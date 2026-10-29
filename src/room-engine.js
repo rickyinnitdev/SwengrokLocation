@@ -1,4 +1,5 @@
 import { locations, modes } from '../.generated/game-data.js';
+import { drawLocations } from './location-rotation.js';
 
 export const MAX_PLAYERS = 8;
 export const GRACE_MS = 30000;
@@ -36,11 +37,14 @@ export function distance(a, b) {
   return 6371000 * 2 * Math.atan2(Math.sqrt(t), Math.sqrt(Math.max(0, 1 - t)));
 }
 export function initialState() {
-  return { players: [], hostId: null, mode: 'classic', match: null, recent: [], updatedAt: 0 };
+  return { players: [], hostId: null, mode: 'classic', match: null, recent: [], rotation: { history: [] }, updatedAt: 0 };
 }
 export class RoomEngine {
-  constructor(state = initialState()) { this.state = state; }
-  join({ create, token, profile: p, mode }, now = Date.now()) {
+  constructor(state = initialState()) {
+    this.state = state;
+    this.state.rotation ||= { history: [...(state.recent || [])] };
+  }
+  join({ create, token, profile: p, mode, seen }, now = Date.now()) {
     const s = this.state;
     let player = token && s.players.find(p => p.token === token);
     if (!player) {
@@ -50,10 +54,21 @@ export class RoomEngine {
       if (s.players.length >= MAX_PLAYERS) throw new Error('This party is full (8 players).');
       player = { id: crypto.randomUUID(), token: crypto.randomUUID(), profile: profile(p), connected: true, leftAt: null };
       s.players.push(player);
+      const valid = new Set(Object.values(locations).flat().map(l => l.id));
+      if (Array.isArray(seen)) {
+        const imported = seen.filter(id => typeof id === 'string' && valid.has(id)).slice(-600);
+        s.rotation.history = [...new Set([...imported, ...s.rotation.history])].slice(-1500);
+        // Imported browser history also applies to an already-created lobby deck.
+        for (const key of Object.keys(s.rotation.decks || {})) {
+          const remaining = s.rotation.decks[key].filter(id => !imported.includes(id));
+          if (remaining.length) s.rotation.decks[key] = remaining;
+        }
+      }
       if (!s.hostId) { s.hostId = player.id; s.mode = Object.hasOwn(modes, mode) ? mode : 'classic'; }
     }
     player.connected = true;
     player.leftAt = null;
+    if (!s.match) player.profile = profile(p);
     s.updatedAt = now;
     return player;
   }
@@ -61,9 +76,8 @@ export class RoomEngine {
   makePlan() {
     const s = this.state, count = modes[s.mode].rounds;
     const pool = this.pool();
-    const unseen = pool.filter(l => !s.recent.includes(l.id));
-    const picks = [...shuffled(unseen), ...shuffled(pool.filter(l => s.recent.includes(l.id)))].slice(0, count);
-    s.recent = [...s.recent, ...picks.map(l => l.id)].slice(-Math.min(80, pool.length - count));
+    const picks = drawLocations(pool, count, s.rotation, modes[s.mode].pool === 'landmarks' ? 'landmarks' : 'all');
+    s.recent = s.rotation.history;
     return picks.map(l => ({ id: l.id, heading: randomInt(360) }));
   }
   startRound(now) {
@@ -76,7 +90,9 @@ export class RoomEngine {
     const s = this.state, p = s.players.find(p => p.id === id);
     if (!p || !p.connected || !msg || typeof msg !== 'object') return;
     s.updatedAt = now;
-    if (msg.type === 'SET_MODE') {
+    if (msg.type === 'UPDATE_PROFILE') {
+      if (!s.match) p.profile = profile(msg.profile);
+    } else if (msg.type === 'SET_MODE') {
       if (id !== s.hostId || s.match || !Object.hasOwn(modes, msg.mode)) return;
       s.mode = msg.mode;
     } else if (msg.type === 'START_MATCH') {
@@ -97,11 +113,10 @@ export class RoomEngine {
     } else if (msg.type === 'SKIP_LOCATION') {
       const m = s.match;
       if (id !== s.hostId || !m || m.phase !== 'playing' || Object.keys(m.guesses[m.round] || {}).length || m.swaps >= 5) return;
-      const unused = this.pool().filter(l => !m.plan.some(r => r.id === l.id) && !s.recent.includes(l.id));
-      if (!unused.length) return;
-      const next = unused[randomInt(unused.length)];
+      const next = drawLocations(this.pool(), 1, s.rotation, modes[s.mode].pool === 'landmarks' ? 'landmarks' : 'all', m.plan.map(r => r.id))[0];
+      if (!next) return;
       m.plan[m.round - 1] = { id: next.id, heading: randomInt(360) };
-      s.recent = [...s.recent, next.id].slice(-80);
+      s.recent = s.rotation.history;
       m.swaps++;
       this.startRound(now);
     }
@@ -157,6 +172,8 @@ export class RoomEngine {
   }
   snapshot() {
     const s = this.state;
-    return { hostId: s.hostId, mode: s.mode, players: s.players.map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId })), match: s.match };
+    const pool = this.pool(), key = modes[s.mode].pool === 'landmarks' ? 'landmarks' : 'all';
+    const remaining = s.rotation.decks?.[key]?.length ?? pool.filter(l => !s.rotation.history.includes(l.id)).length;
+    return { hostId: s.hostId, mode: s.mode, selection: { poolSize: pool.length, remaining }, players: s.players.map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId })), match: s.match };
   }
 }

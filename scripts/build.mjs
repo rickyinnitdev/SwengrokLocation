@@ -20,6 +20,8 @@ for (const l of all) {
 fs.mkdirSync('.generated', { recursive: true });
 fs.writeFileSync('.generated/game-data.js', `export const locations = ${JSON.stringify(locations)};\nexport const modes = ${JSON.stringify(modes)};\n`);
 fs.mkdirSync('dist', { recursive: true });
+const rotationSource = fs.readFileSync('src/location-rotation.js', 'utf8').replace(/^export /gm, '');
+fs.writeFileSync('dist/location-rotation.js', `(function(){${rotationSource}\nglobalThis.WanderRotation = {drawLocations, rotationRandom, protocol: GAME_PROTOCOL};})();`);
 fs.copyFileSync('data/extra-locations.json', 'dist/extra-locations.json');
 const extraScript = `LOCATIONS_DB.classic.push(...${JSON.stringify(extra.locations)});\n`;
 fs.writeFileSync('dist/index.html', html.replace('    const ALL_LOCATIONS =', '    ' + extraScript + '    const ALL_LOCATIONS ='));

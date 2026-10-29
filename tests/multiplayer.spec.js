@@ -6,7 +6,7 @@ test('server confirms joins, mode sync, guesses, refresh recovery, complete matc
   const errors = [];
   for (const p of [a, b]) {
     p.on('pageerror', e => errors.push(e.message));
-    await p.route('**/maps/embed**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama provider stub</p>' }));
+    await p.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama provider stub</p>' }));
   }
   try {
     await Promise.all([a.goto('/'), b.goto('/')]);
@@ -23,6 +23,13 @@ test('server confirms joins, mode sync, guesses, refresh recovery, complete matc
     await expect(b.locator('#lobby-mode-select')).toBeDisabled();
     await a.locator('#lobby-mode-select').selectOption('classic');
     await expect(b.locator('#lobby-mode-select')).toHaveValue('classic');
+    await b.getByRole('button', { name: 'Customize your lobby character' }).click();
+    await expect(b.locator('#profile-modal')).toHaveClass(/active/);
+    await b.locator('#profile-name-input').fill('Lobby explorer');
+    await b.evaluate(() => setStudioOption('hair', 'beanie'));
+    await b.getByRole('button', { name: 'Save & Equip Character' }).click();
+    await expect(a.locator('#lobby-players-container')).toContainText('Lobby explorer');
+    await expect.poll(() => a.evaluate(() => getLobbyPlayers().find(p => p.name === 'Lobby explorer')?.avatarConfig.hairStyle)).toBe('beanie');
     await b.screenshot({ path: 'test-results/party-mobile.png', fullPage: true });
     await a.locator('#start-party-btn').click();
     await expect.poll(() => b.evaluate(() => gameState.roundIndex)).toBe(1);
@@ -72,7 +79,7 @@ test('rooms stay isolated; shared skip, fixed-view mode and socket reconnect wor
       await p.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama stub</p>' }));
       await p.goto('/');
     }
-    expect(await host.evaluate(() => ALL_LOCATIONS.length)).toBe(210);
+    expect(await host.evaluate(() => ALL_LOCATIONS.length)).toBe(392);
     await host.evaluate(() => { openMultiplayerModal(); document.getElementById('party-mode-select').value = 'nmpz'; createMultiplayerLobby(); });
     await other.evaluate(() => { openMultiplayerModal(); createMultiplayerLobby(); });
     await expect.poll(() => host.evaluate(() => roomReady)).toBe(true);
@@ -93,4 +100,33 @@ test('rooms stay isolated; shared skip, fixed-view mode and socket reconnect wor
     expect(await host.evaluate(() => gameState.currentLocation.id)).toBe(await friend.evaluate(() => gameState.currentLocation.id));
     await expect(other.locator('#lobby-screen')).toHaveClass(/active/);
   } finally { await Promise.all(contexts.map(c => c.close())); }
+});
+
+test('solo draw deck and history survive refresh without repeating the pool', async ({ page }) => {
+  await page.goto('/');
+  const first = await page.evaluate(() => {
+    currentMode = 'classic';
+    const result = [];
+    for (let i = 0; i < 150; i++) {
+      if (i % 5 === 0) gameState.usedLocIds = [];
+      result.push(getNextUniqueLocation().id);
+    }
+    return result;
+  });
+  const partySpots = await page.evaluate(() => {
+    const ids = ALL_LOCATIONS.filter(l => !getSeenHistory().includes(l.id)).slice(0, 8).map(l => l.id);
+    ids.forEach(recordSeenLocation);
+    return ids;
+  });
+  await page.reload();
+  const rest = await page.evaluate(() => {
+    currentMode = 'classic';
+    const result = [];
+    for (let i = 0; i < ALL_LOCATIONS.length - 158; i++) {
+      if (i % 5 === 0) gameState.usedLocIds = [];
+      result.push(getNextUniqueLocation().id);
+    }
+    return result;
+  });
+  expect(new Set([...first, ...partySpots, ...rest]).size).toBe(392);
 });

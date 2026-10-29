@@ -1,10 +1,11 @@
 import { DurableObject } from 'cloudflare:workers';
 import { RoomEngine, EMOTES } from './room-engine.js';
+import { GAME_PROTOCOL } from './location-rotation.js';
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname === '/api/health') return Response.json({ service: 'wanderpenh-rooms', version: 2 });
+    if (url.pathname === '/api/health') return Response.json({ service: 'wanderpenh-rooms', version: GAME_PROTOCOL });
     const room = url.pathname.match(/^\/api\/rooms\/(WP-[A-Z0-9]{5,6})$/);
     if (room) {
       if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') return new Response('WebSocket required', { status: 426 });
@@ -32,7 +33,7 @@ export class PartyRoom extends DurableObject {
     return new Response(null, { status: 101, webSocket: client });
   }
   async webSocketMessage(ws, raw) {
-    if (typeof raw !== 'string' || raw.length > 4096) return ws.close(1009, 'Message too large');
+    if (typeof raw !== 'string' || raw.length > 16384) return ws.close(1009, 'Message too large');
     let msg;
     try { msg = JSON.parse(raw); } catch { return ws.close(1007, 'Invalid JSON'); }
     if (!msg || typeof msg !== 'object') return;
@@ -45,6 +46,11 @@ export class PartyRoom extends DurableObject {
     ws.serializeAttachment(attachment);
     if (!attachment.playerId) {
       if (msg.type !== 'HELLO' || now > attachment.pendingUntil) return ws.close(1008, 'Join required');
+      if (msg.protocol !== GAME_PROTOCOL) {
+        ws.send(JSON.stringify({ type: 'ROOM_ERROR', message: 'The game has updated. Reload this page, then join again.' }));
+        ws.close(1008, 'Update required');
+        return;
+      }
       try {
         this.engine.tick(now);
         const p = this.engine.join(msg, now);
@@ -55,7 +61,7 @@ export class PartyRoom extends DurableObject {
             old.close(1000, 'Session resumed');
           }
         }
-        attachment = { ...attachment, playerId: p.id, pendingUntil: null };
+        attachment = { ...attachment, playerId: p.id, protocol: GAME_PROTOCOL, pendingUntil: null };
         ws.serializeAttachment(attachment);
         ws.send(JSON.stringify({ type: 'WELCOME', playerId: p.id, token: p.token }));
       } catch (e) {
@@ -79,6 +85,10 @@ export class PartyRoom extends DurableObject {
   }
   sendAll(msg) {
     for (const ws of this.ctx.getWebSockets()) {
+      if (ws.deserializeAttachment()?.playerId && ws.deserializeAttachment()?.protocol !== GAME_PROTOCOL) {
+        try { ws.send(JSON.stringify({ type: 'ROOM_ERROR', message: 'The game has updated. Reload this page, then join again.' })); ws.close(1008, 'Update required'); } catch {}
+        continue;
+      }
       if (ws.deserializeAttachment()?.playerId) { try { ws.send(JSON.stringify(msg)); } catch {} }
     }
   }

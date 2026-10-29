@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { RoomEngine, GRACE_MS } from '../src/room-engine.js';
 import { locations } from '../.generated/game-data.js';
+import { drawLocations, locationSeparation } from '../src/location-rotation.js';
 
 function room(mode = 'classic') {
   const e = new RoomEngine();
@@ -98,4 +99,52 @@ test('Bounty shortens deadline; sprint awards double speed bonus', () => {
     if (mode === 'bounty') { assert.equal(m.deadline, m.startedAt + 16000); assert.equal(g.bountyBonus, 500); }
     else assert.ok(g.speedBonus > 1000);
   }
+});
+
+test('Full location deck does not repeat IDs until every spot is used', () => {
+  const pool = Object.values(locations).flat();
+  let rotation = { history: [] };
+  const seen = [];
+  // Serialize each match to exercise the same persistence used by Durable Objects.
+  while (seen.length < pool.length * 2) {
+    seen.push(...drawLocations(pool, 5, rotation, 'all').map(l => l.id));
+    rotation = structuredClone(rotation);
+  }
+  assert.equal(new Set(seen.slice(0, pool.length)).size, pool.length);
+  assert.equal(new Set(seen.slice(pool.length, pool.length * 2)).size, pool.length);
+  for (let i = 0; i < seen.length; i += 5) assert.equal(new Set(seen.slice(i, i + 5)).size, 5);
+});
+
+test('New rooms import player history; selection spreads early rounds geographically', () => {
+  const pool = Object.values(locations).flat();
+  const oldIds = pool.slice(0, 50).map(l => l.id);
+  const e = new RoomEngine();
+  e.join({ create: true, seen: oldIds, profile: {} }, 1000);
+  const picks = e.makePlan();
+  assert.ok(picks.every(l => !oldIds.includes(l.id)));
+  const rotation = { history: [] };
+  const spaced = drawLocations(pool, 5, rotation, 'all');
+  for (let i = 0; i < spaced.length; i++) {
+    for (let j = 0; j < i; j++) assert.ok(locationSeparation(spaced[i], spaced[j]) > 600);
+  }
+});
+
+test('Lobby profile edits are sanitized, belong to sender and stop during matches', () => {
+  const { e, a, b } = room();
+  e.handle(b.id, { type: 'UPDATE_PROFILE', playerId: a.id, profile: { name: 'New friend', avatarConfig: { hairStyle: 'bob' } } }, 1000);
+  assert.equal(a.profile.name, 'Host');
+  assert.equal(b.profile.name, 'New friend');
+  assert.equal(b.profile.avatarConfig.hairStyle, 'bob');
+  start(e, a);
+  e.handle(b.id, { type: 'UPDATE_PROFILE', profile: { name: 'Changed mid-game' } }, 2000);
+  assert.equal(b.profile.name, 'New friend');
+});
+
+test('Landmark deck exhausts its smaller pool and survives adding locations', () => {
+  const pool = locations.landmarks, rotation = { history: [] };
+  const ids = Array.from({ length: 9 }, () => drawLocations(pool, 5, rotation, 'landmarks')).flat().map(l => l.id);
+  assert.equal(new Set(ids.slice(0, pool.length)).size, pool.length);
+  const added = { id: 'test_new', name: 'New road', lat: 11.61, lng: 104.95 };
+  drawLocations([...pool, added], 1, rotation, 'landmarks');
+  assert.ok(rotation.catalogs.landmarks.includes(added.id));
 });

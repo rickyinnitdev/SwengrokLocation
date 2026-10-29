@@ -4,7 +4,7 @@
   "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
   "sourceUrl": "https://www.openstreetmap.org",
   "retrieved": "2026-10-29",
-  "coverage": "Named road geometry within central Phnom Penh; panorama availability is not guaranteed.",
+  "coverage": "Named road geometry across central, northern and southern Phnom Penh; panorama availability is not guaranteed.",
   "locations": [
     {
       "id": "osm_37183901",
@@ -805,6 +805,1462 @@
       "lng": 104.9102068,
       "area": "Central Phnom Penh",
       "osmWay": "37183453"
+    },
+    {
+      "id": "osm_922218850",
+      "name": "Street 777",
+      "lat": 11.6064137,
+      "lng": 104.9016472,
+      "area": "Northern Phnom Penh",
+      "osmWay": "922218850"
+    },
+    {
+      "id": "osm_1320227829",
+      "name": "Street 1800",
+      "lat": 11.6096149,
+      "lng": 104.8885212,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1320227829"
+    },
+    {
+      "id": "osm_796565399",
+      "name": "Street 371",
+      "lat": 11.5190596,
+      "lng": 104.9165655,
+      "area": "Southern Phnom Penh",
+      "osmWay": "796565399"
+    },
+    {
+      "id": "osm_1111326999",
+      "name": "Street 510",
+      "lat": 11.5286909,
+      "lng": 104.9207747,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1111326999"
+    },
+    {
+      "id": "osm_694346997",
+      "name": "Street 355",
+      "lat": 11.5297819,
+      "lng": 104.9418733,
+      "area": "Southern Phnom Penh",
+      "osmWay": "694346997"
+    },
+    {
+      "id": "osm_1413030104",
+      "name": "Street 93",
+      "lat": 11.6106421,
+      "lng": 104.9123638,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1413030104"
+    },
+    {
+      "id": "osm_1342360317",
+      "name": "Street 77BT",
+      "lat": 11.5330123,
+      "lng": 104.9008376,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1342360317"
+    },
+    {
+      "id": "osm_922328639",
+      "name": "Street 103",
+      "lat": 11.5984363,
+      "lng": 104.9066248,
+      "area": "Northern Phnom Penh",
+      "osmWay": "922328639"
+    },
+    {
+      "id": "osm_1459248039",
+      "name": "Street Betong",
+      "lat": 11.5846946,
+      "lng": 104.8821914,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1459248039"
+    },
+    {
+      "id": "osm_1162924355",
+      "name": "Sovann Machar Boulevard",
+      "lat": 11.6100574,
+      "lng": 104.9247709,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1162924355"
+    },
+    {
+      "id": "osm_980825252",
+      "name": "Street 371",
+      "lat": 11.5219264,
+      "lng": 104.9024418,
+      "area": "Southern Phnom Penh",
+      "osmWay": "980825252"
+    },
+    {
+      "id": "osm_504532724",
+      "name": "Street 10MC",
+      "lat": 11.5408212,
+      "lng": 104.9029029,
+      "area": "Southern Phnom Penh",
+      "osmWay": "504532724"
+    },
+    {
+      "id": "osm_1160261148",
+      "name": "Chea Sophara Street (Street 598)",
+      "lat": 11.6138296,
+      "lng": 104.8950455,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1160261148"
+    },
+    {
+      "id": "osm_529499143",
+      "name": "Street 598",
+      "lat": 11.5868076,
+      "lng": 104.8911229,
+      "area": "Northern Phnom Penh",
+      "osmWay": "529499143"
+    },
+    {
+      "id": "osm_37624177",
+      "name": "Street 17",
+      "lat": 11.5157786,
+      "lng": 104.9335018,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37624177"
+    },
+    {
+      "id": "osm_788339199",
+      "name": "Street 201",
+      "lat": 11.6141347,
+      "lng": 104.9051186,
+      "area": "Northern Phnom Penh",
+      "osmWay": "788339199"
+    },
+    {
+      "id": "osm_1478777038",
+      "name": "Hun Neang Boulevard",
+      "lat": 11.5167329,
+      "lng": 104.9098497,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1478777038"
+    },
+    {
+      "id": "osm_480455537",
+      "name": "Street Betong",
+      "lat": 11.5942668,
+      "lng": 104.8856073,
+      "area": "Northern Phnom Penh",
+      "osmWay": "480455537"
+    },
+    {
+      "id": "osm_37127556",
+      "name": "Street 103",
+      "lat": 11.5356526,
+      "lng": 104.921217,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37127556"
+    },
+    {
+      "id": "osm_1159750492",
+      "name": "Chea Sophara Street (Street 598)",
+      "lat": 11.5999638,
+      "lng": 104.9000689,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1159750492"
+    },
+    {
+      "id": "osm_37319907",
+      "name": "Street 17BT",
+      "lat": 11.5353922,
+      "lng": 104.9070177,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37319907"
+    },
+    {
+      "id": "osm_604347433",
+      "name": "Street Betong",
+      "lat": 11.5979325,
+      "lng": 104.9133428,
+      "area": "Northern Phnom Penh",
+      "osmWay": "604347433"
+    },
+    {
+      "id": "osm_37369952",
+      "name": "Street 1011",
+      "lat": 11.5854242,
+      "lng": 104.8757243,
+      "area": "Northern Phnom Penh",
+      "osmWay": "37369952"
+    },
+    {
+      "id": "osm_907967116",
+      "name": "Street Betong",
+      "lat": 11.6040029,
+      "lng": 104.9096338,
+      "area": "Northern Phnom Penh",
+      "osmWay": "907967116"
+    },
+    {
+      "id": "osm_188440581",
+      "name": "Street 488",
+      "lat": 11.5322434,
+      "lng": 104.9139418,
+      "area": "Southern Phnom Penh",
+      "osmWay": "188440581"
+    },
+    {
+      "id": "osm_1289083965",
+      "name": "Street 58",
+      "lat": 11.5939149,
+      "lng": 104.901538,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1289083965"
+    },
+    {
+      "id": "osm_263330171",
+      "name": "St Betong",
+      "lat": 11.6034161,
+      "lng": 104.8761004,
+      "area": "Northern Phnom Penh",
+      "osmWay": "263330171"
+    },
+    {
+      "id": "osm_1128330594",
+      "name": "Angkor Boulevard",
+      "lat": 11.6041325,
+      "lng": 104.8914142,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1128330594"
+    },
+    {
+      "id": "osm_1344928287",
+      "name": "New York Street",
+      "lat": 11.5224869,
+      "lng": 104.9116169,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1344928287"
+    },
+    {
+      "id": "osm_517997183",
+      "name": "Street 357",
+      "lat": 11.5362708,
+      "lng": 104.9405242,
+      "area": "Southern Phnom Penh",
+      "osmWay": "517997183"
+    },
+    {
+      "id": "osm_1127646480",
+      "name": "National Highway 5",
+      "lat": 11.6087389,
+      "lng": 104.9180386,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1127646480"
+    },
+    {
+      "id": "osm_807076609",
+      "name": "Street 1003",
+      "lat": 11.6032617,
+      "lng": 104.8855563,
+      "area": "Northern Phnom Penh",
+      "osmWay": "807076609"
+    },
+    {
+      "id": "osm_1159682145",
+      "name": "Okhna Khleang Moeung Street (Street 70)",
+      "lat": 11.5838106,
+      "lng": 104.9092532,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1159682145"
+    },
+    {
+      "id": "osm_299408388",
+      "name": "ផ្លូវ លំ",
+      "lat": 11.5173114,
+      "lng": 104.9430825,
+      "area": "Southern Phnom Penh",
+      "osmWay": "299408388"
+    },
+    {
+      "id": "osm_173274187",
+      "name": "Street 62",
+      "lat": 11.5917972,
+      "lng": 104.9170454,
+      "area": "Northern Phnom Penh",
+      "osmWay": "173274187"
+    },
+    {
+      "id": "osm_1569561614",
+      "name": "Morodok Techo Flyover",
+      "lat": 11.5279341,
+      "lng": 104.9277483,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1569561614"
+    },
+    {
+      "id": "osm_1370681889",
+      "name": "Hun Neang Boulevard",
+      "lat": 11.5177881,
+      "lng": 104.9219885,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1370681889"
+    },
+    {
+      "id": "osm_953524582",
+      "name": "Street 528",
+      "lat": 11.5905583,
+      "lng": 104.8970372,
+      "area": "Northern Phnom Penh",
+      "osmWay": "953524582"
+    },
+    {
+      "id": "osm_389918925",
+      "name": "Street 53BT",
+      "lat": 11.5269307,
+      "lng": 104.9146103,
+      "area": "Southern Phnom Penh",
+      "osmWay": "389918925"
+    },
+    {
+      "id": "osm_178592060",
+      "name": "Street 367",
+      "lat": 11.529445,
+      "lng": 104.9362651,
+      "area": "Southern Phnom Penh",
+      "osmWay": "178592060"
+    },
+    {
+      "id": "osm_1164252650",
+      "name": "Oknha Mong Reththy (Street 1928)",
+      "lat": 11.590157,
+      "lng": 104.8819143,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1164252650"
+    },
+    {
+      "id": "osm_1163992440",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.5452203,
+      "lng": 104.9000738,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1163992440"
+    },
+    {
+      "id": "osm_908021053",
+      "name": "Aphiwat 2 Street",
+      "lat": 11.6021938,
+      "lng": 104.9248652,
+      "area": "Northern Phnom Penh",
+      "osmWay": "908021053"
+    },
+    {
+      "id": "osm_1357218919",
+      "name": "Street 93",
+      "lat": 11.5325261,
+      "lng": 104.9254253,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1357218919"
+    },
+    {
+      "id": "osm_1157973647",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.541653,
+      "lng": 104.9083855,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1157973647"
+    },
+    {
+      "id": "osm_149090167",
+      "name": "Street Betong",
+      "lat": 11.5876487,
+      "lng": 104.8863031,
+      "area": "Northern Phnom Penh",
+      "osmWay": "149090167"
+    },
+    {
+      "id": "osm_1244270836",
+      "name": "Street 99B",
+      "lat": 11.61067,
+      "lng": 104.8995283,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1244270836"
+    },
+    {
+      "id": "osm_258083573",
+      "name": "Street 69BT",
+      "lat": 11.5234039,
+      "lng": 104.9184038,
+      "area": "Southern Phnom Penh",
+      "osmWay": "258083573"
+    },
+    {
+      "id": "osm_922554398",
+      "name": "Street 105",
+      "lat": 11.5937603,
+      "lng": 104.9068751,
+      "area": "Northern Phnom Penh",
+      "osmWay": "922554398"
+    },
+    {
+      "id": "osm_1342368508",
+      "name": "Street 43BT",
+      "lat": 11.523755,
+      "lng": 104.907051,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1342368508"
+    },
+    {
+      "id": "osm_226191287",
+      "name": "Street 31BT",
+      "lat": 11.5309073,
+      "lng": 104.9053669,
+      "area": "Southern Phnom Penh",
+      "osmWay": "226191287"
+    },
+    {
+      "id": "osm_342729296",
+      "name": "Street 1966",
+      "lat": 11.580909,
+      "lng": 104.8844334,
+      "area": "Northern Phnom Penh",
+      "osmWay": "342729296"
+    },
+    {
+      "id": "osm_660696006",
+      "name": "Koh Pich Street",
+      "lat": 11.543936,
+      "lng": 104.9360475,
+      "area": "Southern Phnom Penh",
+      "osmWay": "660696006"
+    },
+    {
+      "id": "osm_508280574",
+      "name": "Angkor Phnom Penh Street",
+      "lat": 11.6105405,
+      "lng": 104.8843235,
+      "area": "Northern Phnom Penh",
+      "osmWay": "508280574"
+    },
+    {
+      "id": "osm_37366758",
+      "name": "Street 5",
+      "lat": 11.6147975,
+      "lng": 104.9130982,
+      "area": "Northern Phnom Penh",
+      "osmWay": "37366758"
+    },
+    {
+      "id": "osm_620732672",
+      "name": "Street 357",
+      "lat": 11.533618,
+      "lng": 104.9366068,
+      "area": "Southern Phnom Penh",
+      "osmWay": "620732672"
+    },
+    {
+      "id": "osm_712310081",
+      "name": "Samdech Sothearos Boulevard (Street 3)",
+      "lat": 11.5442313,
+      "lng": 104.9282566,
+      "area": "Southern Phnom Penh",
+      "osmWay": "712310081"
+    },
+    {
+      "id": "osm_343918868",
+      "name": "Damrei Sroth Street",
+      "lat": 11.5922164,
+      "lng": 104.9243419,
+      "area": "Northern Phnom Penh",
+      "osmWay": "343918868"
+    },
+    {
+      "id": "osm_37183427",
+      "name": "Street 478",
+      "lat": 11.5351717,
+      "lng": 104.9169724,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37183427"
+    },
+    {
+      "id": "osm_37355989",
+      "name": "Street 195",
+      "lat": 11.5462353,
+      "lng": 104.9047914,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37355989"
+    },
+    {
+      "id": "osm_149090162",
+      "name": "Street 1007",
+      "lat": 11.5824789,
+      "lng": 104.8786623,
+      "area": "Northern Phnom Penh",
+      "osmWay": "149090162"
+    },
+    {
+      "id": "osm_687813406",
+      "name": "Street 335",
+      "lat": 11.5828938,
+      "lng": 104.8933156,
+      "area": "Northern Phnom Penh",
+      "osmWay": "687813406"
+    },
+    {
+      "id": "osm_953054839",
+      "name": "Oknha Mong Reththy (Street 1928)",
+      "lat": 11.5907583,
+      "lng": 104.8914626,
+      "area": "Northern Phnom Penh",
+      "osmWay": "953054839"
+    },
+    {
+      "id": "osm_1161095729",
+      "name": "ផ្លូវ បេតុង",
+      "lat": 11.6108822,
+      "lng": 104.907285,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1161095729"
+    },
+    {
+      "id": "osm_1482908557",
+      "name": "Street 432",
+      "lat": 11.5417728,
+      "lng": 104.9208078,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1482908557"
+    },
+    {
+      "id": "osm_37128335",
+      "name": "Street 496",
+      "lat": 11.5314479,
+      "lng": 104.9177189,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37128335"
+    },
+    {
+      "id": "osm_922554399",
+      "name": "Street 105",
+      "lat": 11.5870503,
+      "lng": 104.9072279,
+      "area": "Northern Phnom Penh",
+      "osmWay": "922554399"
+    },
+    {
+      "id": "osm_37725241",
+      "name": "Street 275",
+      "lat": 11.5833757,
+      "lng": 104.9046445,
+      "area": "Northern Phnom Penh",
+      "osmWay": "37725241"
+    },
+    {
+      "id": "osm_37320251",
+      "name": "Street 79BT",
+      "lat": 11.5371675,
+      "lng": 104.9020998,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37320251"
+    },
+    {
+      "id": "osm_1158030325",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.5443464,
+      "lng": 104.9119668,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1158030325"
+    },
+    {
+      "id": "osm_784418400",
+      "name": "Street 1007",
+      "lat": 11.5879389,
+      "lng": 104.8784563,
+      "area": "Northern Phnom Penh",
+      "osmWay": "784418400"
+    },
+    {
+      "id": "osm_1466362324",
+      "name": "Street Betong",
+      "lat": 11.5956556,
+      "lng": 104.9162695,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1466362324"
+    },
+    {
+      "id": "osm_1159750509",
+      "name": "Chea Sophara Street (Street 598)",
+      "lat": 11.6035634,
+      "lng": 104.8993538,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1159750509"
+    },
+    {
+      "id": "osm_279932032",
+      "name": "ផ្លូវ5",
+      "lat": 11.6050244,
+      "lng": 104.9061634,
+      "area": "Northern Phnom Penh",
+      "osmWay": "279932032"
+    },
+    {
+      "id": "osm_151560274",
+      "name": "Street 18BT",
+      "lat": 11.5347063,
+      "lng": 104.9113495,
+      "area": "Southern Phnom Penh",
+      "osmWay": "151560274"
+    },
+    {
+      "id": "osm_1083867176",
+      "name": "Preah Ang Prohm (Street 68)",
+      "lat": 11.5885268,
+      "lng": 104.9157177,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1083867176"
+    },
+    {
+      "id": "osm_661069988",
+      "name": "Street 528",
+      "lat": 11.5874099,
+      "lng": 104.8954438,
+      "area": "Northern Phnom Penh",
+      "osmWay": "661069988"
+    },
+    {
+      "id": "osm_529506724",
+      "name": "Bangabandhu Sheikh Mujib St 337",
+      "lat": 11.5828892,
+      "lng": 104.8896911,
+      "area": "Northern Phnom Penh",
+      "osmWay": "529506724"
+    },
+    {
+      "id": "osm_1157992686",
+      "name": "Preah Norodom Boulevard (Street 41)",
+      "lat": 11.5353638,
+      "lng": 104.9290182,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1157992686"
+    },
+    {
+      "id": "osm_128496932",
+      "name": "Street 357",
+      "lat": 11.5393042,
+      "lng": 104.9389778,
+      "area": "Southern Phnom Penh",
+      "osmWay": "128496932"
+    },
+    {
+      "id": "osm_1316290003",
+      "name": "Okhna Khleang Moeung Street (Street 70)",
+      "lat": 11.5849361,
+      "lng": 104.9132094,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1316290003"
+    },
+    {
+      "id": "osm_299231309",
+      "name": "Street Betong",
+      "lat": 11.598542,
+      "lng": 104.9031311,
+      "area": "Northern Phnom Penh",
+      "osmWay": "299231309"
+    },
+    {
+      "id": "osm_151574097",
+      "name": "St Betong",
+      "lat": 11.6078881,
+      "lng": 104.9142569,
+      "area": "Northern Phnom Penh",
+      "osmWay": "151574097"
+    },
+    {
+      "id": "osm_301638243",
+      "name": "Street 1003",
+      "lat": 11.6065842,
+      "lng": 104.8871869,
+      "area": "Northern Phnom Penh",
+      "osmWay": "301638243"
+    },
+    {
+      "id": "osm_979454158",
+      "name": "Street Betong",
+      "lat": 11.6002176,
+      "lng": 104.8868203,
+      "area": "Northern Phnom Penh",
+      "osmWay": "979454158"
+    },
+    {
+      "id": "osm_683889477",
+      "name": "Oknha Nhiek Tiou Long (Street 466)",
+      "lat": 11.5382161,
+      "lng": 104.9232703,
+      "area": "Southern Phnom Penh",
+      "osmWay": "683889477"
+    },
+    {
+      "id": "osm_573644350",
+      "name": "Street 63BT",
+      "lat": 11.5219437,
+      "lng": 104.9148519,
+      "area": "Southern Phnom Penh",
+      "osmWay": "573644350"
+    },
+    {
+      "id": "osm_1085210155",
+      "name": "Street 590",
+      "lat": 11.5886769,
+      "lng": 104.8998673,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1085210155"
+    },
+    {
+      "id": "osm_1160261154",
+      "name": "Chea Sophara Street (Street 598)",
+      "lat": 11.6068195,
+      "lng": 104.8984381,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1160261154"
+    },
+    {
+      "id": "osm_172897438",
+      "name": "Street 8R",
+      "lat": 11.590064,
+      "lng": 104.905925,
+      "area": "Northern Phnom Penh",
+      "osmWay": "172897438"
+    },
+    {
+      "id": "osm_375961869",
+      "name": "Oknha Nou Kan (Street 105)",
+      "lat": 11.5447686,
+      "lng": 104.9194662,
+      "area": "Southern Phnom Penh",
+      "osmWay": "375961869"
+    },
+    {
+      "id": "osm_1354585847",
+      "name": "Street 105",
+      "lat": 11.5385053,
+      "lng": 104.9199943,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1354585847"
+    },
+    {
+      "id": "osm_785357791",
+      "name": "Street 1003",
+      "lat": 11.5937993,
+      "lng": 104.882494,
+      "area": "Northern Phnom Penh",
+      "osmWay": "785357791"
+    },
+    {
+      "id": "osm_1158218241",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.5433078,
+      "lng": 104.905736,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1158218241"
+    },
+    {
+      "id": "osm_1202587171",
+      "name": "Preah Sisowath Quay (Street 1)",
+      "lat": 11.5803795,
+      "lng": 104.9225559,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1202587171"
+    },
+    {
+      "id": "osm_342117026",
+      "name": "Okhna Khleang Moeung Street (Street 74)",
+      "lat": 11.5854871,
+      "lng": 104.9177774,
+      "area": "Northern Phnom Penh",
+      "osmWay": "342117026"
+    },
+    {
+      "id": "osm_382180730",
+      "name": "Street 907",
+      "lat": 11.5957597,
+      "lng": 104.9111789,
+      "area": "Northern Phnom Penh",
+      "osmWay": "382180730"
+    },
+    {
+      "id": "osm_37127767",
+      "name": "Street 510",
+      "lat": 11.5282247,
+      "lng": 104.9177151,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37127767"
+    },
+    {
+      "id": "osm_257928929",
+      "name": "Street 31BT",
+      "lat": 11.5308512,
+      "lng": 104.9100348,
+      "area": "Southern Phnom Penh",
+      "osmWay": "257928929"
+    },
+    {
+      "id": "osm_1131808845",
+      "name": "Ayasmayan North Street (82)",
+      "lat": 11.580684,
+      "lng": 104.9076592,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1131808845"
+    },
+    {
+      "id": "osm_507581545",
+      "name": "St Betong",
+      "lat": 11.5906264,
+      "lng": 104.8859397,
+      "area": "Northern Phnom Penh",
+      "osmWay": "507581545"
+    },
+    {
+      "id": "osm_1159530858",
+      "name": "Acacia Street",
+      "lat": 11.5449361,
+      "lng": 104.9324908,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1159530858"
+    },
+    {
+      "id": "osm_1199532754",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.5282279,
+      "lng": 104.9247533,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1199532754"
+    },
+    {
+      "id": "osm_487962112",
+      "name": "New York Street",
+      "lat": 11.520956,
+      "lng": 104.9079813,
+      "area": "Southern Phnom Penh",
+      "osmWay": "487962112"
+    },
+    {
+      "id": "osm_517997178",
+      "name": "Street 358",
+      "lat": 11.5336175,
+      "lng": 104.9417683,
+      "area": "Southern Phnom Penh",
+      "osmWay": "517997178"
+    },
+    {
+      "id": "osm_309240038",
+      "name": "Street 73BT",
+      "lat": 11.5417936,
+      "lng": 104.900097,
+      "area": "Southern Phnom Penh",
+      "osmWay": "309240038"
+    },
+    {
+      "id": "osm_186994955",
+      "name": "Street 103",
+      "lat": 11.531398,
+      "lng": 104.9218508,
+      "area": "Southern Phnom Penh",
+      "osmWay": "186994955"
+    },
+    {
+      "id": "osm_1157973652",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.5438315,
+      "lng": 104.9028406,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1157973652"
+    },
+    {
+      "id": "osm_257928919",
+      "name": "Street 24BT",
+      "lat": 11.5263293,
+      "lng": 104.911745,
+      "area": "Southern Phnom Penh",
+      "osmWay": "257928919"
+    },
+    {
+      "id": "osm_679760550",
+      "name": "Street 1966",
+      "lat": 11.5809613,
+      "lng": 104.8875321,
+      "area": "Northern Phnom Penh",
+      "osmWay": "679760550"
+    },
+    {
+      "id": "osm_674002824",
+      "name": "Prek Barang Road",
+      "lat": 11.52788,
+      "lng": 104.9386705,
+      "area": "Southern Phnom Penh",
+      "osmWay": "674002824"
+    },
+    {
+      "id": "osm_1130536859",
+      "name": "Street K5",
+      "lat": 11.58684,
+      "lng": 104.9101027,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1130536859"
+    },
+    {
+      "id": "osm_1131808677",
+      "name": "Ayasmayan North Street (82)",
+      "lat": 11.5810678,
+      "lng": 104.911355,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1131808677"
+    },
+    {
+      "id": "osm_151561377",
+      "name": "Street 414",
+      "lat": 11.5484771,
+      "lng": 104.9031034,
+      "area": "Southern Phnom Penh",
+      "osmWay": "151561377"
+    },
+    {
+      "id": "osm_675603603",
+      "name": "Street 476",
+      "lat": 11.5356071,
+      "lng": 104.9141869,
+      "area": "Southern Phnom Penh",
+      "osmWay": "675603603"
+    },
+    {
+      "id": "osm_488858972",
+      "name": "Street 907",
+      "lat": 11.6067967,
+      "lng": 104.9083212,
+      "area": "Northern Phnom Penh",
+      "osmWay": "488858972"
+    },
+    {
+      "id": "osm_651954891",
+      "name": "Street 62",
+      "lat": 11.5907318,
+      "lng": 104.9098327,
+      "area": "Northern Phnom Penh",
+      "osmWay": "651954891"
+    },
+    {
+      "id": "osm_1490985866",
+      "name": "Sopheak Mongkol Road",
+      "lat": 11.5497343,
+      "lng": 104.9393103,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1490985866"
+    },
+    {
+      "id": "osm_37320249",
+      "name": "Street 83BT",
+      "lat": 11.5390194,
+      "lng": 104.9050057,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37320249"
+    },
+    {
+      "id": "osm_151572896",
+      "name": "Street 60",
+      "lat": 11.5921788,
+      "lng": 104.9142973,
+      "area": "Northern Phnom Penh",
+      "osmWay": "151572896"
+    },
+    {
+      "id": "osm_299174391",
+      "name": "St Betong",
+      "lat": 11.5826579,
+      "lng": 104.8759197,
+      "area": "Northern Phnom Penh",
+      "osmWay": "299174391"
+    },
+    {
+      "id": "osm_466672127",
+      "name": "Street 13BT",
+      "lat": 11.5372608,
+      "lng": 104.9089636,
+      "area": "Southern Phnom Penh",
+      "osmWay": "466672127"
+    },
+    {
+      "id": "osm_1164209536",
+      "name": "Chea Sophara Street (Street 598)",
+      "lat": 11.5923546,
+      "lng": 104.8990474,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1164209536"
+    },
+    {
+      "id": "osm_885161542",
+      "name": "Oknha Mong Reththy (Street 1928)",
+      "lat": 11.5905155,
+      "lng": 104.8886387,
+      "area": "Northern Phnom Penh",
+      "osmWay": "885161542"
+    },
+    {
+      "id": "osm_471302981",
+      "name": "Street 62",
+      "lat": 11.5912709,
+      "lng": 104.9016459,
+      "area": "Northern Phnom Penh",
+      "osmWay": "471302981"
+    },
+    {
+      "id": "osm_1159991920",
+      "name": "Street 484",
+      "lat": 11.5347269,
+      "lng": 104.923742,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1159991920"
+    },
+    {
+      "id": "osm_1459223870",
+      "name": "Street 1011",
+      "lat": 11.588063,
+      "lng": 104.8756247,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1459223870"
+    },
+    {
+      "id": "osm_1187938552",
+      "name": "Preah Norodom Boulevard (Street 41)",
+      "lat": 11.5416532,
+      "lng": 104.9277103,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1187938552"
+    },
+    {
+      "id": "osm_37924126",
+      "name": "Street 2",
+      "lat": 11.5279353,
+      "lng": 104.9304124,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37924126"
+    },
+    {
+      "id": "osm_37125170",
+      "name": "Street 367",
+      "lat": 11.5360179,
+      "lng": 104.935606,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37125170"
+    },
+    {
+      "id": "osm_37370222",
+      "name": "Street 438",
+      "lat": 11.5411123,
+      "lng": 104.9109636,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37370222"
+    },
+    {
+      "id": "osm_525721656",
+      "name": "Street 87BT",
+      "lat": 11.5246347,
+      "lng": 104.9157894,
+      "area": "Southern Phnom Penh",
+      "osmWay": "525721656"
+    },
+    {
+      "id": "osm_913333167",
+      "name": "Street 371",
+      "lat": 11.5314862,
+      "lng": 104.9347093,
+      "area": "Southern Phnom Penh",
+      "osmWay": "913333167"
+    },
+    {
+      "id": "osm_1159750511",
+      "name": "Chea Sophara Street (Street 598)",
+      "lat": 11.5963376,
+      "lng": 104.9007779,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1159750511"
+    },
+    {
+      "id": "osm_37183439",
+      "name": "Street 406",
+      "lat": 11.5442863,
+      "lng": 104.9093908,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37183439"
+    },
+    {
+      "id": "osm_1569561617",
+      "name": "Morodok Techo Flyover",
+      "lat": 11.530341,
+      "lng": 104.9266978,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1569561617"
+    },
+    {
+      "id": "osm_301188634",
+      "name": "Street 57",
+      "lat": 11.5251894,
+      "lng": 104.909146,
+      "area": "Southern Phnom Penh",
+      "osmWay": "301188634"
+    },
+    {
+      "id": "osm_71286259",
+      "name": "Street 516",
+      "lat": 11.5849688,
+      "lng": 104.9026755,
+      "area": "Northern Phnom Penh",
+      "osmWay": "71286259"
+    },
+    {
+      "id": "osm_1127956470",
+      "name": "Street 1003",
+      "lat": 11.5877013,
+      "lng": 104.8820211,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1127956470"
+    },
+    {
+      "id": "osm_515402108",
+      "name": "Street 640",
+      "lat": 11.5305956,
+      "lng": 104.9395251,
+      "area": "Southern Phnom Penh",
+      "osmWay": "515402108"
+    },
+    {
+      "id": "osm_29570314",
+      "name": "Street 398",
+      "lat": 11.5456971,
+      "lng": 104.9257139,
+      "area": "Southern Phnom Penh",
+      "osmWay": "29570314"
+    },
+    {
+      "id": "osm_37329904",
+      "name": "Street 44B",
+      "lat": 11.5249979,
+      "lng": 104.9202055,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37329904"
+    },
+    {
+      "id": "osm_1306136808",
+      "name": "Street 1003",
+      "lat": 11.5823197,
+      "lng": 104.8823091,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1306136808"
+    },
+    {
+      "id": "osm_37356389",
+      "name": "Street 568",
+      "lat": 11.5807208,
+      "lng": 104.892325,
+      "area": "Northern Phnom Penh",
+      "osmWay": "37356389"
+    },
+    {
+      "id": "osm_1158030333",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.543904,
+      "lng": 104.9153922,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1158030333"
+    },
+    {
+      "id": "osm_529504796",
+      "name": "Xiao Ma Street",
+      "lat": 11.5464337,
+      "lng": 104.9343591,
+      "area": "Southern Phnom Penh",
+      "osmWay": "529504796"
+    },
+    {
+      "id": "osm_381077651",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.5292396,
+      "lng": 104.9150858,
+      "area": "Southern Phnom Penh",
+      "osmWay": "381077651"
+    },
+    {
+      "id": "osm_1196683449",
+      "name": "Street 36",
+      "lat": 11.608124,
+      "lng": 104.9118669,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1196683449"
+    },
+    {
+      "id": "osm_970136393",
+      "name": "Street 339",
+      "lat": 11.5851718,
+      "lng": 104.8947231,
+      "area": "Northern Phnom Penh",
+      "osmWay": "970136393"
+    },
+    {
+      "id": "osm_168282945",
+      "name": "Street 422",
+      "lat": 11.5416546,
+      "lng": 104.9240798,
+      "area": "Southern Phnom Penh",
+      "osmWay": "168282945"
+    },
+    {
+      "id": "osm_167935854",
+      "name": "Street 86",
+      "lat": 11.5806012,
+      "lng": 104.9140209,
+      "area": "Northern Phnom Penh",
+      "osmWay": "167935854"
+    },
+    {
+      "id": "osm_1072929821",
+      "name": "St. Q",
+      "lat": 11.5484548,
+      "lng": 104.9413415,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1072929821"
+    },
+    {
+      "id": "osm_510840021",
+      "name": "Street 566",
+      "lat": 11.5843138,
+      "lng": 104.8915007,
+      "area": "Northern Phnom Penh",
+      "osmWay": "510840021"
+    },
+    {
+      "id": "osm_420968795",
+      "name": "Street Betong",
+      "lat": 11.5920277,
+      "lng": 104.8841164,
+      "area": "Northern Phnom Penh",
+      "osmWay": "420968795"
+    },
+    {
+      "id": "osm_471148193",
+      "name": "Street Betong",
+      "lat": 11.5962851,
+      "lng": 104.9184905,
+      "area": "Northern Phnom Penh",
+      "osmWay": "471148193"
+    },
+    {
+      "id": "osm_71270344",
+      "name": "Street 58",
+      "lat": 11.5945535,
+      "lng": 104.904727,
+      "area": "Northern Phnom Penh",
+      "osmWay": "71270344"
+    },
+    {
+      "id": "osm_37628954",
+      "name": "Oknha Oum (Street 80)",
+      "lat": 11.5832056,
+      "lng": 104.9195492,
+      "area": "Northern Phnom Penh",
+      "osmWay": "37628954"
+    },
+    {
+      "id": "osm_1160232843",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.5440618,
+      "lng": 104.9215938,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1160232843"
+    },
+    {
+      "id": "osm_1199531873",
+      "name": "Yothapol Khemarak Phoumin Boulevard (Street 271)",
+      "lat": 11.5274245,
+      "lng": 104.9226763,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1199531873"
+    },
+    {
+      "id": "osm_151561380",
+      "name": "Berk Thmey Street",
+      "lat": 11.5476478,
+      "lng": 104.9010697,
+      "area": "Southern Phnom Penh",
+      "osmWay": "151561380"
+    },
+    {
+      "id": "osm_37183440",
+      "name": "Street 402",
+      "lat": 11.5473742,
+      "lng": 104.9066519,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37183440"
+    },
+    {
+      "id": "osm_651934078",
+      "name": "Street Betong",
+      "lat": 11.61113,
+      "lng": 104.909461,
+      "area": "Northern Phnom Penh",
+      "osmWay": "651934078"
+    },
+    {
+      "id": "osm_37183446",
+      "name": "Street 366",
+      "lat": 11.5497863,
+      "lng": 104.908646,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37183446"
+    },
+    {
+      "id": "osm_1566364477",
+      "name": "Street 8BT",
+      "lat": 11.5317787,
+      "lng": 104.9073677,
+      "area": "Southern Phnom Penh",
+      "osmWay": "1566364477"
+    },
+    {
+      "id": "osm_756567492",
+      "name": "Oknha Mong Reththy (Street 1928)",
+      "lat": 11.5900692,
+      "lng": 104.8786571,
+      "area": "Northern Phnom Penh",
+      "osmWay": "756567492"
+    },
+    {
+      "id": "osm_908002329",
+      "name": "Street Betong",
+      "lat": 11.597759,
+      "lng": 104.915873,
+      "area": "Northern Phnom Penh",
+      "osmWay": "908002329"
+    },
+    {
+      "id": "osm_262071434",
+      "name": "Street 1",
+      "lat": 11.6090675,
+      "lng": 104.8859017,
+      "area": "Northern Phnom Penh",
+      "osmWay": "262071434"
+    },
+    {
+      "id": "osm_1124261332",
+      "name": "Street 528",
+      "lat": 11.5812845,
+      "lng": 104.9032855,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1124261332"
+    },
+    {
+      "id": "osm_922352001",
+      "name": "Street 103",
+      "lat": 11.5886396,
+      "lng": 104.9089893,
+      "area": "Northern Phnom Penh",
+      "osmWay": "922352001"
+    },
+    {
+      "id": "osm_730890879",
+      "name": "Street 70",
+      "lat": 11.5830092,
+      "lng": 104.9121438,
+      "area": "Northern Phnom Penh",
+      "osmWay": "730890879"
+    },
+    {
+      "id": "osm_487962109",
+      "name": "Street 87BT",
+      "lat": 11.5213245,
+      "lng": 104.9182546,
+      "area": "Southern Phnom Penh",
+      "osmWay": "487962109"
+    },
+    {
+      "id": "osm_37130022",
+      "name": "Street 41",
+      "lat": 11.5353029,
+      "lng": 104.926898,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37130022"
+    },
+    {
+      "id": "osm_1256330680",
+      "name": "Street 315",
+      "lat": 11.5832486,
+      "lng": 104.8983404,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1256330680"
+    },
+    {
+      "id": "osm_1306136805",
+      "name": "Street 1007",
+      "lat": 11.5858731,
+      "lng": 104.8785755,
+      "area": "Northern Phnom Penh",
+      "osmWay": "1306136805"
+    },
+    {
+      "id": "osm_772911481",
+      "name": "Street 369",
+      "lat": 11.5332225,
+      "lng": 104.9336334,
+      "area": "Southern Phnom Penh",
+      "osmWay": "772911481"
+    },
+    {
+      "id": "osm_944586090",
+      "name": "Street 173",
+      "lat": 11.5471545,
+      "lng": 104.9110637,
+      "area": "Southern Phnom Penh",
+      "osmWay": "944586090"
+    },
+    {
+      "id": "osm_366170897",
+      "name": "Street 349",
+      "lat": 11.5875875,
+      "lng": 104.8981262,
+      "area": "Northern Phnom Penh",
+      "osmWay": "366170897"
+    },
+    {
+      "id": "osm_37125164",
+      "name": "Street 628",
+      "lat": 11.5317127,
+      "lng": 104.9373005,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37125164"
+    },
+    {
+      "id": "osm_189783586",
+      "name": "Street 99B",
+      "lat": 11.5996862,
+      "lng": 104.9082328,
+      "area": "Northern Phnom Penh",
+      "osmWay": "189783586"
+    },
+    {
+      "id": "osm_37356394",
+      "name": "Street 540",
+      "lat": 11.5810191,
+      "lng": 104.8952084,
+      "area": "Northern Phnom Penh",
+      "osmWay": "37356394"
+    },
+    {
+      "id": "osm_37183071",
+      "name": "Street 369",
+      "lat": 11.5155763,
+      "lng": 104.9440937,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37183071"
+    },
+    {
+      "id": "osm_37370511",
+      "name": "Street 147",
+      "lat": 11.5334304,
+      "lng": 104.9159747,
+      "area": "Southern Phnom Penh",
+      "osmWay": "37370511"
     }
   ]
 }

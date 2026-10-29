@@ -1,12 +1,16 @@
 # Phnom Penh location data
 
-The original 110 locations remain in `index.html`. `extra-locations.json` adds 100 real named road points in central Phnom Penh, for a total of 210. These are coordinate candidates, not independently verified panorama IDs.
+The original 110 locations remain in `index.html`. `extra-locations.json` adds 282 real named road points in central, northern and southern Phnom Penh, for a total of 392. These are coordinate candidates, not independently verified panorama IDs.
 
 The additional data was retrieved on 2026-10-29 from the OpenStreetMap Map API:
 
 https://api.openstreetmap.org/api/0.6/map?bbox=104.89,11.55,104.92,11.58
 
-`scripts/curate-locations.mjs` chooses points on named primary, secondary, tertiary and residential road geometry. Candidates are spaced at least 140 metres from original and previously selected additional points. Each record retains its OSM way ID. The import is a build-time snapshot; playing does not call OpenStreetMap APIs.
+https://api.openstreetmap.org/api/0.6/map?bbox=104.875,11.58,104.925,11.615
+
+https://api.openstreetmap.org/api/0.6/map?bbox=104.90,11.515,104.945,11.55
+
+`scripts/curate-locations.mjs` chooses points on named primary, secondary, tertiary and residential road geometry. Candidates are spaced at least 140 metres from original and previously selected additional points. The second import (`scripts/expand-locations.mjs`) added 182 points in the north and south with at least 220 metres spacing from existing and other newly selected points. Each record retains its OSM way ID. The import is a build-time snapshot; playing does not call OpenStreetMap APIs.
 
 Coordinates are © OpenStreetMap contributors, licensed under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/). Attribution is shown in the party dialog. The derived dataset is available on the deployed website at `/extra-locations.json` and in this repository at `data/extra-locations.json`.
 

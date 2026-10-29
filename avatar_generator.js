@@ -49,7 +49,7 @@ function sanitizeAvatarConfig(config) {
 
 function generateAvatarSVG(config = {}) {
     const c = sanitizeAvatarConfig(config);
-    
+
     // Hand-drawn comic ink styling
     const ink = '#261b2b';
     const strokeProps = `stroke="${ink}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"`;
@@ -86,12 +86,12 @@ function generateAvatarSVG(config = {}) {
     let hairBackSVG = '';
     if (c.hairStyle === 'fluffy') {
         hairBackSVG = `
-            <path d="M 65 170 
-                     C 25 150, 15 95, 45 60 
-                     C 60 30, 95 20, 125 28 
-                     C 150 10, 185 8, 220 28 
-                     C 260 45, 280 90, 265 135 
-                     C 280 170, 255 210, 225 195 
+            <path d="M 65 170
+                     C 25 150, 15 95, 45 60
+                     C 60 30, 95 20, 125 28
+                     C 150 10, 185 8, 220 28
+                     C 260 45, 280 90, 265 135
+                     C 280 170, 255 210, 225 195
                      L 65 170 Z" fill="${c.hairColor}" ${strokeProps} />
             <!-- Sketch hatching highlights on hair -->
             <path d="M 55 75 Q 75 70 70 90 M 95 45 Q 115 35 110 60 M 165 30 Q 185 20 180 45 M 225 50 Q 245 45 235 70" fill="none" stroke="#ffffff" stroke-width="2.5" opacity="0.35" stroke-linecap="round" />
@@ -119,7 +119,7 @@ function generateAvatarSVG(config = {}) {
         clothesSVG = `
             <!-- Neck -->
             <path d="M 132 195 L 132 235 Q 150 242 168 235 L 168 195" fill="${c.skinColor}" ${strokeProps} />
-            
+
             <!-- White T-shirt -->
             <path d="M 112 235 Q 150 248 188 235 L 195 310 L 105 310 Z" fill="${c.shirtColor}" ${strokeProps} />
             <!-- Little cat/bear badge -->
@@ -163,10 +163,10 @@ function generateAvatarSVG(config = {}) {
     `;
 
     const faceBaseSVG = `
-        <path d="M 78 142 
-                 C 74 195, 95 222, 150 222 
-                 C 205 222, 226 195, 222 142 
-                 C 222 110, 78 110, 78 142 Z" 
+        <path d="M 78 142
+                 C 74 195, 95 222, 150 222
+                 C 205 222, 226 195, 222 142
+                 C 222 110, 78 110, 78 142 Z"
                  fill="${c.skinColor}" ${strokeProps} />
         <!-- Chin dot detail from photo -->
         <circle cx="150" cy="214" r="2" fill="${ink}" />
@@ -179,7 +179,7 @@ function generateAvatarSVG(config = {}) {
             <!-- Eyebrows -->
             <path d="M 100 120 L 114 116" ${strokeProps} />
             <path d="M 172 114 L 186 117" ${strokeProps} />
-            
+
             <!-- Left Chill Eye -->
             <ellipse cx="107" cy="150" rx="22" ry="16" fill="#ffffff" ${strokeProps} />
             <!-- Heavy Droopy Upper Lid -->
@@ -246,12 +246,12 @@ function generateAvatarSVG(config = {}) {
     if (c.hairStyle === 'fluffy') {
         hairFrontSVG = `
             <!-- Top head messy fringe (stays comfortably above y=125) -->
-            <path d="M 68 110 
-                     Q 85 124 105 106 
-                     Q 125 126 145 102 
-                     Q 165 125 188 104 
-                     Q 208 124 230 102 
-                     Q 245 118 252 95 
+            <path d="M 68 110
+                     Q 85 124 105 106
+                     Q 125 126 145 102
+                     Q 165 125 188 104
+                     Q 208 124 230 102
+                     Q 245 118 252 95
                      L 245 40 Q 150 20 68 40 Z" fill="${c.hairColor}" ${strokeProps} />
             <!-- Little playful dangling curls on sides -->
             <path d="M 68 105 Q 60 135 72 150" fill="${c.hairColor}" ${strokeProps} />
