@@ -1,0 +1,3842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>WanderPenh 🇰🇭 - Phnom Penh Urban Discovery</title>
+    <!-- Leaflet CSS for Map Pins -->
+    <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
+    <!-- Hand-Drawn Doodle Avatar Vector Engine -->
+    <script src="avatar_generator.js"></script>
+    <!-- Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Kantumruy+Pro:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           1. MODERN DESIGN SYSTEM & CSS TOKENS (UI/UX Pro Max Verified)
+           ============================================================ */
+        :root {
+            --brand-primary: #10b981;
+            --brand-primary-hover: #059669;
+            --brand-primary-glow: rgba(16, 185, 129, 0.45);
+            
+            --brand-accent: #f59e0b;
+            --brand-accent-glow: rgba(245, 158, 11, 0.45);
+
+            --brand-rose: #f43f5e;
+            --brand-sky: #0284c7;
+            --brand-violet: #8b5cf6;
+
+            --bg-deep: #080c15;
+            --bg-canvas: #0d1322;
+            --bg-surface: rgba(18, 26, 45, 0.88);
+            --bg-surface-elevated: rgba(26, 37, 64, 0.96);
+            --bg-surface-hover: rgba(35, 49, 84, 0.95);
+
+            --border-subtle: rgba(255, 255, 255, 0.1);
+            --border-highlight: rgba(255, 255, 255, 0.22);
+            --border-glow: rgba(16, 185, 129, 0.5);
+
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --radius-full: 9999px;
+
+            --safe-bottom: max(16px, env(safe-area-inset-bottom));
+            --safe-top: max(16px, env(safe-area-inset-top));
+        }
+
+        * {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        /* Sleek Modern Custom Scrollbar (Cross-Browser) */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-deep);
+            background-image: 
+                radial-gradient(circle at 15% 10%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
+                radial-gradient(circle at 85% 90%, rgba(245, 158, 11, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 50% 50%, var(--bg-canvas) 0%, var(--bg-deep) 100%);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* Ambient subtle grain overlay */
+        body::after {
+            content: '';
+            position: fixed; inset: 0;
+            background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 24px 24px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Accessible Focus Outline */
+        button:focus-visible, a:focus-visible, input:focus-visible {
+            outline: 2px solid var(--brand-primary);
+            outline-offset: 3px;
+        }
+
+        /* Screen Framework */
+        .screen {
+            position: fixed; inset: 0;
+            display: none;
+            flex-direction: column;
+            z-index: 10;
+        }
+        .screen.active {
+            display: flex;
+            animation: screenFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes screenFadeIn {
+            from { opacity: 0; transform: scale(0.99); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* SVG Icon styling */
+        .icon {
+            display: inline-block;
+            width: 20px; height: 20px;
+            stroke-width: 2.2;
+            stroke: currentColor;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+        .icon-sm { width: 16px; height: 16px; }
+        .icon-lg { width: 26px; height: 26px; }
+
+        /* Tactile Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+            font-weight: 800;
+            font-size: 0.95rem;
+            padding: 12px 22px;
+            border-radius: var(--radius-md);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            text-decoration: none;
+            min-height: 48px;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-hover) 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 20px var(--brand-primary-glow), 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 26px var(--brand-primary-glow);
+        }
+        .btn-secondary {
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border: 1px solid var(--border-subtle);
+            backdrop-filter: blur(12px);
+        }
+        .btn-secondary:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+        }
+        .btn-accent {
+            background: linear-gradient(135deg, var(--brand-accent) 0%, #d97706 100%);
+            color: #1a0f02;
+            font-weight: 900;
+            box-shadow: 0 4px 18px var(--brand-accent-glow);
+        }
+        .btn-accent:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px var(--brand-accent-glow);
+        }
+        .btn-icon-only {
+            width: 44px; height: 44px;
+            padding: 0;
+            border-radius: var(--radius-full);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-icon-only:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-highlight);
+        }
+
+        /* ============================================================
+           2. HOME & NAVIGATION SCREEN
+           ============================================================ */
+        #start-screen {
+            background: transparent;
+            align-items: center;
+            justify-content: flex-start;
+            padding: var(--safe-top) 20px var(--safe-bottom);
+            overflow-y: auto;
+            z-index: 20;
+        }
+
+        .home-layout {
+            max-width: 980px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            padding-bottom: 30px;
+        }
+
+        /* Top Bar: Profile Pill & Utility Controls */
+        .home-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .profile-trigger-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-surface);
+            backdrop-filter: blur(16px);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 6px 18px 6px 6px;
+            cursor: pointer;
+            transition: all 0.22s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        .profile-trigger-card:hover {
+            border-color: var(--brand-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px var(--brand-accent-glow);
+        }
+
+        .profile-avatar-thumb {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fed049;
+            border: 2px solid var(--brand-accent);
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .profile-meta-wrap {
+            display: flex;
+            flex-direction: column;
+            color: var(--text-main);
+            text-align: left;
+        }
+        .profile-player-name {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .profile-player-title {
+            font-size: 0.75rem;
+            color: var(--brand-accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .home-utility-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Hero Brand Banner */
+        .hero-banner {
+            text-align: center;
+            padding: 24px 16px 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hero-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            border-radius: var(--radius-full);
+            padding: 5px 14px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: #6ee7b7;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .hero-title {
+            font-size: clamp(2.4rem, 6vw, 3.8rem);
+            font-weight: 900;
+            letter-spacing: -1.5px;
+            line-height: 1.08;
+            background: linear-gradient(135deg, #ffffff 30%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(0.95rem, 2.2vw, 1.15rem);
+            color: var(--text-secondary);
+            max-width: 620px;
+            line-height: 1.5;
+        }
+        .hero-subtitle-khmer {
+            font-family: 'Kantumruy Pro', sans-serif;
+            color: var(--brand-accent);
+            font-size: 0.95rem;
+            margin-top: 2px;
+        }
+
+        /* Primary Action Buttons */
+        .home-action-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 14px;
+            width: 100%;
+        }
+
+        .action-card-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: space-between;
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            min-height: 120px;
+            color: var(--text-main);
+            text-align: left;
+        }
+        .action-card-btn:hover {
+            transform: translateY(-3px);
+            border-color: var(--border-highlight);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+        }
+        .action-card-btn.featured {
+            background: linear-gradient(145deg, rgba(16, 185, 129, 0.22) 0%, rgba(18, 26, 45, 0.95) 75%);
+            border-color: rgba(16, 185, 129, 0.5);
+            box-shadow: 0 8px 30px rgba(16, 185, 129, 0.18);
+        }
+        .action-card-btn.party {
+            background: linear-gradient(145deg, rgba(245, 158, 11, 0.2) 0%, rgba(18, 26, 45, 0.95) 75%);
+            border-color: rgba(245, 158, 11, 0.45);
+        }
+        .action-card-btn.royale {
+            background: linear-gradient(145deg, rgba(244, 63, 94, 0.2) 0%, rgba(18, 26, 45, 0.95) 75%);
+            border-color: rgba(244, 63, 94, 0.45);
+        }
+
+        .card-top-icon {
+            width: 40px; height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.08);
+            margin-bottom: 12px;
+        }
+        .card-btn-title {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        .card-btn-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Mode Selection Grid */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 14px;
+        }
+
+        .mode-tile {
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 18px;
+            cursor: pointer;
+            transition: all 0.22s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+        .mode-tile:hover {
+            border-color: var(--brand-primary);
+            background: var(--bg-surface-hover);
+            transform: translateY(-2px);
+        }
+        .mode-tile.selected {
+            border-color: var(--brand-primary);
+            background: rgba(16, 185, 129, 0.12);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+        }
+
+        .mode-tile-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .launch-action-panel {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(6, 78, 59, 0.22));
+            border: 1.5px solid var(--brand-primary);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            box-shadow: 0 4px 24px rgba(16, 185, 129, 0.15);
+            margin-top: 14px;
+        }
+        @media (max-width: 768px) {
+            .launch-action-panel {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        .launch-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .launch-title-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .launch-pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--brand-primary);
+            box-shadow: 0 0 8px var(--brand-primary);
+            animation: pulse-dot 1.8s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.85); }
+        }
+        .launch-mode-title {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #ffffff;
+        }
+        .launch-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .launch-big-btn {
+            padding: 14px 22px;
+            font-size: 0.92rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+        .location-count-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.78rem;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .mode-badge {
+            align-self: flex-start;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: var(--radius-full);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+        }
+        .mode-tile.selected .mode-badge {
+            background: var(--brand-primary);
+            color: #ffffff;
+        }
+
+        .mode-tile-title {
+            font-size: 1.05rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .mode-tile-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* How to Play Quick Steps Card */
+        .tutorial-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .tutorial-steps-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .tutorial-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .step-num {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            color: var(--brand-accent);
+            flex-shrink: 0;
+        }
+        .step-text h4 { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
+        .step-text p { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4; }
+
+        /* ============================================================
+           3. IN-GAME STREET VIEW & HEADS-UP DISPLAY (HUD)
+           ============================================================ */
+        #game-screen {
+            position: fixed; inset: 0;
+            z-index: 50;
+            background: #000;
+        }
+
+        #streetview-container {
+            position: absolute; inset: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+        }
+        #streetview-iframe {
+            width: 100%; height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Top In-Game Floating HUD */
+        #hud-top {
+            position: absolute;
+            top: var(--safe-top);
+            left: 16px; right: 16px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            pointer-events: none;
+        }
+        #hud-top > * { pointer-events: auto; }
+
+        .hud-card {
+            background: var(--bg-surface-elevated);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+        }
+
+        .hud-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Circular Accuracy Countdown Timer */
+        .timer-card {
+            padding: 6px 16px;
+            font-weight: 900;
+            gap: 8px;
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+        .timer-ring-box {
+            position: relative;
+            width: 28px; height: 28px;
+        }
+        .timer-ring-svg {
+            transform: rotate(-90deg);
+            width: 28px; height: 28px;
+        }
+        .timer-ring-circle {
+            stroke-dasharray: 88;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke 0.3s;
+        }
+        .timer-val {
+            font-size: 1.15rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+        }
+        .timer-card.danger {
+            border-color: var(--brand-rose);
+            animation: timerPulse 0.8s infinite;
+        }
+        @keyframes timerPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(244, 63, 94, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(244, 63, 94, 0.8); }
+        }
+
+        /* Party Live Status Chips in HUD */
+        #hud-mp-status-card {
+            display: none;
+            padding: 4px 10px;
+            gap: 8px;
+            max-width: 460px;
+            overflow-x: auto;
+        }
+        .hud-player-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 3px 10px 3px 4px;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 800;
+            white-space: nowrap;
+            transition: all 0.25s;
+        }
+        .hud-player-chip.guessed {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: var(--brand-primary);
+            color: #6ee7b7;
+        }
+        .hud-player-chip-avatar {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #fed049;
+            flex-shrink: 0;
+        }
+
+        /* Floating Tool Buttons */
+        .hud-tool-btn {
+            background: var(--bg-surface-elevated);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            color: var(--text-main);
+            padding: 8px 14px;
+            font-size: 0.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .hud-tool-btn:hover {
+            background: var(--bg-surface-hover);
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+        }
+        .hud-tool-btn.btn-alert {
+            background: rgba(244, 63, 94, 0.2);
+            border-color: rgba(244, 63, 94, 0.4);
+            color: #fda4af;
+        }
+
+        /* ============================================================
+           4. UNIFIED GUESS MAP CONSOLE (Never Clips + Responsive Drawer)
+           ============================================================ */
+        #map-panel {
+            position: absolute;
+            bottom: var(--safe-bottom);
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            background: var(--bg-surface-elevated);
+            backdrop-filter: blur(20px);
+            border: 2px solid var(--border-highlight);
+            box-shadow: 0 16px 50px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08) inset;
+            transition: width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s;
+            width: 340px;
+            max-height: calc(100vh - 120px);
+        }
+
+        #map-panel.expanded {
+            z-index: 200;
+            width: min(760px, 92vw);
+            border-color: var(--brand-primary);
+            box-shadow: 0 24px 75px rgba(0,0,0,0.9), 0 0 35px var(--brand-primary-glow);
+        }
+
+        #map-wrapper {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            background: #1e293b;
+            transition: height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Desktop hover preview */
+        @media (hover: hover) {
+            #map-panel:not(.expanded):hover {
+                width: 440px;
+                border-color: rgba(255,255,255,0.35);
+            }
+            #map-panel:not(.expanded):hover #map-wrapper {
+                height: 290px;
+            }
+        }
+
+        #map-panel.expanded #map-wrapper {
+            height: min(490px, 62vh);
+        }
+
+        #guess-map {
+            width: 100%; height: 100%;
+            cursor: crosshair !important;
+        }
+
+        /* Map Floating Controls Inside Map Area */
+        .map-floating-bar {
+            position: absolute;
+            top: 10px; left: 10px; right: 10px;
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .map-floating-bar > * { pointer-events: auto; }
+
+        .map-tool-pill {
+            background: rgba(10, 15, 26, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: var(--radius-sm);
+            padding: 5px 10px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            transition: all 0.2s;
+        }
+        .map-tool-pill:hover {
+            border-color: var(--brand-primary);
+            transform: scale(1.04);
+        }
+
+        #map-pin-status {
+            background: rgba(10, 15, 26, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: var(--radius-full);
+            padding: 4px 12px;
+            font-size: 0.72rem;
+            font-weight: 800;
+            color: var(--text-secondary);
+        }
+        #map-pin-status.placed {
+            color: #a7f3d0;
+            border-color: rgba(16, 185, 129, 0.5);
+            background: rgba(6, 78, 59, 0.85);
+        }
+
+        /* Bottom Confirm Action Bar */
+        #guess-action-bar {
+            padding: 10px 14px;
+            background: rgba(8, 12, 21, 0.98);
+            border-top: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        #guess-btn {
+            width: 100%;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: var(--radius-md);
+            font-size: 0.95rem;
+            font-weight: 900;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            cursor: not-allowed;
+            background: #232d42;
+            color: #64748b;
+            border: 1px solid rgba(255,255,255,0.06);
+            transition: all 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        #guess-btn.ready {
+            background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-hover) 100%);
+            color: #ffffff;
+            cursor: pointer;
+            border-color: rgba(16, 185, 129, 0.8);
+            box-shadow: 0 6px 24px var(--brand-primary-glow), 0 0 0 1px rgba(255,255,255,0.2) inset;
+            animation: pulseGlow 1.8s infinite;
+        }
+        #guess-btn.ready:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px var(--brand-primary-glow);
+        }
+        #guess-btn.ready:active {
+            transform: scale(0.98);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 4px 18px var(--brand-primary-glow); }
+            50% { box-shadow: 0 8px 30px rgba(16, 185, 129, 0.8); }
+        }
+
+        /* Mobile Bottom-Drawer Layout */
+        @media (max-width: 768px) {
+            #map-panel {
+                left: 12px; right: 12px;
+                bottom: var(--safe-bottom);
+                width: auto;
+                border-radius: var(--radius-lg);
+            }
+            #map-wrapper { height: 180px; }
+            #map-panel.expanded { width: auto; }
+            #map-panel.expanded #map-wrapper { height: 50vh; }
+            #hud-top {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+        }
+
+        /* ============================================================
+           5. MODALS & OVERLAYS (Character Studio, Lobby, Results)
+           ============================================================ */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(4, 7, 13, 0.88);
+            backdrop-filter: blur(14px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            z-index: 500;
+        }
+        .modal-overlay.active {
+            display: flex;
+            animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-card {
+            background: var(--bg-surface-elevated);
+            border: 1.5px solid var(--border-highlight);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-title {
+            font-size: 1.35rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Character Studio Specific Styling */
+        .studio-preview-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.15) 0%, rgba(13, 19, 34, 0.8) 70%);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border: 1px solid var(--border-subtle);
+            position: relative;
+        }
+        .studio-avatar-circle {
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 4px solid var(--brand-accent);
+            box-shadow: 0 8px 32px var(--brand-accent-glow);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .studio-avatar-circle:hover {
+            transform: scale(1.06) rotate(-2deg);
+        }
+
+        .studio-tabs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+        .studio-tab-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+            border-radius: var(--radius-full);
+            padding: 8px 16px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .studio-tab-btn.active {
+            background: var(--brand-primary);
+            color: #ffffff;
+            border-color: var(--brand-primary);
+        }
+
+        .studio-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+        .studio-opt-btn {
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+        .studio-opt-btn:hover {
+            border-color: var(--border-highlight);
+            transform: translateY(-2px);
+        }
+        .studio-opt-btn.selected {
+            border-color: var(--brand-primary);
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+        }
+
+        /* Color Swatches */
+        .color-swatch-opt {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid rgba(255,255,255,0.2);
+            transition: all 0.2s;
+        }
+        .color-swatch-opt.selected {
+            border-color: #ffffff;
+            transform: scale(1.15);
+            box-shadow: 0 0 14px currentColor;
+        }
+
+        /* ============================================================
+           6. MULTIPLAYER LOBBY SCREEN
+           ============================================================ */
+        #lobby-screen {
+            background: radial-gradient(circle at 50% 30%, #171f33 0%, #080c15 80%);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 300;
+        }
+
+        .lobby-box {
+            background: var(--bg-surface-elevated);
+            border: 1.5px solid var(--border-highlight);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            max-width: 680px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.7);
+        }
+
+        .room-code-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(16, 185, 129, 0.12);
+            border: 1.5px dashed var(--brand-primary);
+            border-radius: var(--radius-lg);
+            padding: 14px 20px;
+        }
+        .room-code-val {
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 3px;
+            color: #6ee7b7;
+            font-family: monospace;
+        }
+
+        .player-chips-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        .lobby-player-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 8px 12px;
+        }
+        .lobby-player-thumb {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #fed049;
+            flex-shrink: 0;
+        }
+
+        /* Party Quick Emote Reactions */
+        .emote-shelf {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 0;
+        }
+        .emote-pill {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-full);
+            padding: 6px 14px;
+            font-size: 0.82rem;
+            font-weight: 800;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .emote-pill:hover {
+            background: rgba(255,255,255,0.12);
+            transform: scale(1.05);
+        }
+
+        /* ============================================================
+           7. ROUND RESULTS & MULTIPLAYER LEADERBOARD
+           ============================================================ */
+        #result-screen {
+            background: rgba(8, 12, 21, 0.95);
+            backdrop-filter: blur(16px);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 400;
+        }
+
+        .result-card {
+            background: var(--bg-surface-elevated);
+            border: 1.5px solid var(--border-highlight);
+            border-radius: var(--radius-xl);
+            padding: 24px;
+            max-width: 820px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+        }
+
+        #result-map-container {
+            width: 100%;
+            height: 280px;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--border-subtle);
+        }
+        #result-map { width: 100%; height: 100%; }
+
+        .result-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            text-align: center;
+        }
+        .result-stat-box {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 12px;
+        }
+        .result-stat-label {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .result-stat-val {
+            font-size: 1.6rem;
+            font-weight: 900;
+        }
+
+        .mp-leaderboard-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            transition: all 0.2s;
+        }
+        .mp-leaderboard-row.rank-1 {
+            background: linear-gradient(90deg, rgba(245, 158, 11, 0.16) 0%, rgba(255, 255, 255, 0.04) 100%);
+            border-color: rgba(245, 158, 11, 0.5);
+        }
+        .mp-leaderboard-row.is-me {
+            border-color: var(--brand-primary);
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+        }
+
+        /* Custom Leaflet Map Markers */
+        .marker-pin-guess {
+            background: var(--brand-rose);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            width: 18px !important; height: 18px !important;
+            margin-left: -9px !important; margin-top: -9px !important;
+            box-shadow: 0 2px 10px rgba(244, 63, 94, 0.8);
+        }
+        .marker-pin-actual {
+            background: var(--brand-primary);
+            border: 3px solid #fff;
+            border-radius: 50%;
+            width: 20px !important; height: 20px !important;
+            margin-left: -10px !important; margin-top: -10px !important;
+            box-shadow: 0 2px 12px rgba(16, 185, 129, 0.9);
+        }
+
+        .custom-leaflet-player-marker {
+            background: transparent !important;
+            border: none !important;
+        }
+        .marker-player-pin {
+            width: 40px !important; height: 52px !important;
+            margin-left: -20px !important; margin-top: -50px !important;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .marker-player-pin:hover {
+            transform: scale(1.15) translateY(-4px);
+            z-index: 10000 !important;
+        }
+        .marker-pin-bubble {
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2.5px solid #ffffff;
+            background: #fed049;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        .marker-pin-point {
+            width: 0; height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 10px solid #ffffff;
+            position: absolute;
+            bottom: 4px; left: 50%;
+            transform: translateX(-50%);
+        }
+        .marker-pin-label {
+            position: absolute;
+            bottom: -16px; left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            background: rgba(10, 15, 26, 0.94);
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            padding: 2px 7px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.2);
+            pointer-events: none;
+        }
+
+        /* ============================================================
+           8. FINAL PODIUM / GAME OVER SCREEN
+           ============================================================ */
+        #final-screen {
+            background: radial-gradient(circle at 50% 30%, #1e1b4b 0%, #080c15 85%);
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            overflow-y: auto;
+            z-index: 500;
+        }
+
+        .final-box {
+            background: var(--bg-surface-elevated);
+            border: 1.5px solid var(--border-highlight);
+            border-radius: var(--radius-xl);
+            padding: 32px 24px;
+            max-width: 660px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 18px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+
+        .final-badge-icon {
+            font-size: 3rem;
+            animation: bounceIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Toast notification */
+        #toast-notification {
+            position: fixed;
+            top: 24px; left: 50%;
+            transform: translateX(-50%) translateY(-30px);
+            background: rgba(16, 185, 129, 0.95);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.85rem;
+            padding: 8px 18px;
+            border-radius: var(--radius-full);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        #toast-notification.active {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid #6ee7b7; outline-offset: 4px; }
+        button:disabled { opacity: .55; cursor: not-allowed; transform: none !important; }
+        .lobby-box { max-height: calc(100dvh - 32px); overflow-y: auto; }
+        .room-code-banner { background: linear-gradient(120deg, rgba(16,185,129,.15), rgba(56,189,248,.06)); }
+        .lobby-player-card { animation: party-arrive .22s ease-out; border-color: rgba(16,185,129,.25); }
+        #lobby-status-text { line-height: 1.6; margin-top: 6px; }
+        #client-waiting { padding: 16px; border: 1px solid var(--border-subtle); border-radius: 14px; background: rgba(16,185,129,.06); }
+        .emote-shelf { flex-wrap: wrap; overflow: visible; }
+        .emote-pill { color: var(--text-main); flex: 0 0 auto; }
+        .emote-pill, .btn-icon-only { min-height: 44px; min-width: 44px; }
+        @keyframes party-arrive { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 540px) { .lobby-box { width: calc(100% - 24px); padding: 20px; } .room-code-banner { flex-wrap: wrap; gap: 12px; } .player-chips-list { grid-template-columns: 1fr; } }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+        .party-settings { padding: 16px; background: rgba(255,255,255,.035); border: 1px solid var(--border-subtle); border-radius: 14px; }
+        .party-settings label { display: block; color: var(--text-main); font-size: .88rem; font-weight: 800; margin-bottom: 10px; }
+        .party-settings select { width: 100%; min-height: 48px; padding: 10px 12px; background: var(--bg-canvas); color: var(--text-main); border: 1px solid var(--border-highlight); border-radius: 10px; font: inherit; }
+        .party-mode-detail { color: var(--text-secondary); font-size: .82rem; line-height: 1.6; margin-top: 10px; }
+        .party-settings-note { display: block; margin-top: 8px; font-size: .75rem; color: #6ee7b7; line-height: 1.6; }
+        #party-mode-owner { color: var(--text-secondary); font-size: .75rem; font-weight: 500; }
+        #join-code-input { min-width: 0; width: 100%; min-height: 48px; padding: 12px; color: var(--text-main); background: var(--bg-canvas); border: 1px solid var(--border-highlight); border-radius: 10px; font: inherit; }
+        .modal-card { max-height: calc(100dvh - 32px); overflow-y: auto; }
+    </style>
+</head>
+<body>
+
+    <div id="toast-notification">✓ Copied to clipboard!</div>
+
+    <!-- ============================================================
+         1. HOME SCREEN (WanderPenh Hub)
+         ============================================================ -->
+    <div id="start-screen" class="screen active">
+        <div class="home-layout">
+            <!-- Top Bar -->
+            <div class="home-topbar">
+                <!-- Character Avatar Pill -->
+                <div class="profile-trigger-card" onclick="openProfileModal()" title="Customize Character & Profile">
+                    <div class="profile-avatar-thumb" id="home-avatar-circle">
+                        <!-- Rendered by SVG -->
+                    </div>
+                    <div class="profile-meta-wrap">
+                        <span class="profile-player-name">
+                            <span id="home-profile-name">Explorer</span>
+                            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </span>
+                        <span class="profile-player-title" id="home-profile-title">Daun Penh Tuk-Tuk Master</span>
+                    </div>
+                </div>
+
+                <!-- Utilities -->
+                <div class="home-utility-group">
+                    <button class="btn-icon-only" onclick="openTutorialModal()" title="How to Play" aria-label="How to play">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    </button>
+                    <button class="btn-icon-only" onclick="toggleMute()" id="sound-toggle-btn" title="Toggle Sound" aria-label="Toggle sound">
+                        <svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Hero Branding -->
+            <div class="hero-banner">
+                <div class="hero-tag">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    Phnom Penh City Discovery
+                </div>
+                <h1 class="hero-title">WanderPenh</h1>
+                <p class="hero-subtitle">
+                    Immerse yourself in 360° panoramas across Phnom Penh’s vibrant boulevards, riverfronts, and hidden alleys. Pin your location and race your friends!
+                </p>
+                <div class="hero-subtitle-khmer">រុករកនិងស្វែងយល់ទីក្រុងភ្នំពេញជាមួយមិត្តភក្តិរបស់អ្នក</div>
+            </div>
+
+            <!-- Primary Action Cards -->
+            <div class="home-action-row">
+                <button class="action-card-btn featured" onclick="startSinglePlayerGame()">
+                    <div class="card-top-icon" style="color: #6ee7b7; background: rgba(16, 185, 129, 0.2);">
+                        <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </div>
+                    <div>
+                        <div class="card-btn-title">Solo Discovery</div>
+                        <div class="card-btn-desc">Play rounds at your own pace and test your Phnom Penh instinct.</div>
+                        <div class="card-btn-badge" id="top-card-solo-mode" style="margin-top: 8px; font-size: 0.72rem; font-weight: 800; color: #6ee7b7; background: rgba(16, 185, 129, 0.15); padding: 2px 8px; border-radius: 20px; display: inline-block;">Active: City Pulse (60s)</div>
+                    </div>
+                </button>
+
+                <button class="action-card-btn royale" onclick="start4PlayerSimulation()">
+                    <div class="card-top-icon" style="color: #fda4af; background: rgba(244, 63, 94, 0.2);">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    </div>
+                    <div>
+                        <div class="card-btn-title">4-Player AI Battle</div>
+                        <div class="card-btn-desc">Instant party match against local AI rivals: Sokha, Dara & Bopha.</div>
+                        <div class="card-btn-badge" id="top-card-ai-mode" style="margin-top: 8px; font-size: 0.72rem; font-weight: 800; color: #fda4af; background: rgba(244, 63, 94, 0.15); padding: 2px 8px; border-radius: 20px; display: inline-block;">Active: City Pulse (60s)</div>
+                    </div>
+                </button>
+
+                <button class="action-card-btn party" onclick="openMultiplayerModal()">
+                    <div class="card-top-icon" style="color: #fde047; background: rgba(245, 158, 11, 0.2);">
+                        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    </div>
+                    <div>
+                        <div class="card-btn-title">Play with Friends</div>
+                        <div class="card-btn-desc">Create or join a private room code. Shared rooms, zero sign-in.</div>
+                        <div class="card-btn-badge" style="margin-top: 8px; font-size: 0.72rem; font-weight: 800; color: #fde047; background: rgba(245, 158, 11, 0.15); padding: 2px 8px; border-radius: 20px; display: inline-block;">Private Party Room</div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Game Modes Header with Location Counter -->
+            <div class="section-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                <div class="section-title">
+                    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                    Select Game Mode
+                </div>
+                <div class="location-count-pill" id="location-count-pill">
+                    📍 <span id="location-count">110</span> Phnom Penh locations · Random each match
+                </div>
+            </div>
+
+            <!-- Modes Grid with Direct Play Actions -->
+            <div class="modes-grid" id="modes-selection-container">
+                <!-- Injected dynamically -->
+            </div>
+
+            <!-- Direct Launch Action Panel -->
+            <div class="launch-action-panel" id="launch-action-panel">
+                <div class="launch-info">
+                    <div class="launch-title-row">
+                        <span class="launch-pulse-dot"></span>
+                        <span style="font-size: 0.75rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Ready to Start:</span>
+                        <span class="launch-mode-title" id="bar-mode-title">City Pulse (Classic)</span>
+                        <span class="mode-badge" id="bar-mode-badge" style="background: var(--brand-primary); color: #fff;">🏙️ FULL CAPITAL (110 SPOTS)</span>
+                    </div>
+                    <div style="font-size: 0.82rem; color: var(--text-muted);" id="bar-mode-desc">
+                        110 real streets, alleys & avenues across all 14 districts • 60s per round • 5 rounds
+                    </div>
+                </div>
+                <div class="launch-buttons">
+                    <button class="btn btn-primary launch-big-btn" onclick="startSinglePlayerGame()">
+                        <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span id="launch-solo-btn-text">START SOLO MATCH</span>
+                    </button>
+                    <button class="btn btn-secondary launch-big-btn" onclick="start4PlayerSimulation()">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <span id="launch-4p-btn-text">START 4-PLAYER BATTLE</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- How To Play Card -->
+            <div class="tutorial-card">
+                <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    How to Play WanderPenh
+                </div>
+                <div class="tutorial-steps-row">
+                    <div class="tutorial-step">
+                        <div class="step-num">1</div>
+                        <div class="step-text">
+                            <h4>Explore Surroundings</h4>
+                            <p>Look for Khmer pagodas, street numbers (e.g. St. 51), cafes, and monuments in 360°.</p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-num">2</div>
+                        <div class="step-text">
+                            <h4>Place Your Pin</h4>
+                            <p>Tap the mini-map in the bottom corner to mark where you think you are in the city.</p>
+                        </div>
+                    </div>
+                    <div class="tutorial-step">
+                        <div class="step-num">3</div>
+                        <div class="step-text">
+                            <h4>Score & Race</h4>
+                            <p>Confirm before the timer runs out. Faster and closer guesses earn up to 5,000 points!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         2. CHARACTER STUDIO & PROFILE MODAL
+         ============================================================ -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    Character Studio
+                </div>
+                <button class="btn-icon-only" onclick="closeModal('profile-modal')" aria-label="Close">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Live Animated Doodle Preview -->
+            <div class="studio-preview-box">
+                <div class="studio-avatar-circle" id="studio-avatar-preview">
+                    <!-- SVG rendered here -->
+                </div>
+                <button class="btn btn-secondary" onclick="randomizeCharacter()" style="position: absolute; right: 16px; top: 16px; padding: 6px 14px; font-size: 0.78rem;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="16 3 21 3 21 8"></polyline><line x1="4" y1="20" x2="21" y2="3"></line><polyline points="21 16 21 21 16 21"></polyline><line x1="15" y1="15" x2="21" y2="21"></line><line x1="4" y1="4" x2="9" y2="9"></line></svg>
+                    Randomize 🎲
+                </button>
+            </div>
+
+            <!-- Profile Info Fields -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div>
+                    <label style="font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Explorer Name</label>
+                    <input id="profile-name-input" type="text" maxlength="16" placeholder="Your Name" style="width: 100%; margin-top: 6px;">
+                </div>
+                <div>
+                    <label style="font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">City Title</label>
+                    <select id="profile-title-select" style="width: 100%; margin-top: 6px;">
+                        <option value="Daun Penh Tuk-Tuk Master">Daun Penh Tuk-Tuk Master</option>
+                        <option value="BKK1 Cafe Hunter">BKK1 Cafe Hunter</option>
+                        <option value="Riverside Roamer">Riverside Roamer</option>
+                        <option value="Central Market Legend">Central Market Legend</option>
+                        <option value="Olympic Night Stalker">Olympic Night Stalker</option>
+                        <option value="Toul Kork Navigator">Toul Kork Navigator</option>
+                        <option value="Koh Pich Visionary">Koh Pich Visionary</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Studio Category Tabs -->
+            <div class="studio-tabs">
+                <button class="studio-tab-btn active" onclick="switchStudioTab('hair')">💇 Hairstyles</button>
+                <button class="studio-tab-btn" onclick="switchStudioTab('hairColor')">🎨 Hair Color</button>
+                <button class="studio-tab-btn" onclick="switchStudioTab('jacket')">👕 Outfit Style</button>
+                <button class="studio-tab-btn" onclick="switchStudioTab('jacketColor')">🧥 Outfit Color</button>
+                <button class="studio-tab-btn" onclick="switchStudioTab('squiggles')">⚡ Aura & Mood</button>
+                <button class="studio-tab-btn" onclick="switchStudioTab('eye')">🎭 Expression</button>
+            </div>
+
+            <!-- Studio Options Grid -->
+            <div id="studio-picker-container" class="studio-picker-grid">
+                <!-- Injected dynamically -->
+            </div>
+
+            <!-- Save Action -->
+            <div style="display: flex; gap: 10px; margin-top: 6px;">
+                <button class="btn btn-primary" style="flex: 1;" onclick="saveProfile()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Save & Equip Character
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         3. MULTIPLAYER LOBBY CODE MODAL
+         ============================================================ -->
+    <div id="mp-modal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                    Multiplayer Party
+                </div>
+                <button class="btn-icon-only" onclick="closeModal('mp-modal')" aria-label="Close">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5;">
+                Play with friends in real-time with zero sign-in. Host a room code or join your friend's room!
+            </p>
+
+            <div class="party-settings">
+                <label for="party-mode-select">Choose your party mode</label>
+                <select id="party-mode-select" onchange="selectPartyMode(this.value)"></select>
+                <p id="party-mode-description" class="party-mode-detail"></p>
+                <span class="party-settings-note">Fresh random locations · Same spots for everyone · No repeats within a match</span><a class="location-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener" style="display:block;color:var(--text-secondary);font-size:.7rem;margin-top:8px">Additional road coordinates © OpenStreetMap contributors</a>
+            </div>
+            <button class="btn btn-primary" style="padding: 14px; width: 100%; justify-content: center;" onclick="createMultiplayerLobby()">
+                <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Create New Party Lobby
+            </button>
+
+            <div style="display: flex; align-items: center; gap: 10px; margin: 4px 0;">
+                <div style="flex: 1; height: 1px; background: var(--border-subtle);"></div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">or join with code</span>
+                <div style="flex: 1; height: 1px; background: var(--border-subtle);"></div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <input id="join-code-input" aria-label="Party room code" autocomplete="off" spellcheck="false" maxlength="9" type="text" placeholder="WP-ABCDEF" style="flex: 1; text-transform: uppercase; font-weight: 900; letter-spacing: 2px;">
+                <button class="btn btn-secondary" onclick="joinMultiplayerLobby()">
+                    Join Room
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         4. MULTIPLAYER LOBBY WAITING ROOM
+         ============================================================ -->
+    <div id="lobby-screen" class="screen">
+        <div class="lobby-box">
+            <div class="modal-header">
+                <div>
+                    <h2 style="font-size: 1.6rem; font-weight: 900;">Party Waiting Room</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary);" role="status" aria-live="polite" id="lobby-status-text">Share the code with friends to join!</p>
+                </div>
+                <button class="btn-icon-only" onclick="leaveLobby()" title="Leave Party" aria-label="Leave party">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <!-- Room Code Card -->
+            <div class="room-code-banner">
+                <div>
+                    <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">Party Code</div>
+                    <div class="room-code-val" id="room-code-text">WP-0000</div>
+                </div>
+                <button class="btn btn-secondary" onclick="copyInviteLink()" style="padding: 8px 14px; font-size: 0.82rem;">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy Link
+                </button>
+            </div>
+
+            <div class="party-settings">
+                <label for="lobby-mode-select">Party game mode <span id="party-mode-owner">· Host chooses</span></label>
+                <select id="lobby-mode-select" onchange="selectPartyMode(this.value)"></select>
+                <p id="lobby-mode-description" class="party-mode-detail"></p>
+            </div>
+            <!-- Connected Players Grid -->
+            <div>
+                <div style="font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 10px;">
+                    Connected Explorers (<span id="player-count">1</span>)
+                </div>
+                <div class="player-chips-list" id="lobby-players-container">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+
+            <!-- Party Reactions Shelf -->
+            <div>
+                <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Send Quick Emote</div>
+                <div class="emote-shelf">
+                    <button class="emote-pill" onclick="sendLobbyEmote('🛵 Vroom!')">🛵 Vroom!</button>
+                    <button class="emote-pill" onclick="sendLobbyEmote('📍 Easy spot!')">📍 Easy spot!</button>
+                    <button class="emote-pill" onclick="sendLobbyEmote('🤔 No clue!')">🤔 No clue!</button>
+                    <button class="emote-pill" onclick="sendLobbyEmote('🔥 Ready!')">🔥 Ready!</button>
+                    <button class="emote-pill" onclick="sendLobbyEmote('👑 GG!')">👑 GG!</button>
+                </div>
+            </div>
+
+            <!-- Host Game Controls -->
+            <div id="host-controls" style="display: flex; flex-direction: column; gap: 12px;">
+                <button class="btn btn-primary" style="justify-content: center; font-size: 1.1rem; padding: 16px;" id="start-party-btn" disabled onclick="startMultiplayerGame()">
+                    <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Start Party Match 🚀
+                </button>
+            </div>
+
+            <div id="client-waiting" style="display: none; text-align: center; color: var(--text-secondary); font-size: 0.9rem;">
+                <div class="spinner" style="width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--brand-primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 8px;"></div>
+                <span id="client-connection-text">Connecting to the party…</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         5. IN-GAME SCREEN & HEADS-UP DISPLAY
+         ============================================================ -->
+    <div id="game-screen" class="screen">
+        <!-- 360 Panorama Iframe Container -->
+        <div id="streetview-container">
+            <iframe id="streetview-iframe" allow="accelerometer; autoplay; gyroscope; picture-in-picture"></iframe>
+        </div>
+
+        <!-- Top Floating HUD -->
+        <div id="hud-top">
+            <div class="hud-group">
+                <div class="hud-card" style="padding: 4px 12px 4px 6px;">
+                    <div id="hud-player-avatar" style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid var(--brand-accent); background: #fed049; flex-shrink: 0;"></div>
+                    <span style="font-size: 0.88rem; font-weight: 800;" id="hud-player-name">Explorer</span>
+                </div>
+                <div class="hud-card">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">ROUND</span>
+                    <span style="font-size: 1.1rem; font-weight: 900; color: var(--brand-accent);" id="hud-round-indicator">1 / 5</span>
+                </div>
+                <div class="hud-card">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">SCORE</span>
+                    <span style="font-size: 1.1rem; font-weight: 900; color: #6ee7b7;" id="hud-score-indicator">0</span>
+                </div>
+                <!-- Party Live Chips -->
+                <div class="hud-card" id="hud-mp-status-card">
+                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase;">PARTY:</span>
+                    <div id="hud-mp-chips" style="display: flex; gap: 6px; align-items: center;"></div>
+                </div>
+            </div>
+
+            <!-- Center Countdown Ring -->
+            <div class="hud-card timer-card" id="hud-timer-card">
+                <div class="timer-ring-box">
+                    <svg class="timer-ring-svg">
+                        <circle cx="14" cy="14" r="12" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2.5"></circle>
+                        <circle id="timer-svg-circle" class="timer-ring-circle" cx="14" cy="14" r="12" fill="none" stroke="var(--brand-primary)" stroke-width="2.5"></circle>
+                    </svg>
+                </div>
+                <span class="timer-val" id="hud-timer-num">60</span><span style="font-size: 0.75rem; color: var(--text-secondary);">s</span>
+            </div>
+
+            <!-- Right Controls -->
+            <div class="hud-group">
+                <button class="hud-tool-btn btn-alert" onclick="skipBrokenLocation()" title="If Google shows black screen or unavailable view">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    <span>Skip View</span>
+                </button>
+                <button class="hud-tool-btn" onclick="returnToStartPano()" title="Reset camera viewpoint">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    <span>Reset Angle</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Floating Unified Guess Map Console -->
+        <div id="map-panel">
+            <div id="map-wrapper">
+                <div class="map-floating-bar">
+                    <button class="map-tool-pill" id="expand-toggle" onclick="toggleMapExpand(event)" title="Toggle big map view (Space)">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                        <span id="expand-btn-text">Expand</span>
+                    </button>
+                    <div id="map-pin-status">📍 Click map to pin</div>
+                </div>
+                <div id="guess-map"></div>
+            </div>
+            <div id="guess-action-bar">
+                <button id="guess-btn" onclick="submitPlayerGuess()" disabled>
+                    📍 Click Map to Place Pin
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         6. ROUND RESULT OVERLAY
+         ============================================================ -->
+    <div id="result-screen" class="screen">
+        <div class="result-card">
+            <div id="result-map-container">
+                <div id="result-map"></div>
+            </div>
+
+            <div class="result-stats-grid">
+                <div class="result-stat-box">
+                    <div class="result-stat-label">Distance Error</div>
+                    <div class="result-stat-val" id="res-distance" style="color: var(--brand-accent);">0 m</div>
+                </div>
+                <div class="result-stat-box">
+                    <div class="result-stat-label">Accuracy Points</div>
+                    <div class="result-stat-val" id="res-dist-pts" style="color: #6ee7b7;">0</div>
+                </div>
+                <div class="result-stat-box">
+                    <div class="result-stat-label">Speed Bonus</div>
+                    <div class="result-stat-val" id="res-speed-pts" style="color: var(--brand-sky);">+0</div>
+                </div>
+            </div>
+
+            <!-- Multiplayer Standings Table -->
+            <div id="mp-round-leaderboard" style="display: none; background: rgba(0,0,0,0.25); border-radius: var(--radius-md); padding: 14px;">
+                <div style="font-size: 0.78rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 8px;">
+                    Round Standings
+                </div>
+                <div id="mp-round-players-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <button class="btn btn-primary" style="justify-content: center; font-size: 1.05rem; padding: 14px;" id="res-next-btn" onclick="advanceNextRound()">
+                Next Round →
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         7. FINAL PODIUM MATCH COMPLETE SCREEN
+         ============================================================ -->
+    <div id="final-screen" class="screen">
+        <div class="final-box">
+            <div class="final-badge-icon" id="fin-badge">🏆</div>
+            <h2 style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px;">Match Finished!</h2>
+            <div style="font-size: 3rem; font-weight: 900; color: #6ee7b7;" id="fin-total-score">0</div>
+            <p style="font-size: 0.95rem; color: var(--text-secondary);" id="fin-subtitle">Total Expedition Score</p>
+            <div style="font-weight: 800; font-size: 1.15rem; color: var(--brand-accent);" id="fin-rating">
+                Phnom Penh Legend!
+            </div>
+
+            <div id="fin-rounds-table" style="width: 100%; display: flex; flex-direction: column; gap: 6px; margin: 6px 0;"></div>
+
+            <div style="display: flex; gap: 12px; width: 100%; margin-top: 8px;">
+                <button class="btn btn-primary" style="flex: 1; justify-content: center;" onclick="resetToHome()">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                    Play Again
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="/vendor/leaflet/leaflet.js"></script>
+
+    <!-- MAIN ENGINE SCRIPT -->
+    <script>
+    // ============================================================
+    //  AUDIO SYNTHESIZER (Web Audio API)
+    // ============================================================
+    let isSoundMuted = false;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    function playBeep(freq = 440, type = 'sine', duration = 0.12) {
+        if (isSoundMuted) return;
+        try {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        } catch (e) {}
+    }
+
+    function playSuccessChime() {
+        setTimeout(() => playBeep(523.25, 'triangle', 0.18), 0);
+        setTimeout(() => playBeep(659.25, 'triangle', 0.18), 90);
+        setTimeout(() => playBeep(783.99, 'triangle', 0.3), 180);
+    }
+
+    function playBuzzer() {
+        playBeep(180, 'sawtooth', 0.35);
+    }
+
+    function toggleMute() {
+        isSoundMuted = !isSoundMuted;
+        const btn = document.getElementById('sound-toggle-btn');
+        if (btn) {
+            btn.innerHTML = isSoundMuted 
+                ? '<svg class="icon" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"></line><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>'
+                : '<svg class="icon" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>';
+        }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+        const el = document.getElementById('toast-notification');
+        if (!el) return;
+        el.textContent = msg;
+        el.classList.add('active');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('active'), 2500);
+    }
+
+    // ============================================================
+    //  SAFE RENDERING HELPERS
+    // ============================================================
+    function escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+        })[ch]);
+    }
+
+    function cleanText(value, fallback, maxLen = 40) {
+        const text = typeof value === 'string' ? value.trim().slice(0, maxLen) : '';
+        return text || fallback;
+    }
+
+    // Profiles from other players are untrusted: keep only known fields with safe values
+    function sanitizeProfile(profile) {
+        const p = (profile && typeof profile === 'object') ? profile : {};
+        return {
+            name: cleanText(p.name, 'Explorer', 24),
+            title: cleanText(p.title, 'Explorer', 60),
+            avatarType: p.avatarType === 'image' ? 'image' : 'custom',
+            avatarConfig: sanitizeAvatarConfig(p.avatarConfig)
+        };
+    }
+
+    // ============================================================
+    //  CURATED PHNOM PENH COORDINATES DATABASE (110 LOCATIONS ACROSS 14 KHANS)
+    // ============================================================
+    const LOCATIONS_DB = {
+        landmarks: [
+            { id: "lm_01", name: "Royal Palace Grounds", lat: 11.5630, lng: 104.9315, area: "Daun Penh" },
+            { id: "lm_02", name: "Independence Monument", lat: 11.5564, lng: 104.9282, area: "BKK1 / Tonle Bassac" },
+            { id: "lm_03", name: "Wat Phnom Historical Stupa", lat: 11.5760, lng: 104.9230, area: "Wat Phnom" },
+            { id: "lm_04", name: "Central Market (Phsar Thmey)", lat: 11.5696, lng: 104.9212, area: "Phsar Thmey" },
+            { id: "lm_05", name: "National Museum of Cambodia", lat: 11.5662, lng: 104.9290, area: "Chey Chumneas" },
+            { id: "lm_06", name: "Olympic Stadium Roundabout", lat: 11.5580, lng: 104.9135, area: "7 Makara" },
+            { id: "lm_07", name: "Tuol Sleng Genocide Museum (S-21)", lat: 11.5492, lng: 104.9176, area: "Boeung Keng Kang 3" },
+            { id: "lm_08", name: "Russian Market (Phsar Toul Tom Poung)", lat: 11.5407, lng: 104.9150, area: "Toul Tom Poung" },
+            { id: "lm_09", name: "Chroy Changvar Japanese Bridge", lat: 11.5870, lng: 104.9248, area: "Chroy Changvar" },
+            { id: "lm_10", name: "Cambodia-China Friendship Bridge", lat: 11.5882, lng: 104.9255, area: "Chroy Changvar" },
+            { id: "lm_11", name: "Diamond Island (Koh Pich) Bridge", lat: 11.5528, lng: 104.9388, area: "Koh Pich" },
+            { id: "lm_12", name: "Elysee Square Arc de Triomphe (Koh Pich)", lat: 11.5512, lng: 104.9435, area: "Koh Pich" },
+            { id: "lm_13", name: "Phnom Penh Royal Railway Station", lat: 11.5738, lng: 104.9157, area: "Daun Penh" },
+            { id: "lm_14", name: "Vattanac Capital Tower Plaza", lat: 11.5725, lng: 104.9192, area: "Daun Penh" },
+            { id: "lm_15", name: "Canadia Bank Tower Crossroad", lat: 11.5715, lng: 104.9205, area: "Daun Penh" },
+            { id: "lm_16", name: "Wat Ounalom Pagoda Gate", lat: 11.5678, lng: 104.9300, area: "Riverside Daun Penh" },
+            { id: "lm_17", name: "Chaktomuk Conference Hall", lat: 11.5592, lng: 104.9328, area: "Tonle Bassac" },
+            { id: "lm_18", name: "Samdech Chuon Nath Statue Park", lat: 11.5572, lng: 104.9332, area: "Chaktomuk" },
+            { id: "lm_19", name: "NagaWorld Entertainment Complex", lat: 11.5540, lng: 104.9372, area: "Tonle Bassac" },
+            { id: "lm_20", name: "Wat Langka Pagoda & Garden", lat: 11.5550, lng: 104.9270, area: "BKK1" },
+            { id: "lm_21", name: "Wat Botum Park & Peace Pagoda", lat: 11.5595, lng: 104.9330, area: "Daun Penh" },
+            { id: "lm_22", name: "Post Office Heritage Square", lat: 11.5746, lng: 104.9261, area: "Wat Phnom" },
+            { id: "lm_23", name: "Orussey Market (Phsar Orussey)", lat: 11.5638, lng: 104.9162, area: "7 Makara" },
+            { id: "lm_24", name: "Institute of Technology of Cambodia (Techno)", lat: 11.5698, lng: 104.8978, area: "Toul Kork" },
+            { id: "lm_25", name: "Royal University of Phnom Penh (RUPP)", lat: 11.5680, lng: 104.8905, area: "Toul Kork" },
+            { id: "lm_26", name: "TK Avenue Open Mall", lat: 11.5855, lng: 104.8995, area: "Toul Kork" },
+            { id: "lm_27", name: "Aeon Mall Sen Sok City (Aeon 2)", lat: 11.5918, lng: 104.8762, area: "Sen Sok" },
+            { id: "lm_28", name: "Aeon Mall Mean Chey (Aeon 3)", lat: 11.4980, lng: 104.9380, area: "Mean Chey" },
+            { id: "lm_29", name: "Sokha Phnom Penh Hotel Peninsula", lat: 11.5655, lng: 104.9392, area: "Chroy Changvar" },
+            { id: "lm_30", name: "Morodok Techo National Stadium", lat: 11.6780, lng: 104.9080, area: "Chroy Changvar" },
+            { id: "lm_31", name: "Phnom Penh International Airport Terminal", lat: 11.5460, lng: 104.8440, area: "Por Senchey" },
+            { id: "lm_32", name: "Chom Chao Flyover Interchange", lat: 11.5285, lng: 104.8320, area: "Por Senchey" },
+            { id: "lm_33", name: "Choeung Ek Genocidal Center (Killing Fields)", lat: 11.4845, lng: 104.9020, area: "Dangkao" },
+            { id: "lm_34", name: "Stung Meanchey Skybridge", lat: 11.5410, lng: 104.8950, area: "Mean Chey" },
+            { id: "lm_35", name: "Kbal Tnal Skybridge Junction", lat: 11.5320, lng: 104.9315, area: "Chamkarmon" },
+            { id: "lm_36", name: "Monivong Bridge River Crossing", lat: 11.5395, lng: 104.9355, area: "Chbar Ampov" },
+            { id: "lm_37", name: "Koh Norea Satellite City Bridge", lat: 11.5480, lng: 104.9450, area: "Koh Norea / Chbar Ampov" },
+            { id: "lm_38", name: "French Embassy Gate & Avenue", lat: 11.5795, lng: 104.9180, area: "Daun Penh" },
+            { id: "lm_39", name: "Wat Svay Pope & Sothearos Promenade", lat: 11.5475, lng: 104.9310, area: "Chamkarmon" },
+            { id: "lm_40", name: "Ministry of Interior Heritage Complex", lat: 11.5385, lng: 104.9275, area: "Chamkarmon" },
+            { id: "lm_41", name: "Aeon Mall 1 Tonle Bassac", lat: 11.5482, lng: 104.9360, area: "Tonle Bassac" },
+            { id: "lm_42", name: "Koh Pich Convention & Exhibition Center", lat: 11.5470, lng: 104.9395, area: "Koh Pich" }
+        ],
+        classic: [
+            { id: "st_01", name: "Sisowath Quay Riverside Walkway", lat: 11.5682, lng: 104.9307, area: "Daun Penh" },
+            { id: "st_02", name: "Riverside Night Market Promenade", lat: 11.5735, lng: 104.9272, area: "Daun Penh" },
+            { id: "st_03", name: "Street 240 French Colonial Boutique Strip", lat: 11.5605, lng: 104.9298, area: "Chaktomuk" },
+            { id: "st_04", name: "Street 178 Art & Heritage Gallery Row", lat: 11.5645, lng: 104.9285, area: "Chey Chumneas" },
+            { id: "st_05", name: "Street 172 Backpacker District", lat: 11.5658, lng: 104.9262, area: "Phsar Kandal" },
+            { id: "st_06", name: "Norodom Boulevard North (Lycée Sisowath)", lat: 11.5722, lng: 104.9282, area: "Daun Penh" },
+            { id: "st_07", name: "Norodom Boulevard South (Embassy Row)", lat: 11.5515, lng: 104.9285, area: "Tonle Bassac" },
+            { id: "st_08", name: "Monivong Blvd / Sihanouk Junction", lat: 11.5568, lng: 104.9187, area: "Boeung Prolit" },
+            { id: "st_09", name: "Monivong Blvd South (Bokor Market Sector)", lat: 11.5398, lng: 104.9158, area: "Chamkarmon" },
+            { id: "st_10", name: "Sihanouk Boulevard West (City Mall)", lat: 11.5542, lng: 104.9082, area: "Veal Vong" },
+            { id: "st_11", name: "Mao Tse Toung Blvd / Chinese Embassy", lat: 11.5465, lng: 104.9168, area: "Toul Svay Prey" },
+            { id: "st_12", name: "Mao Tse Toung Blvd Commercial Strip", lat: 11.5488, lng: 104.9128, area: "Olympic" },
+            { id: "st_13", name: "Kampuchea Krom Blvd / Bak Touk", lat: 11.5695, lng: 104.9080, area: "Mittapheap" },
+            { id: "st_14", name: "Bak Touk High School Intersection", lat: 11.5652, lng: 104.9115, area: "Veal Vong" },
+            { id: "st_15", name: "Nehru Blvd / Charles de Gaulle Junction", lat: 11.5620, lng: 104.9102, area: "Olympic" },
+            { id: "st_16", name: "Street 63 / BKK1 Dining Strip", lat: 11.5548, lng: 104.9248, area: "Boeung Keng Kang 1" },
+            { id: "st_17", name: "Pasteur Street 51 / Golden Street", lat: 11.5528, lng: 104.9262, area: "Boeung Keng Kang 1" },
+            { id: "st_18", name: "Street 57 Specialty Coffee Hub", lat: 11.5535, lng: 104.9255, area: "Boeung Keng Kang 1" },
+            { id: "st_19", name: "Street 288 / BKK1 Residential Alley", lat: 11.5510, lng: 104.9245, area: "Boeung Keng Kang 1" },
+            { id: "st_20", name: "Bassac Lane Vibrant Nightlife Alley", lat: 11.5518, lng: 104.9312, area: "Tonle Bassac" },
+            { id: "st_21", name: "Street 450 Toul Tom Poung Trendy Cafes", lat: 11.5418, lng: 104.9165, area: "Toul Tom Poung" },
+            { id: "st_22", name: "Street 432 Boutique Row", lat: 11.5385, lng: 104.9142, area: "Toul Tom Poung" },
+            { id: "st_23", name: "Street 360 / BKK3 Quiet Neighborhood", lat: 11.5480, lng: 104.9210, area: "Boeung Keng Kang 3" },
+            { id: "st_24", name: "Toul Kork Street 315 Commercial Spine", lat: 11.5832, lng: 104.9008, area: "Toul Kork" },
+            { id: "st_25", name: "Street 289 / Toul Kork Roundabout", lat: 11.5815, lng: 104.8972, area: "Toul Kork" },
+            { id: "st_26", name: "Toul Kork Street 528 Villa Enclave", lat: 11.5880, lng: 104.9035, area: "Toul Kork" },
+            { id: "st_27", name: "Street 516 / RUPP Back Gate", lat: 11.5720, lng: 104.8912, area: "Toul Kork" },
+            { id: "st_28", name: "Street 598 / Camko City Entrance", lat: 11.5945, lng: 104.8932, area: "Toul Kork" },
+            { id: "st_29", name: "Makro Superstore Sen Sok Access", lat: 11.5942, lng: 104.8785, area: "Sen Sok" },
+            { id: "st_30", name: "Oknha Mong Reththy Street", lat: 11.5995, lng: 104.8810, area: "Sen Sok" },
+            { id: "st_31", name: "Phnom Penh Thmey Hanoi Highway", lat: 11.5850, lng: 104.8680, area: "Sen Sok" },
+            { id: "st_32", name: "Northbridge International School Strip", lat: 11.5555, lng: 104.8690, area: "Sen Sok" },
+            { id: "st_33", name: "Bayon Market Sen Sok Area", lat: 11.5780, lng: 104.8745, area: "Sen Sok" },
+            { id: "st_34", name: "Chroy Changvar Riverside Promenade", lat: 11.5820, lng: 104.9315, area: "Chroy Changvar" },
+            { id: "st_35", name: "National Road 6A Gateway Corridor", lat: 11.5980, lng: 104.9280, area: "Chroy Changvar" },
+            { id: "st_36", name: "OCIC Chroy Changvar Satellite City", lat: 11.6050, lng: 104.9325, area: "Chroy Changvar" },
+            { id: "st_37", name: "National Road 5 / Tonle Sap Highway", lat: 11.6025, lng: 104.9180, area: "Russey Keo" },
+            { id: "st_38", name: "Kilometer 6 Industrial / Riverbank Hub", lat: 11.6210, lng: 104.9065, area: "Russey Keo" },
+            { id: "st_39", name: "Prek Pnov Bridge Access Road", lat: 11.6490, lng: 104.8870, area: "Prek Pnov" },
+            { id: "st_40", name: "Tuol Sangke Market Quarter", lat: 11.5890, lng: 104.9120, area: "Russey Keo" },
+            { id: "st_41", name: "Russey Keo Iron Bridge Riverside", lat: 11.5970, lng: 104.9220, area: "Russey Keo" },
+            { id: "st_42", name: "Calmette Hospital French Colonial Avenue", lat: 11.5810, lng: 104.9195, area: "Daun Penh" },
+            { id: "st_43", name: "Old Stadium (National Sports Complex North)", lat: 11.5830, lng: 104.9160, area: "Daun Penh" },
+            { id: "st_44", name: "Street 271 Ring Road South", lat: 11.5498, lng: 104.9308, area: "Boeung Tumpun" },
+            { id: "st_45", name: "Steung Meanchey Pagoda Road", lat: 11.5365, lng: 104.8910, area: "Mean Chey" },
+            { id: "st_46", name: "Boeung Tumpun Canal Road", lat: 11.5280, lng: 104.9090, area: "Boeung Tumpun" },
+            { id: "st_47", name: "Hun Sen Boulevard (60m Road) Entrance", lat: 11.5220, lng: 104.9295, area: "Mean Chey" },
+            { id: "st_48", name: "Chak Angre Krom River Road", lat: 11.5120, lng: 104.9410, area: "Mean Chey" },
+            { id: "st_49", name: "Preah Monivong South / Boeung Trabek Canal", lat: 11.5440, lng: 104.9240, area: "Chamkarmon" },
+            { id: "st_50", name: "Toul Svay Prey High School Road", lat: 11.5470, lng: 104.9090, area: "Boeung Keng Kang" },
+            { id: "st_51", name: "Chbar Ampov Market (Phsar Chbar Ampov)", lat: 11.5435, lng: 104.9450, area: "Chbar Ampov" },
+            { id: "st_52", name: "National Road 1 (NR1) Tiger Brewery Corridor", lat: 11.5310, lng: 104.9620, area: "Chbar Ampov" },
+            { id: "st_53", name: "Prek Eng Village Center", lat: 11.5160, lng: 104.9850, area: "Chbar Ampov" },
+            { id: "st_54", name: "Kien Svay Riverside Approach", lat: 11.5050, lng: 105.0120, area: "Chbar Ampov / Kandal Border" },
+            { id: "st_55", name: "Russian Blvd Airport Viaduct", lat: 11.5520, lng: 104.8550, area: "Por Senchey" },
+            { id: "st_56", name: "Veng Sreng Boulevard Industrial Strip", lat: 11.5330, lng: 104.8620, area: "Por Senchey" },
+            { id: "st_57", name: "Choam Chao Market", lat: 11.5250, lng: 104.8280, area: "Por Senchey" },
+            { id: "st_58", name: "National Road 3 Gateway", lat: 11.5080, lng: 104.8150, area: "Por Senchey" },
+            { id: "st_59", name: "Kamboul Special Economic Zone (PPSEZ)", lat: 11.5170, lng: 104.7780, area: "Kamboul" },
+            { id: "st_60", name: "Canadia Industrial Park / Veng Sreng", lat: 11.5370, lng: 104.8710, area: "Por Senchey" },
+            { id: "st_61", name: "Boeung Keng Kang Market (Phsar BKK)", lat: 11.5485, lng: 104.9260, area: "Boeung Keng Kang 1" },
+            { id: "st_62", name: "Russian Market Souvenir Alley (Street 155)", lat: 11.5412, lng: 104.9140, area: "Toul Tom Poung" },
+            { id: "st_63", name: "Wat Tuol Tumpoung Pagoda Lane", lat: 11.5390, lng: 104.9125, area: "Toul Tom Poung" },
+            { id: "st_64", name: "Santhormok High School Junction (Kampuchea Krom)", lat: 11.5670, lng: 104.8985, area: "Toul Kork" },
+            { id: "st_65", name: "Preah Kossamak Hospital / Street 271", lat: 11.5640, lng: 104.8900, area: "Toul Kork" },
+            { id: "st_66", name: "Monivong Boulevard North / Chaktomuk Approach", lat: 11.5765, lng: 104.9200, area: "Daun Penh" },
+            { id: "st_67", name: "Chroy Changvar Water Treatment Sunrise Point", lat: 11.5780, lng: 104.9280, area: "Chroy Changvar" },
+            { id: "st_68", name: "Pochentong Pagoda & Market (Wat Pochentong)", lat: 11.5540, lng: 104.8510, area: "Por Senchey" }
+        ]
+    };
+    const ALL_LOCATIONS = [...LOCATIONS_DB.landmarks, ...LOCATIONS_DB.classic];
+    const PP_CENTER = [11.5564, 104.9282];
+
+    // ============================================================
+    //  ANTI-REPEAT & RANDOM LOCATION ENGINE
+    // ============================================================
+    const HISTORY_KEY = 'wanderpenh_seen_history';
+    const MAX_RECENT_HISTORY = 50;
+
+    function getSeenHistory() {
+        try {
+            const raw = localStorage.getItem(HISTORY_KEY);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function recordSeenLocation(locId) {
+        if (!locId) return;
+        try {
+            let hist = getSeenHistory();
+            hist = hist.filter(id => id !== locId);
+            hist.push(locId);
+            if (hist.length > MAX_RECENT_HISTORY) {
+                hist = hist.slice(hist.length - MAX_RECENT_HISTORY);
+            }
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
+        } catch (e) {
+            console.warn('Could not save seen history', e);
+        }
+    }
+
+    function getRandomHeading() {
+        return Math.floor(Math.random() * 360);
+    }
+
+    function getNextUniqueLocation() {
+        const pool = getModeLocationPool();
+        const recentHistory = getSeenHistory();
+        
+        // 1. Exclude any location already used in this match
+        let eligible = pool.filter(loc => !gameState.usedLocIds.includes(loc.id));
+        if (eligible.length === 0) {
+            gameState.usedLocIds = [];
+            eligible = [...pool];
+        }
+
+        // 2. Filter out locations seen in recent matches (cross-match history)
+        let freshPool = eligible.filter(loc => !recentHistory.includes(loc.id));
+        
+        // If all eligible locations have been seen recently, relax history filter (least recently seen)
+        if (freshPool.length === 0) {
+            eligible.sort((a, b) => {
+                const idxA = recentHistory.indexOf(a.id);
+                const idxB = recentHistory.indexOf(b.id);
+                return idxA - idxB;
+            });
+            freshPool = eligible.slice(0, Math.max(5, Math.floor(eligible.length / 2)));
+        }
+
+        // 3. Fisher-Yates shuffle the candidates and pick the first
+        const shuffled = [...freshPool];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        const picked = shuffled[0];
+
+        // 4. Mark as used in match and persistent history
+        gameState.usedLocIds.push(picked.id);
+        recordSeenLocation(picked.id);
+        return picked;
+    }
+
+    // ============================================================
+    //  PROFILE & AVATAR STATE
+    // ============================================================
+    let userProfile = {
+        name: 'Explorer',
+        title: 'Daun Penh Tuk-Tuk Master',
+        avatarType: 'custom',
+        avatarConfig: {
+            hairStyle: 'fluffy',
+            hairColor: '#261b2b',
+            eyeStyle: 'chill',
+            mouthStyle: 'neutral',
+            jacketStyle: 'cardigan',
+            jacketColor: '#38bdf8',
+            shirtColor: '#ffffff',
+            bg: '#fed049',
+            squiggles: 'electric',
+            earrings: 'hoops',
+            skinColor: '#fee0d2',
+            blush: true
+        },
+        aura: '#f59e0b',
+        auraGlow: 'rgba(245,158,11,0.5)'
+    };
+
+    function renderAvatarHTML(profile, width = '100%', height = '100%') {
+        if (!profile) return '🛵';
+        if (profile.avatarType === 'image') {
+            return `<img src="avatar_default.webp" alt="" style="width:${width};height:${height};object-fit:cover;border-radius:50%;display:block;">`;
+        }
+        if (typeof generateAvatarSVG === 'function') {
+            return generateAvatarSVG(profile.avatarConfig || AVATAR_DEFAULTS);
+        }
+        return '🛵';
+    }
+
+    function loadProfile() {
+        try {
+            const saved = localStorage.getItem('wanderpenh_profile');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                userProfile = { ...userProfile, ...parsed };
+                if (parsed.avatarConfig) {
+                    userProfile.avatarConfig = { ...AVATAR_DEFAULTS, ...parsed.avatarConfig };
+                }
+            }
+        } catch (e) {}
+        updateProfileUI();
+    }
+
+    function updateProfileUI() {
+        document.getElementById('home-profile-name').textContent = userProfile.name;
+        document.getElementById('home-profile-title').textContent = userProfile.title;
+        const circle = document.getElementById('home-avatar-circle');
+        if (circle) circle.innerHTML = renderAvatarHTML(userProfile, '100%', '100%');
+
+        const hudAvatar = document.getElementById('hud-player-avatar');
+        if (hudAvatar) hudAvatar.innerHTML = renderAvatarHTML(userProfile, '100%', '100%');
+        const hudName = document.getElementById('hud-player-name');
+        if (hudName) hudName.textContent = userProfile.name;
+    }
+
+    // Character Studio Config Options
+    const STUDIO_OPTIONS = {
+        hair: [
+            { id: 'fluffy', label: 'Fluffy Curls' },
+            { id: 'spiky', label: 'Spiky Anime' },
+            { id: 'beanie', label: 'Cozy Beanie' },
+            { id: 'cap', label: 'Street Cap' }
+        ],
+        hairColor: [
+            { id: '#261b2b', label: 'Obsidian', color: '#261b2b' },
+            { id: '#4a2810', label: 'Chestnut', color: '#4a2810' },
+            { id: '#d97706', label: 'Caramel', color: '#d97706' },
+            { id: '#0284c7', label: 'Electric Blue', color: '#0284c7' },
+            { id: '#db2777', label: 'Sakura Pink', color: '#db2777' },
+            { id: '#f1f5f9', label: 'Frost White', color: '#f1f5f9' }
+        ],
+        jacket: [
+            { id: 'cardigan', label: 'Cardigan' },
+            { id: 'hoodie', label: 'Hoodie' },
+            { id: 'bomber', label: 'Bomber' }
+        ],
+        jacketColor: [
+            { id: '#38bdf8', label: 'Sky Marine', color: '#38bdf8' },
+            { id: '#f59e0b', label: 'Gold Amber', color: '#f59e0b' },
+            { id: '#10b981', label: 'Emerald', color: '#10b981' },
+            { id: '#f43f5e', label: 'Rose Pop', color: '#f43f5e' },
+            { id: '#8b5cf6', label: 'Royal Violet', color: '#8b5cf6' },
+            { id: '#1e293b', label: 'Charcoal', color: '#1e293b' }
+        ],
+        squiggles: [
+            { id: 'electric', label: '⚡ Sparks' },
+            { id: 'question', label: '❓ Lost' },
+            { id: 'sparkles', label: '✨ Stars' },
+            { id: 'sweat', label: '💧 Sweat' },
+            { id: 'none', label: 'Clean' }
+        ],
+        eye: [
+            { id: 'chill', label: 'Unbothered' },
+            { id: 'happy', label: 'Joyful' },
+            { id: 'curious', label: 'Curious' },
+            { id: 'smug', label: 'Smug Wink' },
+            { id: 'shades', label: 'Sunglasses' }
+        ]
+    };
+
+    let activeStudioTab = 'hair';
+    let editingAvatar = null;
+
+    function openProfileModal() {
+        document.getElementById('profile-name-input').value = userProfile.name;
+        document.getElementById('profile-title-select').value = userProfile.title;
+
+        editingAvatar = {
+            avatarType: userProfile.avatarType || 'custom',
+            avatarConfig: { ...(userProfile.avatarConfig || AVATAR_DEFAULTS) }
+        };
+
+        switchStudioTab('hair');
+        updateStudioPreview();
+        document.getElementById('profile-modal').classList.add('active');
+    }
+
+    function switchStudioTab(tab) {
+        activeStudioTab = tab;
+        document.querySelectorAll('.studio-tab-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('onclick').includes(`'${tab}'`));
+        });
+
+        const container = document.getElementById('studio-picker-container');
+        if (!container) return;
+
+        const options = STUDIO_OPTIONS[tab] || [];
+        if (tab === 'hairColor' || tab === 'jacketColor') {
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.gap = '12px';
+            const curVal = tab === 'hairColor' ? editingAvatar.avatarConfig.hairColor : editingAvatar.avatarConfig.jacketColor;
+            container.innerHTML = options.map(opt => `
+                <div class="color-swatch-opt ${curVal === opt.id ? 'selected' : ''}" style="background: ${opt.color};" onclick="setStudioOption('${tab}', '${opt.id}')" title="${opt.label}"></div>
+            `).join('');
+        } else {
+            container.style.display = 'grid';
+            let curVal = '';
+            if (tab === 'hair') curVal = editingAvatar.avatarConfig.hairStyle;
+            else if (tab === 'jacket') curVal = editingAvatar.avatarConfig.jacketStyle;
+            else if (tab === 'squiggles') curVal = editingAvatar.avatarConfig.squiggles;
+            else if (tab === 'eye') curVal = editingAvatar.avatarConfig.eyeStyle;
+
+            container.innerHTML = options.map(opt => `
+                <div class="studio-opt-btn ${curVal === opt.id ? 'selected' : ''}" onclick="setStudioOption('${tab}', '${opt.id}')">
+                    <span>${opt.label}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    function setStudioOption(tab, val) {
+        if (!editingAvatar) return;
+        if (tab === 'hair') editingAvatar.avatarConfig.hairStyle = val;
+        else if (tab === 'hairColor') editingAvatar.avatarConfig.hairColor = val;
+        else if (tab === 'jacket') editingAvatar.avatarConfig.jacketStyle = val;
+        else if (tab === 'jacketColor') editingAvatar.avatarConfig.jacketColor = val;
+        else if (tab === 'squiggles') editingAvatar.avatarConfig.squiggles = val;
+        else if (tab === 'eye') editingAvatar.avatarConfig.eyeStyle = val;
+
+        playBeep(580, 'sine', 0.05);
+        updateStudioPreview();
+        switchStudioTab(tab);
+    }
+
+    function randomizeCharacter() {
+        if (!editingAvatar) return;
+        const rand = (arr) => arr[Math.floor(Math.random() * arr.length)].id;
+        editingAvatar.avatarConfig.hairStyle = rand(STUDIO_OPTIONS.hair);
+        editingAvatar.avatarConfig.hairColor = rand(STUDIO_OPTIONS.hairColor);
+        editingAvatar.avatarConfig.jacketStyle = rand(STUDIO_OPTIONS.jacket);
+        editingAvatar.avatarConfig.jacketColor = rand(STUDIO_OPTIONS.jacketColor);
+        editingAvatar.avatarConfig.squiggles = rand(STUDIO_OPTIONS.squiggles);
+        editingAvatar.avatarConfig.eyeStyle = rand(STUDIO_OPTIONS.eye);
+
+        playBeep(720, 'triangle', 0.08);
+        updateStudioPreview();
+        switchStudioTab(activeStudioTab);
+    }
+
+    function updateStudioPreview() {
+        const preview = document.getElementById('studio-avatar-preview');
+        if (preview && editingAvatar) {
+            preview.innerHTML = renderAvatarHTML(editingAvatar, '100%', '100%');
+        }
+    }
+
+    function saveProfile() {
+        userProfile.name = document.getElementById('profile-name-input').value.trim() || 'Explorer';
+        userProfile.title = document.getElementById('profile-title-select').value;
+        if (editingAvatar) {
+            userProfile.avatarConfig = { ...editingAvatar.avatarConfig };
+        }
+        localStorage.setItem('wanderpenh_profile', JSON.stringify(userProfile));
+        updateProfileUI();
+        closeModal('profile-modal');
+        playSuccessChime();
+        showToast('Character & Profile Updated!');
+    }
+
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    }
+
+    function openTutorialModal() {
+        const homeSec = document.querySelector('.tutorial-card');
+        if (homeSec) homeSec.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // ============================================================
+    //  GAME MODES CONFIGURATION
+    // ============================================================
+    let currentMode = 'classic';
+    const MODE_CONFIG = {
+        landmarks: { 
+            name: "Landmark Blitz", 
+            badge: "🌟 BEST FOR BEGINNERS", 
+            desc: "42 iconic temples, royal palaces, markets & bridges.", 
+            time: 60, rounds: 5, pool: 'landmarks', nmpz: false 
+        },
+        classic: { 
+            name: "City Pulse (Classic)", 
+            badge: "🏙️ FULL CAPITAL (110 SPOTS)", 
+            desc: "110 real streets, alleys & avenues across all 14 districts.", 
+            time: 60, rounds: 5, pool: 'all', nmpz: false 
+        },
+        sprint: { 
+            name: "Tuk-Tuk Sprint", 
+            badge: "⚡ FAST & INTENSE", 
+            desc: "30-second rapid rounds with 2x speed bonus points! (110 Spots)", 
+            time: 30, rounds: 5, pool: 'all', nmpz: false 
+        },
+        bounty: { 
+            name: "Bounty Point Race", 
+            badge: "🏆 PARTY COMPETITIVE", 
+            desc: "1st guess locks in 15s timer for rivals. Sub-200m bullseye bounty!", 
+            time: 60, rounds: 5, pool: 'all', nmpz: false, isBounty: true 
+        },
+        nmpz: { 
+            name: "No-Move Challenge", 
+            badge: "👁️ MASTER DEDUCTION", 
+            desc: "Fixed photo viewpoint. Zero pan, zoom, or walking. (110 Spots)", 
+            time: 45, rounds: 5, pool: 'all', nmpz: true 
+        }
+    };
+
+    for (const cfg of Object.values(MODE_CONFIG)) {
+        cfg.desc = cfg.desc.replaceAll('110', String(ALL_LOCATIONS.length)).replaceAll('2x speed bonus points!', 'double speed bonus in party mode!');
+        cfg.badge = cfg.badge.replace('110', String(ALL_LOCATIONS.length));
+    }
+    function renderModeCards() {
+        const container = document.getElementById('modes-selection-container');
+        if (!container) return;
+        container.innerHTML = Object.entries(MODE_CONFIG).map(([key, m]) => {
+            const isSel = currentMode === key;
+            return `
+            <div class="mode-tile ${isSel ? 'selected' : ''}" onclick="handleModeCardClick('${key}')">
+                <span class="mode-badge">${m.badge}</span>
+                <div class="mode-tile-title">
+                    <span>${m.name}</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">${m.time}s • ${m.rounds}R</span>
+                </div>
+                <div class="mode-tile-desc">${m.desc}</div>
+                <div class="mode-tile-actions">
+                    <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); startModeGame('${key}', false);" style="flex:1; justify-content:center; padding: 9px 12px; font-weight:800;" title="Start Solo Match">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        Play Solo
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); startModeGame('${key}', true);" style="flex:1; justify-content:center; padding: 9px 12px; font-weight:800;" title="Start 4-Player Battle">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        4P Battle
+                    </button>
+                </div>
+            </div>
+            `;
+        }).join('');
+        updateLaunchBar();
+    }
+
+    function handleModeCardClick(key) {
+        if (currentMode === key) {
+            playBeep(580, 'sine', 0.06);
+            startSinglePlayerGame();
+        } else {
+            selectGameMode(key);
+        }
+    }
+
+    function startModeGame(key, is4Player) {
+        currentMode = key;
+        if (is4Player) {
+            start4PlayerSimulation();
+        } else {
+            startSinglePlayerGame();
+        }
+    }
+
+    function selectGameMode(key) {
+        currentMode = key;
+        playBeep(520, 'sine', 0.05);
+        renderModeCards();
+    }
+
+    function updateLaunchBar() {
+        const m = MODE_CONFIG[currentMode];
+        if (!m) return;
+        const barTitle = document.getElementById('bar-mode-title');
+        const barBadge = document.getElementById('bar-mode-badge');
+        const barDesc = document.getElementById('bar-mode-desc');
+        const soloBtn = document.getElementById('launch-solo-btn-text');
+        const p4Btn = document.getElementById('launch-4p-btn-text');
+        if (barTitle) barTitle.textContent = m.name;
+        if (barBadge) barBadge.textContent = m.badge;
+        if (barDesc) barDesc.textContent = `${m.desc} • ${m.time}s per round • ${m.rounds} rounds`;
+        if (soloBtn) soloBtn.textContent = `START SOLO MATCH (${m.name})`;
+        if (p4Btn) p4Btn.textContent = `START 4-PLAYER BATTLE (${m.name})`;
+
+        const soloSub = document.getElementById('top-card-solo-mode');
+        const aiSub = document.getElementById('top-card-ai-mode');
+        if (soloSub) soloSub.textContent = `Active: ${m.name} (${m.time}s)`;
+        if (aiSub) aiSub.textContent = `Active: ${m.name} (${m.time}s)`;
+    }
+
+    // ============================================================
+    //  STREET VIEW EMBED ENGINE
+    // ============================================================
+    function loadPano(lat, lng, heading = 0) {
+        const iframe = document.getElementById('streetview-iframe');
+        const fixedView = !!MODE_CONFIG[currentMode].nmpz;
+        iframe.style.pointerEvents = fixedView ? 'none' : 'auto';
+        iframe.tabIndex = fixedView ? -1 : 0;
+        iframe.title = fixedView ? 'Fixed Street View panorama — no moving, panning or zooming' : 'Explore the Street View panorama';
+        // Clean free iframe embed URL with 360 degree randomized heading
+        iframe.src = `https://maps.google.com/maps?layer=c&cbll=${lat},${lng}&cbp=12,${heading},,0,0&output=svembed`;
+    }
+
+    function returnToStartPano() {
+        if (!gameState.currentLocation) return;
+        playBeep(480, 'sine', 0.08);
+        loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading || 0);
+    }
+
+    function skipBrokenLocation() {
+        if (gameState.matchPlan) {
+            if (gameState.isHost) { sendRoomMessage({ type: 'SKIP_LOCATION' }); showToast('Replacing the shared view if nobody has guessed yet (up to 5 per match).'); }
+            else showToast('Ask the host to replace this view for the party.');
+            return;
+        }
+        playBeep(320, 'triangle', 0.12);
+        // Swap the location without using up a round
+        gameState.roundIndex--;
+        loadRound();
+        showToast('View skipped! Loaded new location.');
+    }
+
+    // ============================================================
+    //  LEAFLET GUESS MAP CONTROLS
+    // ============================================================
+    let gameState = {
+        isMultiplayer: false,
+        simulated4P: false,
+        isHost: false,
+        roomCode: null,
+        roundIndex: 0,
+        totalScore: 0,
+        roundScore: 0,
+        roundSpeedBonus: 0,
+        roundDistance: 0,
+        currentLocation: null,
+        currentHeading: 0,
+        guessLatLng: null,
+        guessMap: null,
+        guessMarker: null,
+        resultMap: null,
+        timerInterval: null,
+        roundStartTime: 0,
+        roundsHistory: [],
+        usedLocIds: [],
+        simPlayers: [],
+        matchPlan: null,    // multiplayer: server-chosen [{ id, heading }] per round
+        activeMatch: null,  // local indicator of the running server match
+        mpGuesses: {},      // multiplayer: { [round]: { [playerId]: guess } }
+        mpPinLayer: null
+    };
+
+    function initGuessMap() {
+        if (gameState.guessMap) {
+            gameState.guessMap.invalidateSize();
+            return;
+        }
+
+        gameState.guessMap = L.map('guess-map', {
+            center: PP_CENTER,
+            zoom: 12,
+            minZoom: 11,
+            maxZoom: 18,
+            zoomControl: false,
+            attributionControl: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(gameState.guessMap);
+
+        gameState.guessMap.on('click', (e) => {
+            placePin(e.latlng);
+        });
+
+        const wrapper = document.getElementById('map-wrapper');
+        new ResizeObserver(() => {
+            if (gameState.guessMap) gameState.guessMap.invalidateSize();
+        }).observe(wrapper);
+    }
+
+    function placePin(latlng) {
+        if (gameState.guessMarker) {
+            gameState.guessMarker.setLatLng(latlng);
+        } else {
+            const icon = L.divIcon({ className: 'marker-pin-guess', iconSize: [18, 18] });
+            gameState.guessMarker = L.marker(latlng, { icon, draggable: true }).addTo(gameState.guessMap);
+            gameState.guessMarker.on('dragend', (e) => {
+                gameState.guessLatLng = e.target.getLatLng();
+            });
+        }
+        gameState.guessLatLng = latlng;
+        playBeep(640, 'sine', 0.08);
+
+        const btn = document.getElementById('guess-btn');
+        btn.innerHTML = '<span>🎯 CONFIRM GUESS</span>';
+        btn.classList.add('ready');
+        btn.disabled = false;
+
+        const pinStatus = document.getElementById('map-pin-status');
+        if (pinStatus) {
+            pinStatus.textContent = '✓ Pin placed';
+            pinStatus.classList.add('placed');
+        }
+
+        if (gameState.simulated4P) {
+            const myChip = document.getElementById('sim-chip-player_me');
+            if (myChip) {
+                myChip.classList.add('guessed');
+                myChip.innerHTML = `
+                    <div class="hud-player-chip-avatar">${renderAvatarHTML(userProfile, '100%', '100%')}</div>
+                    <span>${escapeHTML(userProfile.name)} (Ready)</span>
+                `;
+            }
+        }
+    }
+
+    function toggleMapExpand(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        const panel = document.getElementById('map-panel');
+        const isExpanded = panel.classList.toggle('expanded');
+        const text = document.getElementById('expand-btn-text');
+        if (text) text.textContent = isExpanded ? 'Minimize' : 'Expand';
+
+        if (gameState.guessMap) {
+            gameState.guessMap.invalidateSize();
+            setTimeout(() => { if (gameState.guessMap) gameState.guessMap.invalidateSize(); }, 120);
+            setTimeout(() => { if (gameState.guessMap) gameState.guessMap.invalidateSize(); }, 360);
+        }
+    }
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+        if (e.code === 'Enter') {
+            const btn = document.getElementById('guess-btn');
+            if (btn && !btn.disabled && gameState.guessLatLng) {
+                e.preventDefault();
+                submitPlayerGuess();
+            }
+        } else if (e.code === 'Space') {
+            e.preventDefault();
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('active')) {
+                toggleMapExpand();
+            }
+        } else if (e.code === 'Escape') {
+            const panel = document.getElementById('map-panel');
+            if (panel && panel.classList.contains('expanded')) toggleMapExpand();
+            closeModal('profile-modal');
+            closeModal('mp-modal');
+        }
+    });
+
+    // ============================================================
+    //  TIMER & ACCURACY SCORING SYSTEM
+    // ============================================================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function formatDistanceStr(distMeters) {
+        if (distMeters === null) return 'No guess';
+        if (distMeters < 1000) return `${Math.round(distMeters)} m`;
+        return `${(distMeters / 1000).toFixed(2)} km`;
+    }
+
+    function scoreGuess(distMeters, timeRemaining, maxTime) {
+        // Distance score: max 5000 pts
+        let distScore = 0;
+        if (distMeters <= 25) {
+            distScore = 5000;
+        } else {
+            distScore = Math.max(0, Math.round(5000 * Math.exp(-distMeters / 1500)));
+        }
+
+        // Speed bonus: up to 1000 pts
+        const speedRatio = Math.max(0, timeRemaining / maxTime);
+        const speedBonus = Math.round(speedRatio * 1000);
+
+        return {
+            distScore,
+            speedBonus,
+            total: distScore + speedBonus
+        };
+    }
+
+    function startRoundTimer(seconds) {
+        clearInterval(gameState.timerInterval);
+        let remaining = seconds;
+        gameState.roundStartTime = isRealMultiplayer() && serverMatch ? serverMatch.startedAt - serverClockOffset : Date.now();
+
+        const timerCard = document.getElementById('hud-timer-card');
+        const timerVal = document.getElementById('hud-timer-num');
+        const circle = document.getElementById('timer-svg-circle');
+        const totalOffset = 75.4; // 2 * PI * 12
+
+        timerCard.classList.remove('danger');
+        timerVal.textContent = remaining;
+        circle.style.strokeDashoffset = 0;
+        circle.style.stroke = 'var(--brand-primary)';
+
+        gameState.timerInterval = setInterval(() => {
+            remaining = Math.max(0, Math.ceil(isRealMultiplayer() && serverMatch ? (serverMatch.deadline - (Date.now() + serverClockOffset)) / 1000 : seconds - (Date.now() - gameState.roundStartTime) / 1000));
+            timerVal.textContent = remaining;
+
+            const progress = remaining / seconds;
+            circle.style.strokeDashoffset = totalOffset * (1 - progress);
+
+            if (progress < 0.25) {
+                circle.style.stroke = 'var(--brand-rose)';
+                timerCard.classList.add('danger');
+                playBeep(880, 'sine', 0.04);
+            } else if (progress < 0.5) {
+                circle.style.stroke = 'var(--brand-accent)';
+            }
+
+            if (remaining <= 0) {
+                clearInterval(gameState.timerInterval);
+                playBuzzer();
+                if (gameState.guessLatLng) {
+                    submitPlayerGuess();
+                } else {
+                    submitTimeoutZero();
+                }
+            }
+        }, 1000);
+    }
+
+    // ============================================================
+    //  4-PLAYER SIMULATION ENGINE & BOT ROSTER
+    // ============================================================
+    const SIM_BOTS = [
+        {
+            id: 'bot_sokha',
+            name: 'Sokha 🛵',
+            title: 'Daun Penh Tuk-Tuk Master',
+            avatarType: 'custom',
+            avatarConfig: {
+                hairStyle: 'fluffy',
+                hairColor: '#261b2b',
+                jacketStyle: 'cardigan',
+                jacketColor: '#0284c7',
+                shirtColor: '#ffffff',
+                skinColor: '#fee0d2',
+                bg: '#38bdf8',
+                squiggles: 'electric',
+                eyeStyle: 'happy',
+                blush: true
+            },
+            aura: '#38bdf8',
+            minDist: 100, maxDist: 480,
+            minDelay: 3200, maxDelay: 5800
+        },
+        {
+            id: 'bot_dara',
+            name: 'Dara 🛺',
+            title: 'BKK1 Cafe Hopper',
+            avatarType: 'custom',
+            avatarConfig: {
+                hairStyle: 'spiky',
+                hairColor: '#4a2810',
+                jacketStyle: 'hoodie',
+                jacketColor: '#ea580c',
+                shirtColor: '#fef08a',
+                skinColor: '#fee0d2',
+                bg: '#fbbf24',
+                squiggles: 'electric',
+                eyeStyle: 'curious',
+                blush: true
+            },
+            aura: '#f59e0b',
+            minDist: 320, maxDist: 980,
+            minDelay: 5500, maxDelay: 9200
+        },
+        {
+            id: 'bot_bopha',
+            name: 'Bopha 🌸',
+            title: 'Riverside Sunset Chaser',
+            avatarType: 'custom',
+            avatarConfig: {
+                hairStyle: 'fluffy',
+                hairColor: '#db2777',
+                jacketStyle: 'cardigan',
+                jacketColor: '#db2777',
+                shirtColor: '#fbcfe8',
+                skinColor: '#fee0d2',
+                bg: '#f472b6',
+                squiggles: 'sparkles',
+                eyeStyle: 'chill',
+                blush: true
+            },
+            aura: '#ec4899',
+            minDist: 650, maxDist: 1850,
+            minDelay: 8500, maxDelay: 13500
+        }
+    ];
+
+    let simBotTimers = [];
+
+    function start4PlayerSimulation() {
+        gameState.isMultiplayer = true;
+        gameState.simulated4P = true;
+        gameState.matchPlan = null;
+        gameState.simPlayers = [
+            {
+                id: 'player_me',
+                name: userProfile.name || 'ricy',
+                avatarType: userProfile.avatarType || 'custom',
+                avatarConfig: userProfile.avatarConfig,
+                aura: userProfile.aura || '#10b981',
+                isMe: true,
+                totalScore: 0
+            },
+            ...SIM_BOTS.map(b => ({
+                id: b.id,
+                name: b.name,
+                avatarType: b.avatarType,
+                avatarConfig: b.avatarConfig,
+                aura: b.aura,
+                isMe: false,
+                botConfig: b,
+                totalScore: 0
+            }))
+        ];
+
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+
+        gameState.roundIndex = 0;
+        gameState.totalScore = 0;
+        gameState.roundsHistory = [];
+        gameState.usedLocIds = [];
+
+        initGuessMap();
+        loadRound();
+    }
+
+    function initSimRound() {
+        simBotTimers.forEach(t => clearTimeout(t));
+        simBotTimers = [];
+
+        const hudCard = document.getElementById('hud-mp-status-card');
+        const chipsContainer = document.getElementById('hud-mp-chips');
+        if (!hudCard || !chipsContainer) return;
+
+        hudCard.style.display = 'flex';
+        chipsContainer.innerHTML = gameState.simPlayers.map(p => `
+            <div class="hud-player-chip" id="sim-chip-${p.id}">
+                <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
+                <span>${escapeHTML(p.name)}${p.isMe ? ' (You)' : ': 🤔'}</span>
+            </div>
+        `).join('');
+
+        gameState.simPlayers.forEach(p => {
+            p.currentGuess = null;
+            p.roundCompleted = false;
+        });
+
+        const target = gameState.currentLocation;
+        const cfg = MODE_CONFIG[currentMode];
+
+        gameState.simPlayers.filter(p => !p.isMe).forEach(bot => {
+            const delay = bot.botConfig.minDelay + Math.random() * (bot.botConfig.maxDelay - bot.botConfig.minDelay);
+            const tId = setTimeout(() => {
+                if (bot.roundCompleted) return;
+                generateBotGuess(bot, target, cfg.time);
+            }, delay);
+            simBotTimers.push(tId);
+        });
+    }
+
+    function generateBotGuess(bot, target, maxTime) {
+        if (bot.roundCompleted) return;
+        const bCfg = bot.botConfig;
+        const dist = bCfg.minDist + Math.random() * (bCfg.maxDist - bCfg.minDist);
+        const angle = Math.random() * 2 * Math.PI;
+
+        const dLat = (dist / 111320) * Math.cos(angle);
+        const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+        const guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+
+        const actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        const elapsed = Math.min(maxTime, Math.max(2.5, (Date.now() - gameState.roundStartTime) / 1000));
+        const timeRemaining = Math.max(0, maxTime - elapsed);
+        const scoreObj = scoreGuess(actualDist, timeRemaining, maxTime);
+
+        bot.currentGuess = {
+            guessLatLng,
+            dist: actualDist,
+            score: scoreObj.total,
+            distScore: scoreObj.distScore,
+            speedBonus: scoreObj.speedBonus,
+            elapsed
+        };
+        bot.totalScore += scoreObj.total;
+        bot.roundCompleted = true;
+
+        const chip = document.getElementById(`sim-chip-${bot.id}`);
+        if (chip) {
+            chip.classList.add('guessed');
+            chip.innerHTML = `
+                <div class="hud-player-chip-avatar">${renderAvatarHTML(bot, '100%', '100%')}</div>
+                <span>${escapeHTML(bot.name)}: ✓ (${elapsed.toFixed(1)}s)</span>
+            `;
+        }
+    }
+
+    // ============================================================
+    //  MATCH FLOW (SOLO & MULTIPLAYER)
+    // ============================================================
+    function getModeLocationPool() {
+        const cfg = MODE_CONFIG[currentMode];
+        if (cfg.pool === 'landmarks') return LOCATIONS_DB.landmarks;
+        return ALL_LOCATIONS;
+    }
+
+    function startSinglePlayerGame() {
+        gameState.isMultiplayer = false;
+        gameState.simulated4P = false;
+        gameState.matchPlan = null;
+        const mpCard = document.getElementById('hud-mp-status-card');
+        if (mpCard) mpCard.style.display = 'none';
+
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+
+        gameState.roundIndex = 0;
+        gameState.totalScore = 0;
+        gameState.roundsHistory = [];
+        gameState.usedLocIds = [];
+
+        initGuessMap();
+        loadRound();
+    }
+
+    function loadRound() {
+        gameState.roundSubmitted = false;
+        guessPending = false;
+        readyPending = false;
+        readyPlayers.clear();
+        gameState.guessLatLng = null;
+        gameState.roundIndex++;
+        const cfg = MODE_CONFIG[currentMode];
+
+        document.getElementById('hud-round-indicator').textContent = `${gameState.roundIndex} / ${cfg.rounds}`;
+        document.getElementById('hud-score-indicator').textContent = gameState.totalScore.toLocaleString();
+
+        const planned = gameState.matchPlan && gameState.matchPlan[gameState.roundIndex - 1];
+        const plannedLoc = planned && ALL_LOCATIONS.find(l => l.id === planned.id);
+        if (plannedLoc) {
+            gameState.currentLocation = plannedLoc;
+            gameState.currentHeading = planned.heading;
+            recordSeenLocation(plannedLoc.id);
+        } else {
+            gameState.currentLocation = getNextUniqueLocation();
+            gameState.currentHeading = getRandomHeading();
+        }
+
+        if (gameState.guessMarker) {
+            gameState.guessMap.removeLayer(gameState.guessMarker);
+            gameState.guessMarker = null;
+            gameState.guessLatLng = null;
+        }
+        const btn = document.getElementById('guess-btn');
+        btn.innerHTML = '<span>📍 Click Map to Place Pin</span>';
+        btn.classList.remove('ready');
+        btn.disabled = true;
+
+        const pinStatus = document.getElementById('map-pin-status');
+        if (pinStatus) {
+            pinStatus.textContent = '📍 Click map to pin';
+            pinStatus.classList.remove('placed');
+        }
+        gameState.guessMap.setView(PP_CENTER, 12);
+
+        loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading);
+        startRoundTimer(cfg.time);
+
+        if (gameState.simulated4P) {
+            initSimRound();
+        } else if (isRealMultiplayer()) {
+            renderMpHudChips();
+        }
+    }
+
+    function submitPlayerGuess() {
+        if (isRealMultiplayer()) { if (gameState.guessLatLng) submitRoomGuess(gameState.guessLatLng); return; }
+        if (!gameState.guessLatLng || gameState.roundSubmitted) return;
+        gameState.roundSubmitted = true;
+        clearInterval(gameState.timerInterval);
+
+        const elapsedSeconds = (Date.now() - gameState.roundStartTime) / 1000;
+        const cfg = MODE_CONFIG[currentMode];
+        const timeRemaining = Math.max(0, cfg.time - elapsedSeconds);
+
+        const dist = calculateDistance(
+            gameState.currentLocation.lat, gameState.currentLocation.lng,
+            gameState.guessLatLng.lat, gameState.guessLatLng.lng
+        );
+
+        const scoreObj = scoreGuess(dist, timeRemaining, cfg.time);
+        gameState.totalScore += scoreObj.total;
+        gameState.roundScore = scoreObj.distScore;
+        gameState.roundSpeedBonus = scoreObj.speedBonus;
+        gameState.roundDistance = dist;
+
+        gameState.roundsHistory.push({
+            round: gameState.roundIndex,
+            area: gameState.currentLocation.name,
+            dist,
+            distScore: scoreObj.distScore,
+            speedBonus: scoreObj.speedBonus,
+            total: scoreObj.total
+        });
+
+        playSuccessChime();
+
+        if (gameState.simulated4P) {
+            const target = gameState.currentLocation;
+            gameState.simPlayers.filter(p => !p.isMe && !p.roundCompleted).forEach(bot => {
+                generateBotGuess(bot, target, cfg.time);
+            });
+
+            const me = gameState.simPlayers.find(p => p.isMe);
+            if (me) {
+                me.currentGuess = {
+                    guessLatLng: gameState.guessLatLng,
+                    dist,
+                    score: scoreObj.total,
+                    distScore: scoreObj.distScore,
+                    speedBonus: scoreObj.speedBonus,
+                    elapsed: elapsedSeconds
+                };
+                me.totalScore = gameState.totalScore;
+                me.roundCompleted = true;
+            }
+
+            const myChip = document.getElementById('sim-chip-player_me');
+            if (myChip) {
+                myChip.classList.add('guessed');
+                myChip.innerHTML = `
+                    <div class="hud-player-chip-avatar">${renderAvatarHTML(userProfile, '100%', '100%')}</div>
+                    <span>${escapeHTML(userProfile.name)}: ✓ (${elapsedSeconds.toFixed(1)}s)</span>
+                `;
+            }
+        }
+
+        sendMpGuess(dist, scoreObj.total, gameState.guessLatLng, elapsedSeconds);
+
+        showRoundResult();
+    }
+
+    function submitTimeoutZero() {
+        if (isRealMultiplayer()) { submitRoomGuess(null); return; }
+        if (gameState.roundSubmitted) return;
+        gameState.roundSubmitted = true;
+        // Reset last round's numbers so the result card doesn't show stale points
+        gameState.roundScore = 0;
+        gameState.roundSpeedBonus = 0;
+        gameState.roundDistance = 10000;
+        sendMpGuess(null, 0, null, null);
+        gameState.roundsHistory.push({
+            round: gameState.roundIndex,
+            area: gameState.currentLocation.name,
+            dist: 10000,
+            distScore: 0,
+            speedBonus: 0,
+            total: 0
+        });
+        showRoundResult();
+    }
+
+    // ============================================================
+    //  ROUND RESULT VIEW (SOLO & 4-PLAYER)
+    // ============================================================
+    function showRoundResult() {
+        document.getElementById('res-next-btn').disabled = false;
+        if (isRealMultiplayer()) setTimeout(updateRoundReadyUI, 0);
+        document.getElementById('result-screen').classList.add('active');
+
+        document.getElementById('res-distance').textContent = formatDistanceStr(gameState.roundDistance);
+        document.getElementById('res-dist-pts').textContent = gameState.roundScore.toLocaleString();
+        document.getElementById('res-speed-pts').textContent = `+${gameState.roundSpeedBonus}`;
+
+        const nextBtn = document.getElementById('res-next-btn');
+        const cfg = MODE_CONFIG[currentMode];
+        if (gameState.roundIndex >= cfg.rounds) {
+            nextBtn.textContent = 'View Final Results 🏆';
+        } else {
+            nextBtn.textContent = `Next Round (${gameState.roundIndex + 1}/${cfg.rounds}) →`;
+        }
+
+        const mpLeaderboard = document.getElementById('mp-round-leaderboard');
+        const mpList = document.getElementById('mp-round-players-list');
+
+        if (gameState.simulated4P && mpLeaderboard && mpList) {
+            mpLeaderboard.style.display = 'block';
+
+            const sortedPlayers = [...gameState.simPlayers].sort((a, b) => {
+                const distA = a.currentGuess ? a.currentGuess.dist : 99999;
+                const distB = b.currentGuess ? b.currentGuess.dist : 99999;
+                return distA - distB;
+            });
+
+            const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd', '4th'];
+            mpList.innerHTML = sortedPlayers.map((p, idx) => {
+                const g = p.currentGuess || { dist: 99999, score: 0 };
+                return `
+                    <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.isMe ? 'is-me' : ''}">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 900; font-size: 0.92rem; min-width: 48px; color: ${idx === 0 ? 'var(--brand-accent)' : 'var(--text-secondary)'};">${medals[idx]}</span>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid ${p.aura || '#fff'}; background: #fed049; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                ${renderAvatarHTML(p, '100%', '100%')}
+                            </div>
+                            <div>
+                                <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                    ${escapeHTML(p.name)} ${p.isMe ? '<span style="font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--brand-primary); color: #fff;">YOU</span>' : ''}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--text-secondary);">${formatDistanceStr(g.dist)} away (${g.elapsed ? g.elapsed.toFixed(1) + 's' : ''})</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 900; font-size: 1.05rem; color: #6ee7b7;">+${g.score.toLocaleString()} pts</div>
+                            <div style="font-size: 0.72rem; color: var(--brand-accent); font-weight: 700;">Total: ${p.totalScore.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else if (isRealMultiplayer() && mpLeaderboard && mpList) {
+            mpLeaderboard.style.display = 'block';
+            renderMpRoundLeaderboard();
+        } else if (mpLeaderboard) {
+            mpLeaderboard.style.display = 'none';
+        }
+
+        setTimeout(() => {
+            if (gameState.resultMap) gameState.resultMap.remove();
+
+            gameState.resultMap = L.map('result-map', { zoomControl: true, attributionControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(gameState.resultMap);
+
+            const actualLoc = [gameState.currentLocation.lat, gameState.currentLocation.lng];
+            const actualIcon = L.divIcon({ className: 'marker-pin-actual', iconSize: [18, 18] });
+            L.marker(actualLoc, { icon: actualIcon }).addTo(gameState.resultMap).bindPopup(`<b>📍 ${gameState.currentLocation.name}</b><br><span style="color:#64748b; font-size:11px;">Phnom Penh Target</span>`).openPopup();
+
+            const boundsPoints = [actualLoc];
+
+            if (gameState.simulated4P) {
+                gameState.simPlayers.forEach(p => {
+                    if (!p.currentGuess) return;
+                    const guessLoc = [p.currentGuess.guessLatLng.lat, p.currentGuess.guessLatLng.lng];
+                    boundsPoints.push(guessLoc);
+
+                    const playerPinHtml = `
+                        <div class="marker-player-pin">
+                            <div class="marker-pin-bubble" style="border-color: ${p.aura || '#f59e0b'};">
+                                ${renderAvatarHTML(p, '100%', '100%')}
+                            </div>
+                            <div class="marker-pin-point" style="border-top-color: ${p.aura || '#f59e0b'};"></div>
+                            <div class="marker-pin-label" style="border-color: ${p.aura || '#f59e0b'};">${escapeHTML(p.name)}: ${formatDistanceStr(p.currentGuess.dist)}</div>
+                        </div>
+                    `;
+
+                    const playerIcon = L.divIcon({
+                        className: 'custom-leaflet-player-marker',
+                        html: playerPinHtml,
+                        iconSize: [40, 52],
+                        iconAnchor: [20, 50]
+                    });
+
+                    L.marker(guessLoc, { icon: playerIcon }).addTo(gameState.resultMap);
+
+                    L.polyline([actualLoc, guessLoc], {
+                        color: p.aura || '#f59e0b',
+                        weight: 3,
+                        dashArray: '6,6',
+                        opacity: 0.85
+                    }).addTo(gameState.resultMap);
+                });
+
+                if (boundsPoints.length > 1) {
+                    const bounds = L.latLngBounds(boundsPoints);
+                    gameState.resultMap.fitBounds(bounds.pad(0.25));
+                }
+            } else if (gameState.guessLatLng) {
+                const guessLoc = [gameState.guessLatLng.lat, gameState.guessLatLng.lng];
+                const guessIcon = L.divIcon({ className: 'marker-pin-guess', iconSize: [18, 18] });
+                L.marker(guessLoc, { icon: guessIcon }).addTo(gameState.resultMap).bindPopup('<b>Your Guess</b>');
+
+                L.polyline([actualLoc, guessLoc], { color: 'var(--brand-accent)', weight: 3, dashArray: '6,6' }).addTo(gameState.resultMap);
+
+                const bounds = L.latLngBounds([actualLoc, guessLoc]);
+                gameState.resultMap.fitBounds(bounds.pad(0.3));
+            } else {
+                gameState.resultMap.setView(actualLoc, 15);
+            }
+
+            gameState.mpPinLayer = null;
+            refreshMpResultPins();
+        }, 150);
+    }
+
+    function updateRoundReadyUI() {
+        if (!isRealMultiplayer()) return;
+        const btn = document.getElementById('res-next-btn');
+        const players = getLobbyPlayers();
+        const count = players.filter(p => readyPlayers.has(p.id)).length;
+        const ready = readyPlayers.has(myPlayerId);
+        btn.disabled = ready || readyPending || !roomReady;
+        btn.textContent = ready ? `Waiting for friends · ${count}/${players.length} ready` : 'Ready for next round →';
+    }
+
+    function advanceNextRound() {
+        if (isRealMultiplayer()) {
+            if (!gameState.roundSubmitted || readyPlayers.has(myPlayerId) || readyPending) return;
+            if (sendRoomMessage({ type: 'ROUND_READY', matchId, round: gameState.roundIndex })) readyPending = true;
+            updateRoundReadyUI();
+            return;
+        }
+        document.getElementById('result-screen').classList.remove('active');
+        const cfg = MODE_CONFIG[currentMode];
+        if (gameState.roundIndex >= cfg.rounds) {
+            showFinalPodium();
+        } else {
+            loadRound();
+        }
+    }
+
+    function showFinalPodium() {
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('final-screen').classList.add('active');
+
+        const total = gameState.totalScore;
+        document.getElementById('fin-total-score').textContent = total.toLocaleString();
+
+        let badge = '🏆', rating = 'Phnom Penh Legend!';
+        if (total >= 25000) { badge = '👑'; rating = 'Absolute Grandmaster of Phnom Penh!'; }
+        else if (total >= 20000) { badge = '🌟'; rating = 'True Local Expert! Amazing intuition!'; }
+        else if (total >= 15000) { badge = '👏'; rating = 'Great Navigator! Solid knowledge!'; }
+        else if (total >= 10000) { badge = '🛵'; rating = 'Good Tuk-Tuk Apprentice! Getting there!'; }
+        else { badge = '😅'; rating = 'Time to explore the capital more often!'; }
+
+        document.getElementById('fin-badge').textContent = badge;
+        document.getElementById('fin-rating').textContent = rating;
+
+        const table = document.getElementById('fin-rounds-table');
+        if (gameState.simulated4P) {
+            const finalRanked = [...gameState.simPlayers].sort((a, b) => b.totalScore - a.totalScore);
+            const medals = ['🥇 1st Place', '🥈 2nd Place', '🥉 3rd Place', '4th Place'];
+            table.innerHTML = `
+                <div style="font-weight: 800; font-size: 0.85rem; color: var(--brand-accent); text-transform: uppercase; margin-bottom: 8px; text-align: left;">
+                    4-Player Tournament Leaderboard
+                </div>
+                ${finalRanked.map((p, idx) => `
+                    <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.isMe ? 'is-me' : ''}">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 900; color: ${idx === 0 ? 'var(--brand-accent)' : 'var(--text-secondary)'}; min-width: 85px;">${medals[idx]}</span>
+                            <div style="width: 26px; height: 26px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fed049; border: 1.5px solid ${p.aura || '#fff'};">
+                                ${renderAvatarHTML(p, '100%', '100%')}
+                            </div>
+                            <span style="font-weight: 800; color: #fff;">${escapeHTML(p.name)} ${p.isMe ? '(You)' : ''}</span>
+                        </div>
+                        <span style="font-weight: 900; color: #6ee7b7;">${p.totalScore.toLocaleString()} pts</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            const roundsHTML = gameState.roundsHistory.map(r => `
+                <div class="mp-leaderboard-row">
+                    <span style="font-weight: 800; color: var(--brand-accent);">R${r.round}</span>
+                    <span style="color: var(--text-secondary);">${escapeHTML(r.area)}</span>
+                    <span>${formatDistanceStr(r.dist)}</span>
+                    <span style="font-weight: 800; color: #6ee7b7;">${r.total.toLocaleString()} pts</span>
+                </div>
+            `).join('');
+
+            let partyHTML = '';
+            if (isRealMultiplayer()) {
+                const me = myPlayerId || 'me';
+                const ranked = getLobbyPlayers()
+                    .map(p => ({ ...p, total: mpTotalFor(p.id) }))
+                    .sort((a, b) => b.total - a.total);
+                const medals = ['🥇 1st Place', '🥈 2nd Place', '🥉 3rd Place'];
+                partyHTML = `
+                    <div style="font-weight: 800; font-size: 0.85rem; color: var(--brand-accent); text-transform: uppercase; margin-bottom: 8px; text-align: left;">
+                        Party Leaderboard
+                    </div>
+                    ${ranked.map((p, idx) => `
+                        <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 900; color: ${idx === 0 ? 'var(--brand-accent)' : 'var(--text-secondary)'}; min-width: 85px;">${medals[idx] || `${idx + 1}th Place`}</span>
+                                <div style="width: 26px; height: 26px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #fed049; border: 1.5px solid ${getPlayerAura(p.id)};">
+                                    ${renderAvatarHTML(p, '100%', '100%')}
+                                </div>
+                                <span style="font-weight: 800; color: #fff;">${escapeHTML(p.name)} ${p.id === me ? '(You)' : ''}</span>
+                            </div>
+                            <span style="font-weight: 900; color: #6ee7b7;">${p.total.toLocaleString()} pts</span>
+                        </div>
+                    `).join('')}
+                    <div style="font-size: 0.72rem; color: var(--text-muted); margin: 6px 0 14px; text-align: left;">Scores update as friends finish their rounds.</div>
+                `;
+            }
+            table.innerHTML = partyHTML + roundsHTML;
+        }
+    }
+
+    function resetToHome() {
+        // Still connected to a party: go back to the waiting room for a rematch
+        if (isRealMultiplayer() && roomSocket) {
+            if (!gameState.isHost) { showToast('Waiting for the host to return the party to the lobby.'); return; }
+            sendRoomMessage({ type: 'REMATCH' });
+            return;
+        }
+        document.getElementById('final-screen').classList.remove('active');
+        gameState.isMultiplayer = false;
+        gameState.matchPlan = null;
+        document.getElementById('start-screen').classList.add('active');
+        renderModeCards();
+    }
+
+    // ============================================================
+    //  CLOUDFLARE MULTIPLAYER ROOMS (server coordinates all players)
+    // ============================================================
+    let roomSocket = null;
+    let heartbeatTimer = null;
+    let lastServerMessage = 0;
+    let roomSession = null;
+    let reconnectTimer = null;
+    let reconnectAttempts = 0;
+    let serverClockOffset = 0;
+    let serverMatch = null;
+    let guessPending = false;
+    let readyPending = false;
+    let myPlayerId = null;
+    let connectionTimer = null;
+    let roomReady = false;
+    let readyPlayers = new Set();
+    let matchId = null;
+    let lobbyPlayers = [];          // player list as last synced from the host (clients only)
+
+    const MAX_ROOM_PLAYERS = 8;
+    const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const LOBBY_EMOTES = ['🛵 Vroom!', '📍 Easy spot!', '🤔 No clue!', '🔥 Ready!', '👑 GG!'];
+    const MP_AURAS = ['#10b981', '#f59e0b', '#38bdf8', '#ec4899', '#8b5cf6', '#f43f5e', '#facc15', '#14b8a6'];
+
+    function isRealMultiplayer() {
+        return gameState.isMultiplayer && !gameState.simulated4P;
+    }
+
+    function openMultiplayerModal() {
+        renderPartyModes();
+        document.getElementById('mp-modal').classList.add('active');
+        setTimeout(() => document.getElementById('join-code-input')?.focus(), 50);
+    }
+
+    function generateRoomCode() {
+        const bytes = crypto.getRandomValues(new Uint8Array(6));
+        return 'WP-' + Array.from(bytes, b => ROOM_CODE_CHARS[b % ROOM_CODE_CHARS.length]).join('');
+    }
+
+    function setLobbyStatus(text) {
+        const el = document.getElementById('lobby-status-text');
+        if (el) el.textContent = text;
+        const waiting = document.getElementById('client-connection-text');
+        if (waiting) waiting.textContent = text;
+        const start = document.getElementById('start-party-btn');
+        const spinner = document.querySelector('#client-waiting .spinner');
+        if (spinner) spinner.style.display = roomReady ? 'none' : 'block';
+        if (start) {
+            start.disabled = !roomReady || getLobbyPlayers().filter(p => p.connected !== false).length < 2 || getLobbyPlayers().some(p => p.connected === false) || !!serverMatch;
+            start.title = !roomReady ? 'Connecting…' : getLobbyPlayers().length < 2 ? 'Invite at least one friend to start' : 'Everyone is connected. Start the match';
+        }
+    }
+
+    function createMultiplayerLobby() {
+        closeModal('mp-modal');
+        teardownRoom();
+        currentMode = document.getElementById('party-mode-select').value || currentMode;
+        const code = generateRoomCode();
+        gameState.isMultiplayer = true;
+        gameState.simulated4P = false;
+        gameState.isHost = true;
+        gameState.roomCode = code;
+        gameState.activeMatch = null;
+
+        openLobbyUI(code, true);
+        initRoomConnection(code, true);
+    }
+
+    function joinMultiplayerLobby() {
+        const input = document.getElementById('join-code-input');
+        let code = input.value.trim().toUpperCase().replace(/\s+/g, '');
+        if (!code) {
+            showToast('Please enter a room code!');
+            input.focus();
+            return;
+        }
+        if (!code.startsWith('WP-')) code = 'WP-' + code.replace(/^WP-?/, '');
+        if (!/^WP-[A-Z0-9]{5,6}$/.test(code)) {
+            showToast('Enter a party code like WP-ABCDEF.');
+            input.focus();
+            return;
+        }
+
+        closeModal('mp-modal');
+        teardownRoom();
+        gameState.isMultiplayer = true;
+        gameState.simulated4P = false;
+        gameState.isHost = false;
+        gameState.roomCode = code;
+
+        openLobbyUI(code, false);
+        initRoomConnection(code, false);
+    }
+
+    function openLobbyUI(code, isHost) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('lobby-screen').classList.add('active');
+        document.getElementById('room-code-text').textContent = code;
+
+        document.getElementById('host-controls').style.display = isHost ? 'flex' : 'none';
+        document.getElementById('client-waiting').style.display = isHost ? 'none' : 'block';
+
+        renderLobbyPlayers();
+        renderPartyModes();
+    }
+
+    function myLobbyEntry() {
+        return { id: myPlayerId || 'me', ...sanitizeProfile(userProfile), isHost: gameState.isHost };
+    }
+
+    function getLobbyPlayers() {
+        return lobbyPlayers.length ? lobbyPlayers : [myLobbyEntry()];
+    }
+
+    function getPlayerAura(id) {
+        const idx = getLobbyPlayers().findIndex(p => p.id === id);
+        return MP_AURAS[Math.max(0, idx) % MP_AURAS.length];
+    }
+
+    function renderLobbyPlayers() {
+        const container = document.getElementById('lobby-players-container');
+        const players = getLobbyPlayers();
+
+        document.getElementById('player-count').textContent = players.length;
+        container.innerHTML = players.map(p => `
+            <div class="lobby-player-card">
+                <div class="lobby-player-thumb">${renderAvatarHTML(p, '100%', '100%')}</div>
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-weight: 800; font-size: 0.88rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        ${escapeHTML(p.name)} ${p.isHost ? '<span style="color: var(--brand-accent); font-size: 0.72rem;">(HOST)</span>' : ''} ${p.id === (myPlayerId || 'me') ? '<span style="color: var(--brand-primary); font-size: 0.72rem;">(YOU)</span>' : ''}
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        ${p.connected === false ? 'Reconnecting…' : escapeHTML(p.title || 'Explorer')}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderPartyModes() {
+        for (const [id, descriptionId] of [['party-mode-select', 'party-mode-description'], ['lobby-mode-select', 'lobby-mode-description']]) {
+            const select = document.getElementById(id);
+            select.innerHTML = Object.entries(MODE_CONFIG).map(([key, cfg]) => '<option value="' + key + '">' + escapeHTML(cfg.name) + '</option>').join('');
+            select.value = currentMode;
+            select.disabled = id === 'lobby-mode-select' && (!gameState.isHost || !roomReady || !!serverMatch);
+            const cfg = MODE_CONFIG[currentMode];
+            const count = cfg.pool === 'landmarks' ? LOCATIONS_DB.landmarks.length : ALL_LOCATIONS.length;
+            document.getElementById(descriptionId).textContent = cfg.time + ' seconds · ' + cfg.rounds + ' rounds · ' + count + ' locations. ' + cfg.desc;
+        }
+    }
+
+    function selectPartyMode(mode) {
+        if (!MODE_CONFIG[mode]) return;
+        if (isRealMultiplayer()) {
+            if (!gameState.isHost || !roomReady || serverMatch) return;
+            sendRoomMessage({ type: 'SET_MODE', mode });
+        } else {
+            currentMode = mode;
+            renderPartyModes();
+            renderModeCards();
+        }
+    }
+
+    function teardownRoom() {
+        clearInterval(heartbeatTimer);
+        clearTimeout(connectionTimer);
+        clearTimeout(reconnectTimer);
+        const old = roomSocket;
+        roomSocket = null;
+        if (old) {
+            if (old.readyState === WebSocket.OPEN) old.send(JSON.stringify({ type: 'LEAVE' }));
+            old.close();
+        }
+        roomReady = false;
+        roomSession = null;
+        serverMatch = null;
+        myPlayerId = null;
+        lobbyPlayers = [];
+        matchId = null;
+        readyPlayers.clear();
+        guessPending = false;
+        readyPending = false;
+    }
+
+    function sendRoomMessage(msg) {
+        if (!roomReady || roomSocket?.readyState !== WebSocket.OPEN) {
+            showToast('Reconnecting to the party. Please wait a moment.');
+            return false;
+        }
+        roomSocket.send(JSON.stringify(msg));
+        return true;
+    }
+
+    function initRoomConnection(code, create, resume = false) {
+        if (!resume) {
+            reconnectAttempts = 0;
+            roomSession = null;
+            try { roomSession = JSON.parse(sessionStorage.getItem('wanderpenh_room_' + code)); } catch {}
+        }
+        roomReady = false;
+        setLobbyStatus(resume ? 'Reconnecting to your party…' : create ? 'Opening your party room…' : 'Connecting to ' + code + '…');
+        const url = new URL('/api/rooms/' + encodeURIComponent(code), location.origin);
+        url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(url);
+        roomSocket = socket;
+        clearTimeout(connectionTimer);
+        connectionTimer = setTimeout(() => {
+            if (roomSocket !== socket || roomReady) return;
+            leaveLobby();
+            showToast('Could not reach the room server. Open the Cloudflare deployment, then try again.');
+        }, 15000);
+        socket.onopen = () => {
+            if (roomSocket !== socket) return;
+            lastServerMessage = Date.now();
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = setInterval(() => {
+                if (roomSocket !== socket || socket.readyState !== WebSocket.OPEN) return;
+                if (Date.now() - lastServerMessage > 40000) { socket.close(); return; }
+                socket.send('ping');
+            }, 15000);
+            socket.send(JSON.stringify({ type: 'HELLO', create: create && !roomSession, token: roomSession?.token, profile: sanitizeProfile(userProfile), mode: currentMode }));
+        };
+        socket.onmessage = event => {
+            if (roomSocket !== socket) return;
+            lastServerMessage = Date.now();
+            if (event.data === 'pong') return;
+            let msg;
+            try { msg = JSON.parse(event.data); } catch { return; }
+            if (msg.type === 'WELCOME') {
+                myPlayerId = msg.playerId;
+                roomSession = { token: msg.token };
+                try { sessionStorage.setItem('wanderpenh_room_' + code, JSON.stringify(roomSession)); } catch {}
+                const invite = new URL(location.href);
+                invite.searchParams.set('room', code);
+                history.replaceState(null, '', invite);
+            } else if (msg.type === 'ROOM_STATE') {
+                clearTimeout(connectionTimer);
+                reconnectAttempts = 0;
+                roomReady = true;
+                applyRoomState(msg);
+            } else if (msg.type === 'ROOM_ERROR') {
+                if (msg.message === 'ROOM_EXISTS' && create) {
+                    teardownRoom();
+                    gameState.roomCode = generateRoomCode();
+                    openLobbyUI(gameState.roomCode, true);
+                    initRoomConnection(gameState.roomCode, true);
+                    return;
+                }
+                try { sessionStorage.removeItem('wanderpenh_room_' + code); } catch {}
+                leaveLobby();
+                showToast(msg.message || 'Unable to join this party.');
+            } else if (msg.type === 'LOBBY_EMOTE') {
+                showToast(cleanText(msg.sender, 'Explorer', 24) + ': ' + msg.emote);
+            }
+        };
+        socket.onclose = () => {
+            if (roomSocket !== socket) return;
+            clearInterval(heartbeatTimer);
+            clearTimeout(connectionTimer);
+            roomReady = false;
+            guessPending = false;
+            readyPending = false;
+            setLobbyStatus('Connection interrupted. Rejoining your party…');
+            if (!roomSession || reconnectAttempts >= 6) {
+                leaveLobby();
+                showToast('Room connection lost. Please join again using the room code.');
+                return;
+            }
+            showToast('Reconnecting to the party…');
+            reconnectTimer = setTimeout(() => initRoomConnection(code, false, true), Math.min(4000, 500 * 2 ** reconnectAttempts++));
+        };
+        socket.onerror = () => { /* onclose handles retry and feedback */ };
+    }
+
+    function applyRoomState(state) {
+        serverClockOffset = state.serverNow - Date.now();
+        lobbyPlayers = state.players.map(p => ({ ...sanitizeProfile(p), id: p.id, isHost: p.isHost, connected: p.connected }));
+        gameState.isHost = state.hostId === myPlayerId;
+        currentMode = state.mode;
+        serverMatch = state.match;
+        document.getElementById('host-controls').style.display = gameState.isHost ? 'flex' : 'none';
+        document.getElementById('client-waiting').style.display = gameState.isHost ? 'none' : 'block';
+        const connected = lobbyPlayers.filter(p => p.connected).length;
+        setLobbyStatus(connected < lobbyPlayers.length ? 'A friend is reconnecting. Their place is saved for 30 seconds.' : connected < 2 ? 'Room is open. Invite a friend to start exploring together.' : gameState.isHost ? connected + ' explorers connected. Choose a mode and start!' : 'You’re in! ' + connected + ' explorers connected. The host can start the match.');
+        renderLobbyPlayers();
+        renderPartyModes();
+        if (!state.match) {
+            if (matchId) {
+                matchId = null;
+                clearInterval(gameState.timerInterval);
+                gameState.activeMatch = null;
+                gameState.matchPlan = null;
+                openLobbyUI(gameState.roomCode, gameState.isHost);
+            }
+            return;
+        }
+        const m = state.match;
+        const newMatch = matchId !== m.id;
+        const changedRound = !newMatch && gameState.roundIndex !== m.round;
+        const changedLocation = !newMatch && gameState.matchPlan?.[m.round - 1]?.id !== m.plan[m.round - 1].id;
+        if (newMatch) {
+            matchId = m.id;
+            gameState.activeMatch = { mode: state.mode };
+            gameState.mpGuesses = m.guesses;
+            beginMatch(state.mode, m.plan, m.round);
+        } else if (changedRound || changedLocation) {
+            gameState.matchPlan = m.plan;
+            gameState.roundIndex = m.round - 1;
+            document.getElementById('result-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            loadRound();
+        }
+        gameState.mpGuesses = m.guesses;
+        readyPlayers = new Set(m.ready);
+        readyPending = false;
+        // Rebuild local totals from accepted server guesses, including after a refresh.
+        gameState.roundsHistory = Object.entries(m.guesses).flatMap(([round, guesses]) => {
+            const g = guesses[myPlayerId];
+            if (!g) return [];
+            return [{ round: +round, area: ALL_LOCATIONS.find(l => l.id === m.plan[+round - 1].id)?.name || 'Phnom Penh', dist: g.dist ?? 10000, distScore: g.distScore, speedBonus: g.speedBonus + g.bountyBonus, total: g.score }];
+        });
+        gameState.totalScore = gameState.roundsHistory.reduce((sum, g) => sum + g.total, 0);
+        const own = m.guesses[m.round]?.[myPlayerId];
+        if (own) {
+            const firstResult = !gameState.roundSubmitted;
+            gameState.roundSubmitted = true;
+            guessPending = false;
+            clearInterval(gameState.timerInterval);
+            gameState.guessLatLng = own.guessLatLng;
+            gameState.roundScore = own.distScore;
+            gameState.roundSpeedBonus = own.speedBonus + own.bountyBonus;
+            gameState.roundDistance = own.dist ?? 10000;
+            if (firstResult && m.phase !== 'final') showRoundResult();
+        } else if (m.phase === 'playing') {
+            gameState.roundStartTime = m.startedAt - serverClockOffset;
+            if (!guessPending) {
+                const btn = document.getElementById('guess-btn');
+                btn.disabled = !gameState.guessLatLng;
+                if (gameState.guessLatLng) btn.innerHTML = '<span>Confirm guess</span>';
+            }
+        }
+        if (m.phase === 'final') {
+            document.getElementById('result-screen').classList.remove('active');
+            showFinalPodium();
+        }
+        renderMpHudChips();
+        if (document.getElementById('result-screen').classList.contains('active')) {
+            renderMpRoundLeaderboard();
+            refreshMpResultPins();
+            updateRoundReadyUI();
+        }
+    }
+
+    function beginMatch(mode, plan, round = 1) {
+        currentMode = mode;
+        gameState.matchPlan = plan;
+        gameState.mpGuesses = {};
+        gameState.roundIndex = round - 1;
+        gameState.totalScore = 0;
+        gameState.roundsHistory = [];
+        gameState.usedLocIds = [];
+
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('game-screen').classList.add('active');
+        initGuessMap();
+        loadRound();
+    }
+
+    function startMultiplayerGame() {
+        if (!gameState.isHost || !roomReady || getLobbyPlayers().length < 2 || serverMatch) return;
+        sendRoomMessage({ type: 'START_MATCH' });
+    }
+
+    function submitRoomGuess(point) {
+        if (gameState.roundSubmitted || guessPending) return;
+        if (serverMatch && Date.now() + serverClockOffset < serverMatch.startedAt) {
+            showToast('The round is starting. Try your guess in a moment.');
+            return;
+        }
+        if (!sendRoomMessage({ type: 'PLAYER_GUESS', matchId, round: gameState.roundIndex, guessLatLng: point ? { lat: point.lat, lng: point.lng } : null })) return;
+        guessPending = true;
+        const btn = document.getElementById('guess-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span>Confirming guess…</span>';
+    }
+
+    function sendMpGuess() { /* Solo and AI results stay local. Party guesses use submitRoomGuess. */ }
+
+    function mpTotalFor(playerId) {
+        return Object.values(gameState.mpGuesses || {})
+            .reduce((sum, round) => sum + (round[playerId] ? round[playerId].score : 0), 0);
+    }
+
+    function renderMpHudChips() {
+        if (!isRealMultiplayer()) return;
+        const hudCard = document.getElementById('hud-mp-status-card');
+        const chips = document.getElementById('hud-mp-chips');
+        if (!hudCard || !chips) return;
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+
+        hudCard.style.display = 'flex';
+        chips.innerHTML = getLobbyPlayers().map(p => {
+            const g = guesses[p.id];
+            const status = g ? (g.elapsed !== null ? `✓ (${g.elapsed.toFixed(1)}s)` : '⌛') : '🤔';
+            return `
+                <div class="hud-player-chip ${g ? 'guessed' : ''}">
+                    <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
+                    <span>${escapeHTML(p.name)}${p.id === me ? ' (You)' : ''}: ${status}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderMpRoundLeaderboard() {
+        const list = document.getElementById('mp-round-players-list');
+        if (!list) return;
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+
+        const rows = getLobbyPlayers().map(p => ({ ...p, guess: guesses[p.id] || null, total: mpTotalFor(p.id) }));
+        const rank = r => r.guess ? (r.guess.dist !== null ? r.guess.dist : 1e8) : 1e9;
+        rows.sort((a, b) => rank(a) - rank(b));
+
+        const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd'];
+        list.innerHTML = rows.map((p, idx) => {
+            const g = p.guess;
+            const detail = !g ? 'Still guessing…'
+                : g.dist === null ? 'No guess (time ran out)'
+                : `${formatDistanceStr(g.dist)} away${g.elapsed !== null ? ` (${g.elapsed.toFixed(1)}s)` : ''}`;
+            return `
+                <div class="mp-leaderboard-row ${idx === 0 && g ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight: 900; font-size: 0.92rem; min-width: 48px; color: ${idx === 0 && g ? 'var(--brand-accent)' : 'var(--text-secondary)'};">${g ? (medals[idx] || `${idx + 1}th`) : '…'}</span>
+                        <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid ${getPlayerAura(p.id)}; background: #fed049; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                            ${renderAvatarHTML(p, '100%', '100%')}
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                ${escapeHTML(p.name)} ${p.id === me ? '<span style="font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--brand-primary); color: #fff;">YOU</span>' : ''}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary);">${detail}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 900; font-size: 1.05rem; color: #6ee7b7;">${g ? `+${g.score.toLocaleString()} pts` : ''}</div>
+                        <div style="font-size: 0.72rem; color: var(--brand-accent); font-weight: 700;">Total: ${p.total.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function refreshMpResultPins() {
+        if (!isRealMultiplayer() || !gameState.resultMap || !gameState.currentLocation) return;
+        if (gameState.mpPinLayer) gameState.mpPinLayer.remove();
+        gameState.mpPinLayer = L.layerGroup().addTo(gameState.resultMap);
+
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+        const actualLoc = [gameState.currentLocation.lat, gameState.currentLocation.lng];
+
+        getLobbyPlayers().forEach(p => {
+            const g = guesses[p.id];
+            if (p.id === me || !g || !g.guessLatLng) return;
+            const aura = getPlayerAura(p.id);
+            const guessLoc = [g.guessLatLng.lat, g.guessLatLng.lng];
+            const html = `
+                <div class="marker-player-pin">
+                    <div class="marker-pin-bubble" style="border-color: ${aura};">${renderAvatarHTML(p, '100%', '100%')}</div>
+                    <div class="marker-pin-point" style="border-top-color: ${aura};"></div>
+                    <div class="marker-pin-label" style="border-color: ${aura};">${escapeHTML(p.name)}: ${formatDistanceStr(g.dist)}</div>
+                </div>
+            `;
+            L.marker(guessLoc, {
+                icon: L.divIcon({ className: 'custom-leaflet-player-marker', html, iconSize: [40, 52], iconAnchor: [20, 50] })
+            }).addTo(gameState.mpPinLayer);
+            L.polyline([actualLoc, guessLoc], { color: aura, weight: 3, dashArray: '6,6', opacity: 0.85 }).addTo(gameState.mpPinLayer);
+        });
+    }
+
+    function sendLobbyEmote(text) {
+        if (LOBBY_EMOTES.includes(text)) sendRoomMessage({ type: 'LOBBY_EMOTE', emote: text });
+    }
+
+    function copyInviteLink() {
+        const code = gameState.roomCode;
+        const link = window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(code);
+        navigator.clipboard.writeText(link).then(() => {
+            showToast(`Room Link Copied! (${code})`);
+        }).catch(() => {
+            prompt('Copy this room link to send to friends:', link);
+        });
+    }
+
+    function leaveLobby() {
+        try { sessionStorage.removeItem('wanderpenh_room_' + gameState.roomCode); } catch {}
+        clearInterval(gameState.timerInterval);
+        teardownRoom();
+        gameState.isMultiplayer = false;
+        gameState.isHost = false;
+        gameState.roomCode = null;
+        gameState.matchPlan = null;
+        gameState.activeMatch = null;
+        const mpCard = document.getElementById('hud-mp-status-card');
+        if (mpCard) mpCard.style.display = 'none';
+
+        // Drop ?room= so a refresh doesn't rejoin the party
+        if (window.location.search) history.replaceState(null, '', window.location.pathname);
+
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('start-screen').classList.add('active');
+        renderModeCards();
+    }
+
+    // ============================================================
+    //  INITIALIZATION
+    // ============================================================
+    window.addEventListener('DOMContentLoaded', () => {
+        loadProfile();
+        renderModeCards();
+        document.getElementById('location-count').textContent = ALL_LOCATIONS.length;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        document.getElementById('join-code-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinMultiplayerLobby(); });
+        const room = urlParams.get('room');
+        if (room) {
+            document.getElementById('join-code-input').value = room;
+            joinMultiplayerLobby();
+        }
+    });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,810 @@
+{
+  "source": "© OpenStreetMap contributors",
+  "license": "ODbL 1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "sourceUrl": "https://www.openstreetmap.org",
+  "retrieved": "2026-10-29",
+  "coverage": "Named road geometry within central Phnom Penh; panorama availability is not guaranteed.",
+  "locations": [
+    {
+      "id": "osm_37183901",
+      "name": "Street 662",
+      "lat": 11.5524795,
+      "lng": 104.892326,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183901"
+    },
+    {
+      "id": "osm_1119795700",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.5589089,
+      "lng": 104.9013285,
+      "area": "Central Phnom Penh",
+      "osmWay": "1119795700"
+    },
+    {
+      "id": "osm_173113227",
+      "name": "Street 612",
+      "lat": 11.5758543,
+      "lng": 104.9033204,
+      "area": "Central Phnom Penh",
+      "osmWay": "173113227"
+    },
+    {
+      "id": "osm_197381905",
+      "name": "Street 430",
+      "lat": 11.5504574,
+      "lng": 104.8996128,
+      "area": "Central Phnom Penh",
+      "osmWay": "197381905"
+    },
+    {
+      "id": "osm_37356386",
+      "name": "Street 576",
+      "lat": 11.5794429,
+      "lng": 104.8902885,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356386"
+    },
+    {
+      "id": "osm_1191646386",
+      "name": "City Center Boulevard (169)",
+      "lat": 11.5780831,
+      "lng": 104.9101372,
+      "area": "Central Phnom Penh",
+      "osmWay": "1191646386"
+    },
+    {
+      "id": "osm_37183817",
+      "name": "Street 210",
+      "lat": 11.5587932,
+      "lng": 104.8943338,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183817"
+    },
+    {
+      "id": "osm_37356429",
+      "name": "Street 301",
+      "lat": 11.5758258,
+      "lng": 104.8964331,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356429"
+    },
+    {
+      "id": "osm_1457750806",
+      "name": "Street 138z",
+      "lat": 11.5658025,
+      "lng": 104.9037739,
+      "area": "Central Phnom Penh",
+      "osmWay": "1457750806"
+    },
+    {
+      "id": "osm_251157710",
+      "name": "Street 324",
+      "lat": 11.555051,
+      "lng": 104.898107,
+      "area": "Central Phnom Penh",
+      "osmWay": "251157710"
+    },
+    {
+      "id": "osm_1191646384",
+      "name": "Bulgaria Boulevard (Street 114)",
+      "lat": 11.5706291,
+      "lng": 104.9123382,
+      "area": "Central Phnom Penh",
+      "osmWay": "1191646384"
+    },
+    {
+      "id": "osm_37692022",
+      "name": "Street 326",
+      "lat": 11.5555179,
+      "lng": 104.9040501,
+      "area": "Central Phnom Penh",
+      "osmWay": "37692022"
+    },
+    {
+      "id": "osm_37183759",
+      "name": "Street 206",
+      "lat": 11.5606249,
+      "lng": 104.9052586,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183759"
+    },
+    {
+      "id": "osm_669055040",
+      "name": "Canadia (Street 284)",
+      "lat": 11.5538317,
+      "lng": 104.9129537,
+      "area": "Central Phnom Penh",
+      "osmWay": "669055040"
+    },
+    {
+      "id": "osm_1335900788",
+      "name": "Street 138",
+      "lat": 11.5652078,
+      "lng": 104.8948217,
+      "area": "Central Phnom Penh",
+      "osmWay": "1335900788"
+    },
+    {
+      "id": "osm_701462485",
+      "name": "Charles De Gaulle Boulevard (Street 217)",
+      "lat": 11.5581446,
+      "lng": 104.9089662,
+      "area": "Central Phnom Penh",
+      "osmWay": "701462485"
+    },
+    {
+      "id": "osm_29544666",
+      "name": "Street 140",
+      "lat": 11.5675866,
+      "lng": 104.917541,
+      "area": "Central Phnom Penh",
+      "osmWay": "29544666"
+    },
+    {
+      "id": "osm_225383463",
+      "name": "Street 269",
+      "lat": 11.5587411,
+      "lng": 104.8902948,
+      "area": "Central Phnom Penh",
+      "osmWay": "225383463"
+    },
+    {
+      "id": "osm_37183443",
+      "name": "Street 384",
+      "lat": 11.5500397,
+      "lng": 104.9064707,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183443"
+    },
+    {
+      "id": "osm_37356366",
+      "name": "Street 608",
+      "lat": 11.5795592,
+      "lng": 104.9045652,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356366"
+    },
+    {
+      "id": "osm_1302180190",
+      "name": "Preah Monivong Boulevard (Street 93)",
+      "lat": 11.5619248,
+      "lng": 104.9196322,
+      "area": "Central Phnom Penh",
+      "osmWay": "1302180190"
+    },
+    {
+      "id": "osm_1160013162",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.5632062,
+      "lng": 104.9009556,
+      "area": "Central Phnom Penh",
+      "osmWay": "1160013162"
+    },
+    {
+      "id": "osm_1170527661",
+      "name": "Ayasmayan South Street (102)",
+      "lat": 11.5731384,
+      "lng": 104.9095366,
+      "area": "Central Phnom Penh",
+      "osmWay": "1170527661"
+    },
+    {
+      "id": "osm_455131546",
+      "name": "Street 288",
+      "lat": 11.5533057,
+      "lng": 104.9175439,
+      "area": "Central Phnom Penh",
+      "osmWay": "455131546"
+    },
+    {
+      "id": "osm_686149443",
+      "name": "Samdach Penn Nouth Street (289)",
+      "lat": 11.5734453,
+      "lng": 104.8992737,
+      "area": "Central Phnom Penh",
+      "osmWay": "686149443"
+    },
+    {
+      "id": "osm_559965423",
+      "name": "Samdach Penn Nouth Street (289)",
+      "lat": 11.5789608,
+      "lng": 104.8998848,
+      "area": "Central Phnom Penh",
+      "osmWay": "559965423"
+    },
+    {
+      "id": "osm_529499145",
+      "name": "Street 566",
+      "lat": 11.5788417,
+      "lng": 104.8943687,
+      "area": "Central Phnom Penh",
+      "osmWay": "529499145"
+    },
+    {
+      "id": "osm_686150931",
+      "name": "Street 608",
+      "lat": 11.5721125,
+      "lng": 104.8949008,
+      "area": "Central Phnom Penh",
+      "osmWay": "686150931"
+    },
+    {
+      "id": "osm_37187063",
+      "name": "Street 112",
+      "lat": 11.5693774,
+      "lng": 104.9033798,
+      "area": "Central Phnom Penh",
+      "osmWay": "37187063"
+    },
+    {
+      "id": "osm_1127910086",
+      "name": "Ayasmayan West Street (113)",
+      "lat": 11.5762422,
+      "lng": 104.9069464,
+      "area": "Central Phnom Penh",
+      "osmWay": "1127910086"
+    },
+    {
+      "id": "osm_29544695",
+      "name": "Street 125",
+      "lat": 11.5598121,
+      "lng": 104.9167054,
+      "area": "Central Phnom Penh",
+      "osmWay": "29544695"
+    },
+    {
+      "id": "osm_37356457",
+      "name": "Street 323",
+      "lat": 11.5759491,
+      "lng": 104.8907008,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356457"
+    },
+    {
+      "id": "osm_651113974",
+      "name": "Street 227",
+      "lat": 11.5503007,
+      "lng": 104.8961091,
+      "area": "Central Phnom Penh",
+      "osmWay": "651113974"
+    },
+    {
+      "id": "osm_175005923",
+      "name": "Street 86",
+      "lat": 11.5774302,
+      "lng": 104.9152335,
+      "area": "Central Phnom Penh",
+      "osmWay": "175005923"
+    },
+    {
+      "id": "osm_652155302",
+      "name": "Street 257",
+      "lat": 11.5614779,
+      "lng": 104.8963725,
+      "area": "Central Phnom Penh",
+      "osmWay": "652155302"
+    },
+    {
+      "id": "osm_1110567027",
+      "name": "Street 132",
+      "lat": 11.572716,
+      "lng": 104.9043817,
+      "area": "Central Phnom Penh",
+      "osmWay": "1110567027"
+    },
+    {
+      "id": "osm_1482921041",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.5512792,
+      "lng": 104.9028687,
+      "area": "Central Phnom Penh",
+      "osmWay": "1482921041"
+    },
+    {
+      "id": "osm_1159507981",
+      "name": "Chey Chetha (Street 118)",
+      "lat": 11.5702597,
+      "lng": 104.9156994,
+      "area": "Central Phnom Penh",
+      "osmWay": "1159507981"
+    },
+    {
+      "id": "osm_711084672",
+      "name": "Jawaharlal Nehru Boulevard (Street 215)",
+      "lat": 11.5651652,
+      "lng": 104.9069752,
+      "area": "Central Phnom Penh",
+      "osmWay": "711084672"
+    },
+    {
+      "id": "osm_37356189",
+      "name": "Wat Koh Street",
+      "lat": 11.5650106,
+      "lng": 104.919968,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356189"
+    },
+    {
+      "id": "osm_1202667473",
+      "name": "Street 139",
+      "lat": 11.5669718,
+      "lng": 104.914505,
+      "area": "Central Phnom Penh",
+      "osmWay": "1202667473"
+    },
+    {
+      "id": "osm_37183451",
+      "name": "Street 318",
+      "lat": 11.5520263,
+      "lng": 104.910498,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183451"
+    },
+    {
+      "id": "osm_761921616",
+      "name": "Oknha Tep Phan (Street 182)",
+      "lat": 11.5621942,
+      "lng": 104.9136498,
+      "area": "Central Phnom Penh",
+      "osmWay": "761921616"
+    },
+    {
+      "id": "osm_237321387",
+      "name": "Street 159",
+      "lat": 11.5514025,
+      "lng": 104.9146724,
+      "area": "Central Phnom Penh",
+      "osmWay": "237321387"
+    },
+    {
+      "id": "osm_1160247607",
+      "name": "Samdech Preah Sihanouk Boulevard (Street 274)",
+      "lat": 11.5556906,
+      "lng": 104.9158511,
+      "area": "Central Phnom Penh",
+      "osmWay": "1160247607"
+    },
+    {
+      "id": "osm_655882446",
+      "name": "Samdech Preah Sihanouk Boulevard (Street 274)",
+      "lat": 11.5557496,
+      "lng": 104.9106322,
+      "area": "Central Phnom Penh",
+      "osmWay": "655882446"
+    },
+    {
+      "id": "osm_1158304113",
+      "name": "Street 261",
+      "lat": 11.567662,
+      "lng": 104.8933717,
+      "area": "Central Phnom Penh",
+      "osmWay": "1158304113"
+    },
+    {
+      "id": "osm_1159993944",
+      "name": "Czech Republic Boulevard (Street 169)",
+      "lat": 11.5680198,
+      "lng": 104.9112144,
+      "area": "Central Phnom Penh",
+      "osmWay": "1159993944"
+    },
+    {
+      "id": "osm_674194609",
+      "name": "Russian Federation Boulevard (Street 110)",
+      "lat": 11.5699335,
+      "lng": 104.9006526,
+      "area": "Central Phnom Penh",
+      "osmWay": "674194609"
+    },
+    {
+      "id": "osm_37356253",
+      "name": "Street 356",
+      "lat": 11.552696,
+      "lng": 104.9059648,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356253"
+    },
+    {
+      "id": "osm_1478894615",
+      "name": "Ayasmayan East Street",
+      "lat": 11.5786135,
+      "lng": 104.9127813,
+      "area": "Central Phnom Penh",
+      "osmWay": "1478894615"
+    },
+    {
+      "id": "osm_172370018",
+      "name": "Street 160",
+      "lat": 11.5624922,
+      "lng": 104.8939263,
+      "area": "Central Phnom Penh",
+      "osmWay": "172370018"
+    },
+    {
+      "id": "osm_37183626",
+      "name": "Street 234",
+      "lat": 11.5575861,
+      "lng": 104.9056,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183626"
+    },
+    {
+      "id": "osm_646830026",
+      "name": "Street 336",
+      "lat": 11.5545531,
+      "lng": 104.9006731,
+      "area": "Central Phnom Penh",
+      "osmWay": "646830026"
+    },
+    {
+      "id": "osm_37692130",
+      "name": "Street 362Z",
+      "lat": 11.5527099,
+      "lng": 104.8970713,
+      "area": "Central Phnom Penh",
+      "osmWay": "37692130"
+    },
+    {
+      "id": "osm_1162250060",
+      "name": "Samdach Penn Nouth Street (289)",
+      "lat": 11.5759654,
+      "lng": 104.899565,
+      "area": "Central Phnom Penh",
+      "osmWay": "1162250060"
+    },
+    {
+      "id": "osm_661684610",
+      "name": "Street 304",
+      "lat": 11.5515367,
+      "lng": 104.9193893,
+      "area": "Central Phnom Penh",
+      "osmWay": "661684610"
+    },
+    {
+      "id": "osm_713374995",
+      "name": "Jawaharlal Nehru Boulevard (Street 215)",
+      "lat": 11.5604132,
+      "lng": 104.9077736,
+      "area": "Central Phnom Penh",
+      "osmWay": "713374995"
+    },
+    {
+      "id": "osm_37183756",
+      "name": "Street 188",
+      "lat": 11.5622049,
+      "lng": 104.9032626,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183756"
+    },
+    {
+      "id": "osm_1381023550",
+      "name": "Street 618",
+      "lat": 11.573744,
+      "lng": 104.9021438,
+      "area": "Central Phnom Penh",
+      "osmWay": "1381023550"
+    },
+    {
+      "id": "osm_921468348",
+      "name": "Street 253",
+      "lat": 11.561131,
+      "lng": 104.898744,
+      "area": "Central Phnom Penh",
+      "osmWay": "921468348"
+    },
+    {
+      "id": "osm_1127910084",
+      "name": "Ayasmayan South Street (102)",
+      "lat": 11.5733807,
+      "lng": 104.9133578,
+      "area": "Central Phnom Penh",
+      "osmWay": "1127910084"
+    },
+    {
+      "id": "osm_918647989",
+      "name": "The Financial Street",
+      "lat": 11.5604586,
+      "lng": 104.9120669,
+      "area": "Central Phnom Penh",
+      "osmWay": "918647989"
+    },
+    {
+      "id": "osm_723557878",
+      "name": "Jawaharlal Nehru Boulevard (Street 215)",
+      "lat": 11.5675894,
+      "lng": 104.9066595,
+      "area": "Central Phnom Penh",
+      "osmWay": "723557878"
+    },
+    {
+      "id": "osm_1077925446",
+      "name": "Street 257",
+      "lat": 11.5675546,
+      "lng": 104.895733,
+      "area": "Central Phnom Penh",
+      "osmWay": "1077925446"
+    },
+    {
+      "id": "osm_1119795699",
+      "name": "Mao Tse Toung Boulevard (Street 245)",
+      "lat": 11.5654805,
+      "lng": 104.900699,
+      "area": "Central Phnom Penh",
+      "osmWay": "1119795699"
+    },
+    {
+      "id": "osm_340135893",
+      "name": "Street 81",
+      "lat": 11.5675571,
+      "lng": 104.91987,
+      "area": "Central Phnom Penh",
+      "osmWay": "340135893"
+    },
+    {
+      "id": "osm_1316293006",
+      "name": "Street 230",
+      "lat": 11.5569857,
+      "lng": 104.8970085,
+      "area": "Central Phnom Penh",
+      "osmWay": "1316293006"
+    },
+    {
+      "id": "osm_37692122",
+      "name": "Street 251",
+      "lat": 11.5523443,
+      "lng": 104.900892,
+      "area": "Central Phnom Penh",
+      "osmWay": "37692122"
+    },
+    {
+      "id": "osm_37692156",
+      "name": "Street 270",
+      "lat": 11.5567179,
+      "lng": 104.9003993,
+      "area": "Central Phnom Penh",
+      "osmWay": "37692156"
+    },
+    {
+      "id": "osm_37356445",
+      "name": "Street 602",
+      "lat": 11.5738252,
+      "lng": 104.8923049,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356445"
+    },
+    {
+      "id": "osm_685938508",
+      "name": "Street 315",
+      "lat": 11.5771592,
+      "lng": 104.8930705,
+      "area": "Central Phnom Penh",
+      "osmWay": "685938508"
+    },
+    {
+      "id": "osm_29544526",
+      "name": "Street 211",
+      "lat": 11.5640415,
+      "lng": 104.9087854,
+      "area": "Central Phnom Penh",
+      "osmWay": "29544526"
+    },
+    {
+      "id": "osm_644412402",
+      "name": "Oknha Ing Bunheov (Street 108)",
+      "lat": 11.571847,
+      "lng": 104.9171719,
+      "area": "Central Phnom Penh",
+      "osmWay": "644412402"
+    },
+    {
+      "id": "osm_1160400704",
+      "name": "Street 664",
+      "lat": 11.5504144,
+      "lng": 104.8923787,
+      "area": "Central Phnom Penh",
+      "osmWay": "1160400704"
+    },
+    {
+      "id": "osm_1077925447",
+      "name": "Kampuchea Krom Boulevard (Street 128)",
+      "lat": 11.5660583,
+      "lng": 104.8911927,
+      "area": "Central Phnom Penh",
+      "osmWay": "1077925447"
+    },
+    {
+      "id": "osm_919613431",
+      "name": "Street 265",
+      "lat": 11.5600885,
+      "lng": 104.8918753,
+      "area": "Central Phnom Penh",
+      "osmWay": "919613431"
+    },
+    {
+      "id": "osm_1160247620",
+      "name": "Preah Monivong Boulevard (Street 93)",
+      "lat": 11.5599092,
+      "lng": 104.9199382,
+      "area": "Central Phnom Penh",
+      "osmWay": "1160247620"
+    },
+    {
+      "id": "osm_1158258056",
+      "name": "Samdech Munireth Boulevard (Street 217)",
+      "lat": 11.556713,
+      "lng": 104.9074769,
+      "area": "Central Phnom Penh",
+      "osmWay": "1158258056"
+    },
+    {
+      "id": "osm_37183897",
+      "name": "Street 664",
+      "lat": 11.5515577,
+      "lng": 104.8944752,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183897"
+    },
+    {
+      "id": "osm_652403383",
+      "name": "Street 592",
+      "lat": 11.5743548,
+      "lng": 104.8950109,
+      "area": "Central Phnom Penh",
+      "osmWay": "652403383"
+    },
+    {
+      "id": "osm_1160296682",
+      "name": "Preah Monivong Boulevard (Street 93)",
+      "lat": 11.5692399,
+      "lng": 104.9186348,
+      "area": "Central Phnom Penh",
+      "osmWay": "1160296682"
+    },
+    {
+      "id": "osm_29544698",
+      "name": "Street 143",
+      "lat": 11.5580628,
+      "lng": 104.9157889,
+      "area": "Central Phnom Penh",
+      "osmWay": "29544698"
+    },
+    {
+      "id": "osm_172117023",
+      "name": "Street 134Z",
+      "lat": 11.566809,
+      "lng": 104.9084948,
+      "area": "Central Phnom Penh",
+      "osmWay": "172117023"
+    },
+    {
+      "id": "osm_664968079",
+      "name": "Charles De Gaulle Boulevard (Street 217)",
+      "lat": 11.5596832,
+      "lng": 104.9102329,
+      "area": "Central Phnom Penh",
+      "osmWay": "664968079"
+    },
+    {
+      "id": "osm_37187059",
+      "name": "Street 233",
+      "lat": 11.5668898,
+      "lng": 104.9020709,
+      "area": "Central Phnom Penh",
+      "osmWay": "37187059"
+    },
+    {
+      "id": "osm_1160272292",
+      "name": "Rue Ung Po Kun (Street 109)",
+      "lat": 11.5649775,
+      "lng": 104.9179826,
+      "area": "Central Phnom Penh",
+      "osmWay": "1160272292"
+    },
+    {
+      "id": "osm_614018418",
+      "name": "Czech Republic Boulevard (Street 169)",
+      "lat": 11.5633375,
+      "lng": 104.9120584,
+      "area": "Central Phnom Penh",
+      "osmWay": "614018418"
+    },
+    {
+      "id": "osm_1304720753",
+      "name": "Street 161",
+      "lat": 11.5604043,
+      "lng": 104.9143136,
+      "area": "Central Phnom Penh",
+      "osmWay": "1304720753"
+    },
+    {
+      "id": "osm_1159860694",
+      "name": "Rachana Street (616)",
+      "lat": 11.5749373,
+      "lng": 104.9101745,
+      "area": "Central Phnom Penh",
+      "osmWay": "1159860694"
+    },
+    {
+      "id": "osm_37183632",
+      "name": "Street 202",
+      "lat": 11.5607935,
+      "lng": 104.9012415,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183632"
+    },
+    {
+      "id": "osm_29570181",
+      "name": "Street 304",
+      "lat": 11.5514724,
+      "lng": 104.9171187,
+      "area": "Central Phnom Penh",
+      "osmWay": "29570181"
+    },
+    {
+      "id": "osm_37183902",
+      "name": "Street 656",
+      "lat": 11.5530197,
+      "lng": 104.8905094,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183902"
+    },
+    {
+      "id": "osm_1189580260",
+      "name": "Street 173",
+      "lat": 11.5520522,
+      "lng": 104.9124013,
+      "area": "Central Phnom Penh",
+      "osmWay": "1189580260"
+    },
+    {
+      "id": "osm_37356428",
+      "name": "Street 590",
+      "lat": 11.5741512,
+      "lng": 104.89724,
+      "area": "Central Phnom Penh",
+      "osmWay": "37356428"
+    },
+    {
+      "id": "osm_1120006744",
+      "name": "Sena Pramuk Kim Il Sung Boulevard (Street 289)",
+      "lat": 11.5714301,
+      "lng": 104.8995745,
+      "area": "Central Phnom Penh",
+      "osmWay": "1120006744"
+    },
+    {
+      "id": "osm_550110433",
+      "name": "Oknha Tep Phan (Street 182)",
+      "lat": 11.5622035,
+      "lng": 104.9171166,
+      "area": "Central Phnom Penh",
+      "osmWay": "550110433"
+    },
+    {
+      "id": "osm_789928295",
+      "name": "Central Park Boulevard (566)",
+      "lat": 11.577963,
+      "lng": 104.9063402,
+      "area": "Central Phnom Penh",
+      "osmWay": "789928295"
+    },
+    {
+      "id": "osm_1328540848",
+      "name": "Bulgaria Boulevard (Street 114)",
+      "lat": 11.5703921,
+      "lng": 104.9105487,
+      "area": "Central Phnom Penh",
+      "osmWay": "1328540848"
+    },
+    {
+      "id": "osm_37183453",
+      "name": "Street 298",
+      "lat": 11.5537642,
+      "lng": 104.9102068,
+      "area": "Central Phnom Penh",
+      "osmWay": "37183453"
+    }
+  ]
+}

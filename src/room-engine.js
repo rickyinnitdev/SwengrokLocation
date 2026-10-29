@@ -1,0 +1,162 @@
+import { locations, modes } from '../.generated/game-data.js';
+
+export const MAX_PLAYERS = 8;
+export const GRACE_MS = 30000;
+const ROOM_TTL = 2 * 60 * 60 * 1000;
+export const EMOTES = ['🛵 Vroom!', '📍 Easy spot!', '🤔 No clue!', '🔥 Ready!', '👑 GG!'];
+const clean = (s, fallback, n = 60) => typeof s === 'string' ? s.replace(/[<>\x00-\x1f]/g, '').trim().slice(0, n) || fallback : fallback;
+export function profile(p = {}) {
+  // Preserve only small, primitive avatar fields. The client validates their values.
+  const avatarConfig = {};
+  if (p?.avatarConfig && typeof p.avatarConfig === 'object') {
+    for (const [k, v] of Object.entries(p.avatarConfig).slice(0, 16)) {
+      if (typeof v === 'string') avatarConfig[clean(k, '', 30)] = clean(v, '', 40);
+    }
+  }
+  return { name: clean(p?.name, 'Explorer', 24), title: clean(p?.title, 'Explorer'), avatarType: 'custom', avatarConfig };
+}
+export function randomInt(n) {
+  // Rejection sampling avoids modulo bias in both shuffles and headings.
+  const limit = Math.floor(0x100000000 / n) * n;
+  let value;
+  do { value = crypto.getRandomValues(new Uint32Array(1))[0]; } while (value >= limit);
+  return value % n;
+}
+export function shuffled(array) {
+  const copy = [...array];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+export function distance(a, b) {
+  const rad = Math.PI / 180;
+  const t = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lng - a.lng) * rad / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(t), Math.sqrt(Math.max(0, 1 - t)));
+}
+export function initialState() {
+  return { players: [], hostId: null, mode: 'classic', match: null, recent: [], updatedAt: 0 };
+}
+export class RoomEngine {
+  constructor(state = initialState()) { this.state = state; }
+  join({ create, token, profile: p, mode }, now = Date.now()) {
+    const s = this.state;
+    let player = token && s.players.find(p => p.token === token);
+    if (!player) {
+      if (!s.players.length && !create) throw new Error('Room not found. Check the code with your friend.');
+      if (s.players.length && create) throw new Error('ROOM_EXISTS');
+      if (s.match && s.match.phase !== 'final') throw new Error('This match has started. Join the next party.');
+      if (s.players.length >= MAX_PLAYERS) throw new Error('This party is full (8 players).');
+      player = { id: crypto.randomUUID(), token: crypto.randomUUID(), profile: profile(p), connected: true, leftAt: null };
+      s.players.push(player);
+      if (!s.hostId) { s.hostId = player.id; s.mode = Object.hasOwn(modes, mode) ? mode : 'classic'; }
+    }
+    player.connected = true;
+    player.leftAt = null;
+    s.updatedAt = now;
+    return player;
+  }
+  pool() { return modes[this.state.mode].pool === 'landmarks' ? locations.landmarks : Object.values(locations).flat(); }
+  makePlan() {
+    const s = this.state, count = modes[s.mode].rounds;
+    const pool = this.pool();
+    const unseen = pool.filter(l => !s.recent.includes(l.id));
+    const picks = [...shuffled(unseen), ...shuffled(pool.filter(l => s.recent.includes(l.id)))].slice(0, count);
+    s.recent = [...s.recent, ...picks.map(l => l.id)].slice(-Math.min(80, pool.length - count));
+    return picks.map(l => ({ id: l.id, heading: randomInt(360) }));
+  }
+  startRound(now) {
+    const m = this.state.match;
+    m.startedAt = now + 800;
+    m.deadline = m.startedAt + modes[this.state.mode].time * 1000;
+    m.ready = [];
+  }
+  handle(id, msg, now = Date.now()) {
+    const s = this.state, p = s.players.find(p => p.id === id);
+    if (!p || !p.connected || !msg || typeof msg !== 'object') return;
+    s.updatedAt = now;
+    if (msg.type === 'SET_MODE') {
+      if (id !== s.hostId || s.match || !Object.hasOwn(modes, msg.mode)) return;
+      s.mode = msg.mode;
+    } else if (msg.type === 'START_MATCH') {
+      if (id !== s.hostId || s.match || s.players.filter(p => p.connected).length < 2 || s.players.some(p => !p.connected)) return;
+      s.match = { id: crypto.randomUUID(), phase: 'playing', plan: this.makePlan(), round: 1, guesses: {}, ready: [], swaps: 0 };
+      this.startRound(now);
+    } else if (msg.type === 'REMATCH') {
+      if (id === s.hostId && s.match?.phase === 'final') s.match = null;
+    } else if (msg.type === 'PLAYER_GUESS') {
+      const m = s.match;
+      if (!m || m.phase !== 'playing' || msg.matchId !== m.id || msg.round !== m.round || now < m.startedAt) return;
+      this.guess(id, msg.guessLatLng, now);
+    } else if (msg.type === 'ROUND_READY') {
+      const m = s.match;
+      if (!m || msg.matchId !== m.id || msg.round !== m.round || !m.guesses[m.round]?.[id]) return;
+      if (!m.ready.includes(id)) m.ready.push(id);
+      this.advance(now);
+    } else if (msg.type === 'SKIP_LOCATION') {
+      const m = s.match;
+      if (id !== s.hostId || !m || m.phase !== 'playing' || Object.keys(m.guesses[m.round] || {}).length || m.swaps >= 5) return;
+      const unused = this.pool().filter(l => !m.plan.some(r => r.id === l.id) && !s.recent.includes(l.id));
+      if (!unused.length) return;
+      const next = unused[randomInt(unused.length)];
+      m.plan[m.round - 1] = { id: next.id, heading: randomInt(360) };
+      s.recent = [...s.recent, next.id].slice(-80);
+      m.swaps++;
+      this.startRound(now);
+    }
+  }
+  guess(id, ll, now) {
+    const s = this.state, m = s.match, cfg = modes[s.mode];
+    const round = m.guesses[m.round] ||= {};
+    if (round[id]) return;
+    const valid = ll && typeof ll.lat === 'number' && typeof ll.lng === 'number' && Number.isFinite(ll.lat) && Number.isFinite(ll.lng) && Math.abs(ll.lat) <= 90 && Math.abs(ll.lng) <= 180 && now <= m.deadline;
+    const point = valid ? { lat: ll.lat, lng: ll.lng } : null;
+    const target = Object.values(locations).flat().find(l => l.id === m.plan[m.round - 1].id);
+    const dist = point ? distance(target, point) : null;
+    const elapsed = Math.max(0, Math.min(cfg.time, (now - m.startedAt) / 1000));
+    const distScore = dist === null ? 0 : dist <= 25 ? 5000 : Math.round(5000 * Math.exp(-dist / 1500));
+    const speedBonus = point ? Math.round(Math.max(0, 1 - elapsed / cfg.time) * 1000) * (s.mode === 'sprint' ? 2 : 1) : 0;
+    const bountyBonus = cfg.isBounty && dist !== null && dist < 200 ? 500 : 0;
+    round[id] = { playerId: id, round: m.round, dist, elapsed, distScore, speedBonus, bountyBonus, score: distScore + speedBonus + bountyBonus, guessLatLng: point };
+    if (cfg.isBounty && point) m.deadline = Math.min(m.deadline, now + 15000);
+  }
+  advance(now) {
+    const s = this.state, m = s.match;
+    if (!m || m.phase !== 'playing' || !s.players.length || !s.players.every(p => m.ready.includes(p.id))) return;
+    if (m.round >= modes[s.mode].rounds) m.phase = 'final';
+    else { m.round++; this.startRound(now); }
+  }
+  disconnect(id, now = Date.now(), explicit = false) {
+    const s = this.state, p = s.players.find(p => p.id === id);
+    if (!p) return;
+    p.connected = false;
+    p.leftAt = explicit ? now - GRACE_MS : now;
+    this.tick(now);
+  }
+  tick(now = Date.now()) {
+    const s = this.state;
+    s.players = s.players.filter(p => p.connected || p.leftAt + GRACE_MS > now);
+    if (!s.players.some(p => p.id === s.hostId)) s.hostId = s.players.find(p => p.connected)?.id || s.players[0]?.id || null;
+    if (!s.players.length || (s.updatedAt && now - s.updatedAt > ROOM_TTL)) {
+      this.state = initialState();
+      return;
+    }
+    const m = s.match;
+    if (m?.phase === 'playing' && now >= m.deadline) {
+      for (const p of s.players) this.guess(p.id, null, now);
+    }
+    this.advance(now);
+  }
+  nextAlarm(now = Date.now()) {
+    const s = this.state;
+    const deadlines = s.players.filter(p => !p.connected).map(p => p.leftAt + GRACE_MS);
+    if (s.match?.phase === 'playing' && s.match.deadline > now) deadlines.push(s.match.deadline + 1);
+    if (s.players.length) deadlines.push(s.updatedAt + ROOM_TTL);
+    return deadlines.length ? Math.max(now + 1, Math.min(...deadlines)) : null;
+  }
+  snapshot() {
+    const s = this.state;
+    return { hostId: s.hostId, mode: s.mode, players: s.players.map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId })), match: s.match };
+  }
+}
