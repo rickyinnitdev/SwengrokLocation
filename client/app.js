@@ -250,3 +250,217 @@
     }
 
     // ============================================================
+    //  PROFILE & AVATAR STATE
+    // ============================================================
+    let userProfile = {
+        name: 'Explorer',
+        title: 'Daun Penh Tuk-Tuk Master',
+        avatarType: 'custom',
+        avatarConfig: {
+            hairStyle: 'fluffy',
+            hairColor: '#261b2b',
+            eyeStyle: 'chill',
+            mouthStyle: 'neutral',
+            jacketStyle: 'cardigan',
+            jacketColor: '#38bdf8',
+            shirtColor: '#ffffff',
+            bg: '#fed049',
+            squiggles: 'electric',
+            earrings: 'hoops',
+            skinColor: '#fee0d2',
+            blush: true
+        },
+        aura: '#f59e0b',
+        auraGlow: 'rgba(245,158,11,0.5)'
+    };
+
+    function renderAvatarHTML(profile, width = '100%', height = '100%') {
+        if (!profile) return '🛵';
+        if (profile.avatarType === 'image') {
+            return `<img src="avatar_default.png" alt="" style="width:${width};height:${height};object-fit:cover;border-radius:50%;display:block;">`;
+        }
+        if (typeof generateAvatarSVG === 'function') {
+            return generateAvatarSVG(profile.avatarConfig || AVATAR_DEFAULTS);
+        }
+        return '🛵';
+    }
+
+    function loadProfile() {
+        try {
+            const saved = localStorage.getItem('wanderpenh_profile');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                userProfile = { ...userProfile, ...parsed };
+                if (parsed.avatarConfig) {
+                    userProfile.avatarConfig = { ...AVATAR_DEFAULTS, ...parsed.avatarConfig };
+                }
+            }
+        } catch (e) {}
+        updateProfileUI();
+    }
+
+    function updateProfileUI() {
+        document.getElementById('home-profile-name').textContent = userProfile.name;
+        document.getElementById('home-profile-title').textContent = userProfile.title;
+        const circle = document.getElementById('home-avatar-circle');
+        if (circle) circle.innerHTML = renderAvatarHTML(userProfile, '100%', '100%');
+
+        const hudAvatar = document.getElementById('hud-player-avatar');
+        if (hudAvatar) hudAvatar.innerHTML = renderAvatarHTML(userProfile, '100%', '100%');
+        const hudName = document.getElementById('hud-player-name');
+        if (hudName) hudName.textContent = userProfile.name;
+    }
+
+    // Character Studio Config Options
+    const STUDIO_OPTIONS = {
+        hair: [
+            { id: 'fluffy', label: 'Fluffy Curls' },
+            { id: 'spiky', label: 'Spiky Anime' },
+            { id: 'beanie', label: 'Cozy Beanie' },
+            { id: 'cap', label: 'Street Cap' }
+        ],
+        hairColor: [
+            { id: '#261b2b', label: 'Obsidian', color: '#261b2b' },
+            { id: '#4a2810', label: 'Chestnut', color: '#4a2810' },
+            { id: '#d97706', label: 'Caramel', color: '#d97706' },
+            { id: '#0284c7', label: 'Electric Blue', color: '#0284c7' },
+            { id: '#db2777', label: 'Sakura Pink', color: '#db2777' },
+            { id: '#f1f5f9', label: 'Frost White', color: '#f1f5f9' }
+        ],
+        jacket: [
+            { id: 'cardigan', label: 'Cardigan' },
+            { id: 'hoodie', label: 'Hoodie' },
+            { id: 'bomber', label: 'Bomber' }
+        ],
+        jacketColor: [
+            { id: '#38bdf8', label: 'Sky Marine', color: '#38bdf8' },
+            { id: '#f59e0b', label: 'Gold Amber', color: '#f59e0b' },
+            { id: '#10b981', label: 'Emerald', color: '#10b981' },
+            { id: '#f43f5e', label: 'Rose Pop', color: '#f43f5e' },
+            { id: '#8b5cf6', label: 'Royal Violet', color: '#8b5cf6' },
+            { id: '#1e293b', label: 'Charcoal', color: '#1e293b' }
+        ],
+        squiggles: [
+            { id: 'electric', label: '⚡ Sparks' },
+            { id: 'question', label: '❓ Lost' },
+            { id: 'sparkles', label: '✨ Stars' },
+            { id: 'sweat', label: '💧 Sweat' },
+            { id: 'none', label: 'Clean' }
+        ],
+        eye: [
+            { id: 'chill', label: 'Unbothered' },
+            { id: 'happy', label: 'Joyful' },
+            { id: 'curious', label: 'Curious' },
+            { id: 'smug', label: 'Smug Wink' },
+            { id: 'shades', label: 'Sunglasses' }
+        ]
+    };
+
+    let activeStudioTab = 'hair';
+    let editingAvatar = null;
+
+    function openProfileModal() {
+        if (isRealMultiplayer() && serverMatch) { showToast(t('toast.customizeBetween')); return; }
+        document.getElementById('profile-name-input').value = userProfile.name;
+        document.getElementById('profile-title-select').value = userProfile.title;
+
+        editingAvatar = {
+            avatarType: userProfile.avatarType || 'custom',
+            avatarConfig: { ...(userProfile.avatarConfig || AVATAR_DEFAULTS) }
+        };
+
+        switchStudioTab('hair');
+        updateStudioPreview();
+        document.getElementById('profile-modal').classList.add('active');
+    }
+
+    function switchStudioTab(tab) {
+        activeStudioTab = tab;
+        document.querySelectorAll('.studio-tab-btn').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('onclick').includes(`'${tab}'`));
+        });
+
+        const container = document.getElementById('studio-picker-container');
+        if (!container) return;
+
+        const options = STUDIO_OPTIONS[tab] || [];
+        if (tab === 'hairColor' || tab === 'jacketColor') {
+            container.style.display = 'flex';
+            container.style.flexWrap = 'wrap';
+            container.style.gap = '12px';
+            const curVal = tab === 'hairColor' ? editingAvatar.avatarConfig.hairColor : editingAvatar.avatarConfig.jacketColor;
+            container.innerHTML = options.map(opt => `
+                <div class="color-swatch-opt ${curVal === opt.id ? 'selected' : ''}" style="background: ${opt.color};" onclick="setStudioOption('${tab}', '${opt.id}')" title="${opt.label}"></div>
+            `).join('');
+        } else {
+            container.style.display = 'grid';
+            let curVal = '';
+            if (tab === 'hair') curVal = editingAvatar.avatarConfig.hairStyle;
+            else if (tab === 'jacket') curVal = editingAvatar.avatarConfig.jacketStyle;
+            else if (tab === 'squiggles') curVal = editingAvatar.avatarConfig.squiggles;
+            else if (tab === 'eye') curVal = editingAvatar.avatarConfig.eyeStyle;
+
+            container.innerHTML = options.map(opt => `
+                <div class="studio-opt-btn ${curVal === opt.id ? 'selected' : ''}" onclick="setStudioOption('${tab}', '${opt.id}')">
+                    <span>${opt.label}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    function setStudioOption(tab, val) {
+        if (!editingAvatar) return;
+        if (tab === 'hair') editingAvatar.avatarConfig.hairStyle = val;
+        else if (tab === 'hairColor') editingAvatar.avatarConfig.hairColor = val;
+        else if (tab === 'jacket') editingAvatar.avatarConfig.jacketStyle = val;
+        else if (tab === 'jacketColor') editingAvatar.avatarConfig.jacketColor = val;
+        else if (tab === 'squiggles') editingAvatar.avatarConfig.squiggles = val;
+        else if (tab === 'eye') editingAvatar.avatarConfig.eyeStyle = val;
+
+        playBeep(580, 'sine', 0.05);
+        updateStudioPreview();
+        switchStudioTab(tab);
+    }
+
+    function randomizeCharacter() {
+        if (!editingAvatar) return;
+        const rand = (arr) => arr[Math.floor(Math.random() * arr.length)].id;
+        editingAvatar.avatarConfig.hairStyle = rand(STUDIO_OPTIONS.hair);
+        editingAvatar.avatarConfig.hairColor = rand(STUDIO_OPTIONS.hairColor);
+        editingAvatar.avatarConfig.jacketStyle = rand(STUDIO_OPTIONS.jacket);
+        editingAvatar.avatarConfig.jacketColor = rand(STUDIO_OPTIONS.jacketColor);
+        editingAvatar.avatarConfig.squiggles = rand(STUDIO_OPTIONS.squiggles);
+        editingAvatar.avatarConfig.eyeStyle = rand(STUDIO_OPTIONS.eye);
+
+        playBeep(720, 'triangle', 0.08);
+        updateStudioPreview();
+        switchStudioTab(activeStudioTab);
+    }
+
+    function updateStudioPreview() {
+        const preview = document.getElementById('studio-avatar-preview');
+        if (preview && editingAvatar) {
+            preview.innerHTML = renderAvatarHTML(editingAvatar, '100%', '100%');
+        }
+    }
+
+    function saveProfile() {
+        userProfile.name = document.getElementById('profile-name-input').value.trim() || 'Explorer';
+        userProfile.title = document.getElementById('profile-title-select').value;
+        if (editingAvatar) {
+            userProfile.avatarConfig = { ...editingAvatar.avatarConfig };
+        }
+        try { localStorage.setItem('wanderpenh_profile', JSON.stringify(userProfile)); } catch {}
+        if (isRealMultiplayer() && !serverMatch && roomReady) sendRoomMessage({ type: 'UPDATE_PROFILE', profile: sanitizeProfile(userProfile) });
+        updateProfileUI();
+        closeModal('profile-modal');
+        playSuccessChime();
+        showToast(t('toast.profileSaved'));
+    }
+
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+    }
+
+    // ============================================================
