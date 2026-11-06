@@ -950,3 +950,320 @@ select {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ==========================================================================
+   GAME
+   ========================================================================== */
+#game-screen { background: #0d1414; }
+#streetview-container { position: absolute; inset: 0; background: #0d1414; }
+#streetview-iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+#hud-top {
+  position: absolute;
+  top: var(--safe-top);
+  left: 12px;
+  right: 12px;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  pointer-events: none;
+}
+.hud-group { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; pointer-events: auto; }
+.hud-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--card);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  padding: 5px 11px;
+  min-height: 38px;
+  box-shadow: var(--hard-sm);
+  font-size: 0.85rem;
+}
+.hud-label { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2); }
+.hud-value { font-size: 1rem; font-weight: 800; }
+.timer-card {
+  pointer-events: auto;
+  background: var(--gold);
+  color: var(--on-gold);
+  padding: 5px 13px 5px 7px;
+  gap: 6px;
+  min-height: 44px;
+}
+.timer-ring-box { width: 28px; height: 28px; }
+.timer-ring-svg { width: 28px; height: 28px; transform: rotate(-90deg); }
+.timer-ring-circle { transition: stroke-dashoffset 1s linear; }
+.timer-val { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.hud-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  padding: 7px 11px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: var(--hard-sm);
+}
+.hud-tool-btn.btn-alert { background: var(--lotus); color: #fff; }
+
+/* Leaflet's default 30px zoom buttons are too small for thumbs. */
+.leaflet-bar a.leaflet-control-zoom-in,
+.leaflet-bar a.leaflet-control-zoom-out {
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  font-size: 1.15rem;
+}
+.hud-player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  padding: 2px 7px 2px 2px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+.hud-player-chip.guessed { background: color-mix(in srgb, var(--rice) 32%, var(--card)); }
+.hud-player-chip-avatar { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; background: var(--gold); flex: none; }
+
+/* the map sheet */
+#map-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border: 2.5px solid var(--line);
+  border-bottom: 0;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 0 rgba(34, 51, 49, 0.14);
+  transform: translateY(calc(100% - var(--sheet-peek)));
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  touch-action: none;
+}
+#map-panel[data-state='half'] { transform: translateY(40%); }
+#map-panel[data-state='full'] { transform: translateY(0); }
+
+.sheet-handle {
+  min-height: 44px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: grab;
+  background: transparent;
+  border: 0;
+  width: 100%;
+  color: var(--ink-2);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sheet-handle::before {
+  content: '';
+  width: 46px;
+  height: 5px;
+  border-radius: 4px;
+  background: var(--line);
+  opacity: 0.55;
+}
+.sheet-handle:active { cursor: grabbing; }
+
+#mode-choice-shelf {
+  flex: none;
+  padding: 6px 12px 10px;
+  border-bottom: 2px dashed color-mix(in srgb, var(--line) 30%, transparent);
+}
+.choice-shelf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 7px;
+}
+#mode-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; max-height: 130px; overflow-y: auto; }
+.choice-opt-btn {
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  min-height: 44px;
+  padding: 5px 8px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+}
+.choice-opt-btn.selected { background: var(--gold); color: var(--on-gold); }
+
+#map-wrapper { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+#guess-map { position: absolute; inset: 0; background: var(--paper-2); }
+.map-floating-bar {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  right: 9px;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.map-tool-pill {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  min-height: 44px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: var(--hard-sm);
+}
+#map-pin-status {
+  pointer-events: auto;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 6px 11px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  box-shadow: var(--hard-sm);
+}
+#map-pin-status.placed { background: var(--rice); color: #08240f; }
+#guess-action-bar {
+  flex: none;
+  padding: 10px 12px calc(10px + var(--safe-bottom));
+  background: var(--card);
+  border-top: 2px solid var(--line);
+}
+#guess-btn {
+  width: 100%;
+  min-height: 54px;
+  border: 2.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper-2);
+  color: var(--ink-2);
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: var(--hard-sm);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+#guess-btn.ready { background: var(--gold); color: var(--on-gold); }
+#guess-btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+
+/* markers */
+.marker-pin-guess {
+  width: 20px;
+  height: 20px;
+  border-radius: 50% 50% 50% 0;
+  background: var(--gold);
+  border: 2.5px solid var(--ink);
+  transform: rotate(-45deg);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.25);
+}
+.marker-pin-actual {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--rice);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.marker-player-pin { position: relative; width: 40px; height: 52px; }
+.marker-pin-bubble {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2.5px solid;
+  overflow: hidden;
+  background: var(--gold);
+  display: grid;
+  place-items: center;
+}
+.marker-pin-point {
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 11px solid;
+  margin: -2px auto 0;
+}
+.marker-pin-label {
+  position: absolute;
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  border: 1.5px solid;
+  border-radius: 8px;
+  background: #fff;
+  color: #223331;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 5px;
+}
+
+/* desktop split */
+@media (min-width: 900px) {
+  #game-screen.active { display: grid; grid-template-columns: 1fr 10px var(--map-width); }
+  #streetview-container { position: relative; inset: auto; grid-column: 1; height: 100dvh; }
+  #hud-top { right: calc(var(--map-width) + 22px); }
+  #map-panel {
+    position: relative;
+    inset: auto;
+    grid-column: 3;
+    height: 100dvh;
+    border: 0;
+    border-left: 2.5px solid var(--line);
+    border-radius: 0;
+    transform: none !important;
+    box-shadow: none;
+    touch-action: auto;
+    transition: none;
+  }
+  .sheet-handle { display: none; }
+  #map-resizer {
+    display: block;
+    grid-column: 2;
+    background: var(--ink);
+    cursor: col-resize;
+    position: relative;
+  }
+  #map-resizer::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 2px;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 38px;
+    border-radius: 4px;
+    background: var(--paper);
+    opacity: 0.5;
+  }
+}
+#map-resizer { display: none; }
+
+/* ==========================================================================
