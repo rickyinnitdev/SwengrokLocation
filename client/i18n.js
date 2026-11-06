@@ -201,3 +201,255 @@ const en = {
   'game.orTapMap': 'or tap the map'
 };
 
+const km = {
+  'app.name': 'វ៉ាន់ឌើរពេញ',
+  'app.kicker': 'ហ្គេមផ្លូវភ្នំពេញ',
+  'nav.play': 'លេង',
+  'nav.party': 'លេងជាក្រុម',
+  'nav.ranked': 'ចំណាត់ថ្នាក់',
+  'nav.howto': 'របៀបលេង',
+  'nav.sound': 'សំឡេង',
+  'nav.profile': 'មុខរូប',
+  'nav.region': 'តំបន់',
+
+  'doors.kicker': 'ជ្រើសទ្វារ',
+  'doors.title': 'ទៅណា?',
+  'doors.lead': 'ចាប់ផ្តើមក្នុងទីក្រុងរបស់អ្នក ឬចេញរុករកពិភពលោកទាំងមូល។',
+  'doors.kh.name': 'ក្នុងស្រុក',
+  'doors.kh.desc': 'ផ្លូវភ្នំពេញ សម្គាល់ដី ខណ្ឌ និងអង្គរ។',
+  'doors.world.name': 'ជុំវិញពិភពលោក',
+  'doors.world.desc': 'ផែនទីពិភពលោក ទង់ជាតិ និងអាស៊ី។',
+  'doors.continue': 'បន្ត',
+  'doors.saved': 'អ្នកអាចប្តូរតំបន់បានគ្រប់ពេលពីផ្នែកខាងលើ។',
+
+  'home.hello': 'សូមស្វាគមន៍',
+  'home.lead': 'អានផ្លូវ។ ដាក់ម្ជុល។ ឈ្នះមិត្តភក្តិ។',
+  'home.playNow': 'លេងឥឡូវ',
+  'home.playNowSub': 'ជីពចរទីក្រុង · ៥ វគ្គ · ៦០ វិនាទី',
+  'home.party': 'លេងជាមួយមិត្តភក្តិ',
+  'home.partySub': 'បន្ទប់ឯកជន ដោយគ្មានការចូលគណនី',
+  'home.join': 'ចូលបន្ទប់',
+  'home.joinSub': 'មានលេខកូដហើយ? ចូលភ្លាម។',
+  'home.joinPlaceholder': 'WP-XXXXX',
+  'home.joinButton': 'ចូល',
+  'home.ranked': 'ចំណាត់ថ្នាក់',
+  'home.rankedSub': 'ការលេងដែលគណនាដោយម៉ាស៊ីនមេ',
+  'home.rankedSoon': 'ឆាប់ៗនេះ',
+  'home.featured': 'ហ្គេមពេញនិយម',
+  'home.more': 'ហ្គេមផ្សេងទៀត',
+  'home.less': 'បិទហ្គេមបន្ថែម',
+  'home.locations': 'ទីតាំង {n} ក្នុងសន្លឹកបៀ',
+  'home.inRegion': 'នៅ {region}',
+  'home.switchRegion': 'ប្តូរតំបន់',
+  'home.size': 'កន្លែងក្នុងសន្លឹកបៀ',
+
+  'mode.play': 'លេង',
+  'mode.playParty': 'លេងជាក្រុម',
+  'mode.rounds': '{n} វគ្គ',
+  'mode.perRound': '{n} វិនាទី/វគ្គ',
+  'mode.difficulty': 'កម្រិត',
+  'mode.beginner': 'ងាយ',
+  'mode.medium': 'មធ្យម',
+  'mode.hard': 'ខ្លាំង',
+  'mode.featured': 'ពិសេស',
+
+  'party.title': 'បន្ទប់ក្រុម',
+  'party.lead': 'លេងជាមួយមិត្តភក្តិលើទីតាំងដូចគ្នា។ គ្មានចូលគណនី គ្មានទាញយក។',
+  'party.create': 'បង្កើតបន្ទប់',
+  'party.join': 'ចូលបន្ទប់',
+  'party.code': 'លេខកូដបន្ទប់',
+  'party.mode': 'ហ្គេម',
+  'party.hostPicks': 'ម្ចាស់បន្ទប់ជ្រើស',
+  'party.copy': 'ចម្លងតំណ',
+  'party.telegram': 'Telegram',
+  'party.share': 'ចែករំលែក',
+  'party.shareText': 'ចូលរួមបន្ទប់ WanderPenh របស់ខ្ញុំ — {code}',
+  'party.leave': 'ចាកចេញ',
+  'party.players': 'អ្នកលេងដែលបានភ្ជាប់',
+  'party.waiting': 'បន្ទប់រង់ចាំ',
+  'party.shareCode': 'ចែករំលែកលេខកូដនេះជាមួយមិត្តភក្តិ',
+  'party.start': 'ចាប់ផ្តើម',
+  'party.needTwo': 'ត្រូវការយ៉ាងតិចអ្នកលេង ២ នាក់។',
+  'party.orJoin': 'ឬចូលដោយលេខកូដ',
+  'party.roomHint': 'ទីតាំងថ្មីរាល់ហ្គេម · ទិដ្ឋភាពដូចគ្នាសម្រាប់គ្រប់គ្នា',
+  'party.connecting': 'កំពុងភ្ជាប់ទៅបន្ទប់…',
+  'party.host': 'ម្ចាស់បន្ទប់',
+  'party.you': 'អ្នក',
+  'party.ready': 'រួចរាល់',
+  'party.customize': 'កែតួអង្គ និងមុខរូប',
+  'party.reconnecting': 'កំពុងភ្ជាប់ឡើងវិញ…',
+
+  'game.round': 'វគ្គ',
+  'game.score': 'ពិន្ទុ',
+  'game.streak': 'ជាប់គ្នា',
+  'game.timer': 'ពេល',
+  'game.skip': 'រំលងទិដ្ឋភាព',
+  'game.reset': 'កំណត់មុំឡើងវិញ',
+  'game.mapTitle': 'ផែនទីទាយរបស់អ្នក',
+  'game.pinHint': 'ចុចលើផែនទីដើម្បីដាក់ម្ជុល',
+  'game.pinPlaced': 'ដាក់ម្ជុលរួចហើយ',
+  'game.confirm': 'បញ្ជាក់ចម្លើយ',
+  'game.confirmWait': 'ដាក់ម្ជុលជាមុន',
+  'game.sheetPeek': 'ផែនទី',
+  'game.sheetHalf': 'ផែនទីពាក់កណ្តាល',
+  'game.sheetFull': 'ផែនទីពេញ',
+  'game.yourGuess': 'ចម្លើយរបស់អ្នក',
+  'game.target': 'ចម្លើយត្រូវ',
+
+  'result.roundDone': 'ចប់វគ្គ',
+  'result.distance': 'ចម្ងាយ',
+  'result.accuracy': 'ភាពត្រឹមត្រូវ',
+  'result.speed': 'រង្វាន់ល្បឿន',
+  'result.next': 'វគ្គបន្ទាប់',
+  'result.final': 'មើលលទ្ធផលចុងក្រោយ',
+  'result.ready': 'រួចរាល់សម្រាប់វគ្គបន្ទាប់',
+  'result.waiting': 'រង់ចាំមិត្តភក្តិ · {n}/{total} រួចរាល់',
+  'result.youWereAt': 'អ្នកនៅ',
+  'result.target': 'ទីតាំងត្រូវ',
+  'result.standings': 'ចំណាត់ថ្នាក់វគ្គ',
+  'result.correct': 'ត្រូវ',
+  'result.missed': 'ខុស',
+  'result.khan': 'ខណ្ឌ',
+  'result.province': 'ខេត្ត',
+  'result.streak': 'ជាប់គ្នា',
+  'result.multiplier': 'កត្តា',
+  'result.away': 'ឆ្ងាយ',
+  'result.targetCountry': 'ប្រទេសត្រូវ',
+  'result.destination': 'គោលដៅ',
+  'result.bullseye': 'កណ្តាលគោល',
+  'result.perfect': 'ត្រូវចំណុចកណ្តាល',
+  'result.closeShot': 'ជិតណាស់',
+  'result.nearby': 'ក្បែរនោះ',
+  'result.outside': 'ក្រៅគោលដៅ',
+
+  'scale.sameBlock': 'ប្លុកតែមួយ',
+  'scale.sameKhan': 'ខណ្ឌតែមួយ',
+  'scale.sameSide': 'ច្រាំងតែមួយ',
+  'scale.acrossCity': 'កាត់ទីក្រុង',
+  'scale.acrossCountry': 'កាត់ប្រទេស',
+  'scale.otherContinent': 'ទ្វីបផ្សេង',
+
+  'final.title': 'ចប់ហ្គេម',
+  'final.total': 'ពិន្ទុសរុប',
+  'final.partyBoard': 'ចំណាត់ថ្នាក់ក្រុម',
+  'final.roundByRound': 'មួយវគ្គម្តង',
+  'final.playAgain': 'លេងម្តងទៀត',
+  'final.home': 'ត្រឡប់ទៅផ្ទះ',
+  'final.newBest': 'កំណត់ត្រាថ្មី',
+  'final.tier': 'កម្រិតរបស់អ្នក',
+  'final.tournament': 'ការប្រកួត ៤ នាក់',
+  'final.place1': 'ទី ១',
+  'final.place2': 'ទី ២',
+  'final.place3': 'ទី ៣',
+  'final.place4': 'ទី ៤',
+  'final.you': 'អ្នក',
+  'final.points': 'ពិន្ទុ',
+  'final.roundShort': 'វគ្គ {n}',
+  'final.rating.grandmaster': 'ជើងឯកភ្នំពេញពិតប្រាកដ',
+  'final.rating.expert': 'អ្នកជំនាញក្នុងស្រុកពិត — វិចារណញាណអស្ចារ្យ',
+  'final.rating.navigator': 'អ្នកដឹកនាំផ្លូវពូកែ ចេះច្បាស់',
+  'final.rating.apprentice': 'សិស្សទុកទុក កំពុងរីកចម្រើន',
+  'final.rating.explore': 'ដល់ពេលរុករករាជធានីបន្ថែមទៀត',
+
+  'profile.title': 'ស្ទូឌីយោតួអង្គ',
+  'profile.name': 'ឈ្មោះអ្នករុករក',
+  'profile.cityTitle': 'ងារក្នុងទីក្រុង',
+  'profile.save': 'រក្សាទុក និងប្រើ',
+  'profile.randomize': 'ចៃដន្យ',
+  'profile.updated': 'បានធ្វើបច្ចុប្បន្នភាពមុខរូប',
+
+  'tutorial.title': 'របៀបលេង',
+  'tutorial.step1.title': 'មើលជុំវិញ',
+  'tutorial.step1.body': 'អូសរូបថត។ អានស្លាក វត្ត និងលេខផ្លូវ។',
+  'tutorial.step2.title': 'បើកផែនទី',
+  'tutorial.step2.body': 'ទាញផែនទីឡើងពីបាតអេក្រង់។',
+  'tutorial.step3.title': 'ដាក់ម្ជុល',
+  'tutorial.step3.body': 'ចុចកន្លែងដែលអ្នកគិតថានៅ រួចបញ្ជាក់មុនពេលអស់ពេល។',
+  'tutorial.gotIt': 'យល់ហើយ',
+  'tutorial.skip': 'រំលង',
+  'tutorial.next': 'បន្ទាប់',
+
+  'toast.copied': 'បានចម្លង',
+  'toast.profileSaved': 'បានធ្វើបច្ចុប្បន្នភាពតួអង្គ',
+  'toast.pinFirst': 'ដាក់ម្ជុលលើផែនទីជាមុន',
+  'toast.customizeBetween': 'ប្តូរតួអង្គរបស់អ្នកនៅចន្លោះការប្រកួតក្នុងបន្ទប់រង់ចាំ។',
+  'toast.skipHost': 'កំពុងប្តូរទិដ្ឋភាពរួមសម្រាប់ក្រុម។',
+  'toast.skipGuest': 'សុំម្ចាស់បន្ទប់ប្តូរទិដ្ឋភាពនេះសម្រាប់ក្រុម។',
+  'toast.skipped': 'បានរំលងទិដ្ឋភាព។ ផ្ទុកទីតាំងថ្មី។',
+  'toast.mapLoad': 'ផែនទីមិនអាចផ្ទុកបានទេ។ ពិនិត្យការតភ្ជាប់ ហើយព្យាយាមម្តងទៀត។',
+  'toast.roomCodeRequired': 'សូមបញ្ចូលលេខកូដបន្ទប់ជាមុន។',
+  'toast.roomCodeInvalid': 'លេខកូដបន្ទប់មានទម្រង់ដូច WP-ABCDEF។',
+  'toast.reconnectingWait': 'កំពុងភ្ជាប់ឡើងវិញទៅបន្ទប់។ សូមមួយភ្លែត។',
+  'toast.serverUnreachable': 'មិនអាចទាក់ទងម៉ាស៊ីនមេបន្ទប់បានទេ។ ពិនិត្យការដាក់ផ្សាយ ហើយព្យាយាមម្តងទៀត។',
+  'toast.roomLost': 'ការតភ្ជាប់បន្ទប់បានបាត់។ ចូលម្តងទៀតដោយលេខកូដបន្ទប់។',
+  'toast.reconnecting': 'កំពុងភ្ជាប់ឡើងវិញទៅបន្ទប់…',
+  'toast.roundStarting': 'វគ្គកំពុងចាប់ផ្តើម។ សូមទាយមួយភ្លែតទៀត។',
+  'toast.linkCopied': 'បានចម្លងតំណបន្ទប់ ({code})',
+  'toast.linkPrompt': 'ចម្លងតំណបន្ទប់នេះដើម្បីផ្ញើទៅមិត្តភក្តិ៖',
+  'toast.rankedSoon': 'ការលេងចំណាត់ថ្នាក់នឹងមកជាមួយបច្ចុប្បន្នភាពតារាងពិន្ទុ។',
+  'toast.waitHostLobby': 'រង់ចាំម្ចាស់បន្ទប់ត្រឡប់ក្រុមទៅបន្ទប់រង់ចាំ។',
+  'lobby.reconnecting': 'មិត្តភក្តិម្នាក់កំពុងភ្ជាប់ឡើងវិញ។ កន្លែងរបស់ពួកគេត្រូវបានរក្សាទុក ៣០ វិនាទី។',
+  'lobby.open': 'បន្ទប់បើកហើយ។ អញ្ជើញមិត្តភក្តិម្នាក់ដើម្បីចាប់ផ្តើមរុករកជាមួយគ្នា។',
+  'lobby.host': 'អ្នករុករក {n} នាក់បានភ្ជាប់។ ជ្រើសរើសហ្គេម ហើយចាប់ផ្តើម។',
+  'lobby.client': 'អ្នកចូលហើយ។ អ្នករុករក {n} នាក់បានភ្ជាប់។ ម្ចាស់បន្ទប់អាចចាប់ផ្តើមបាន។',
+  'lobby.rotation': 'នៅសល់ {n} ទីតាំងថ្មីក្នុងវដ្តនេះ · ផ្លូវក្បែរគ្នាត្រូវបានបំបែក',
+  'lobby.connectingTitle': 'កំពុងភ្ជាប់…',
+  'lobby.inviteTitle': 'អញ្ជើញមិត្តភក្តិយ៉ាងតិចម្នាក់ដើម្បីចាប់ផ្តើម',
+  'lobby.readyTitle': 'គ្រប់គ្នាបានភ្ជាប់។ ចាប់ផ្តើមការប្រកួត',
+  'game.selectCountry': 'ជ្រើសរើសប្រទេស',
+  'game.selectKhan': 'ជ្រើសរើសខណ្ឌ',
+  'game.orTapMap': 'ឬចុចលើផែនទី'
+};
+
+export const TRANSLATIONS = { en, km };
+
+let lang = 'en';
+const listeners = new Set();
+
+export function getLang() {
+  return lang;
+}
+
+export function t(key, vars) {
+  const table = TRANSLATIONS[lang] || en;
+  let text = table[key] ?? en[key] ?? key;
+  if (vars) {
+    for (const [name, value] of Object.entries(vars)) text = text.replaceAll(`{${name}}`, String(value));
+  }
+  return text;
+}
+
+export function setLang(next, { persist = true, notify = true } = {}) {
+  lang = next === 'km' ? 'km' : 'en';
+  if (persist) {
+    try { localStorage.setItem('wanderpenh_lang', lang); } catch {}
+  }
+  document.documentElement.lang = lang;
+  document.documentElement.dataset.lang = lang;
+  if (notify) listeners.forEach(fn => fn(lang));
+  return lang;
+}
+
+export function onLangChange(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+export function applyI18n(root = document) {
+  root.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  root.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.setAttribute('placeholder', t(el.dataset.i18nPlaceholder));
+  });
+  root.querySelectorAll('[data-i18n-aria]').forEach(el => {
+    el.setAttribute('aria-label', t(el.dataset.i18nAria));
+  });
+  root.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.setAttribute('title', t(el.dataset.i18nTitle));
+  });
+}
+
+export function languageName(code = lang) {
+  return code === 'km' ? 'ខ្មែរ' : 'EN';
+}
