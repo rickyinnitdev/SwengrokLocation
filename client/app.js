@@ -629,7 +629,8 @@
         const featuredBox = document.getElementById('featured-modes-container');
         const moreBox = document.getElementById('modes-selection-container');
         if (!featuredBox || !moreBox) return;
-        const all = regionModes();
+        // Team modes need a partner, so they only appear in the party picker.
+        const all = regionModes().filter(([, m]) => !m.teams);
         const featured = all.filter(([, m]) => m.featured);
         const rest = all.filter(([, m]) => !m.featured);
         featuredBox.innerHTML = featured.map(([key, m]) => modeCardHTML(key, m)).join('');
