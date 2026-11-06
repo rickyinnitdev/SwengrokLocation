@@ -7,7 +7,7 @@
     "build": "node scripts/build.mjs",
     "dev": "npm run build && wrangler dev --port 4173",
     "deploy": "npm run build && wrangler deploy",
-    "test": "npm run build && node --test tests/room.test.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "test:e2e": "playwright test",
     "check": "npm test && wrangler deploy --dry-run"
   },
