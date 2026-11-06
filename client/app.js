@@ -889,3 +889,222 @@
     }
 
     // ============================================================
+    //  BOTTOM SHEET + DESKTOP SPLIT
+    // ============================================================
+    const SHEET_ORDER = ['peek', 'half', 'full'];
+
+    function sheetState() {
+        return document.getElementById('map-panel').dataset.state || 'peek';
+    }
+
+    function setSheet(state) {
+        const panel = document.getElementById('map-panel');
+        panel.dataset.state = state;
+        const label = document.getElementById('expand-btn-text');
+        if (label) {
+            label.textContent = state === 'peek' ? t('game.sheetHalf')
+                : state === 'half' ? t('game.sheetFull') : t('game.sheetPeek');
+        }
+        const handle = document.getElementById('sheet-handle');
+        if (handle) handle.setAttribute('aria-label', state === 'peek' ? t('game.sheetHalf') : t('game.sheetPeek'));
+        if (gameState.guessMap) {
+            gameState.guessMap.invalidateSize();
+            setTimeout(() => { if (gameState.guessMap) gameState.guessMap.invalidateSize(); }, 180);
+            setTimeout(() => { if (gameState.guessMap) gameState.guessMap.invalidateSize(); }, 380);
+        }
+    }
+
+    function cycleSheet() {
+        const index = SHEET_ORDER.indexOf(sheetState());
+        setSheet(SHEET_ORDER[(index + 1) % SHEET_ORDER.length]);
+    }
+
+    function toggleMapExpand(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        cycleSheet();
+    }
+
+    function setupSheetGesture() {
+        const handle = document.getElementById('sheet-handle');
+        if (!handle) return;
+        let startY = null;
+        handle.addEventListener('pointerdown', e => {
+            startY = e.clientY;
+            try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+        });
+        handle.addEventListener('pointerup', e => {
+            if (startY === null) return;
+            const dy = e.clientY - startY;
+            startY = null;
+            const index = SHEET_ORDER.indexOf(sheetState());
+            if (dy < -32) setSheet(SHEET_ORDER[Math.min(SHEET_ORDER.length - 1, index + 1)]);
+            else if (dy > 32) setSheet(SHEET_ORDER[Math.max(0, index - 1)]);
+            else cycleSheet();
+        });
+    }
+
+    function setupResizer() {
+        const bar = document.getElementById('map-resizer');
+        if (!bar) return;
+        bar.addEventListener('pointerdown', e => {
+            e.preventDefault();
+            try { bar.setPointerCapture(e.pointerId); } catch (err) {}
+            const move = ev => {
+                const pct = Math.min(58, Math.max(22, ((window.innerWidth - ev.clientX) / window.innerWidth) * 100));
+                document.documentElement.style.setProperty('--map-width', pct.toFixed(2) + '%');
+                if (gameState.guessMap) gameState.guessMap.invalidateSize();
+                if (gameState.resultMap) gameState.resultMap.invalidateSize();
+            };
+            const up = () => {
+                bar.removeEventListener('pointermove', move);
+                bar.removeEventListener('pointerup', up);
+                bar.removeEventListener('pointercancel', up);
+            };
+            bar.addEventListener('pointermove', move);
+            bar.addEventListener('pointerup', up);
+            bar.addEventListener('pointercancel', up);
+        });
+    }
+
+    // Keyboard controls
+    window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+        if (e.code === 'Enter') {
+            const btn = document.getElementById('guess-btn');
+            if (btn && !btn.disabled && gameState.guessLatLng) {
+                e.preventDefault();
+                submitPlayerGuess();
+            }
+        } else if (e.code === 'Space') {
+            e.preventDefault();
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('active')) {
+                toggleMapExpand();
+            }
+        } else if (e.code === 'Escape') {
+            const panel = document.getElementById('map-panel');
+            if (panel && panel.dataset.state !== 'peek') setSheet('peek');
+            closeModal('profile-modal');
+            closeModal('mp-modal');
+        }
+    });
+
+    let currentChoices = [];
+
+    function setupChoiceShelf() {
+        const shelf = document.getElementById('mode-choice-shelf');
+        const grid = document.getElementById('mode-choice-grid');
+        const title = document.getElementById('mode-choice-title');
+        const hint = document.getElementById('mode-choice-hint');
+        if (!shelf || !grid) return;
+
+        const cfg = MODE_CONFIG[currentMode] || {};
+        const isWorld = !!cfg.isCountry;
+        const isDist = !!cfg.isDistrict;
+
+        if (!isWorld && !isDist) {
+            shelf.style.display = 'none';
+            return;
+        }
+
+        shelf.style.display = 'block';
+        grid.innerHTML = '';
+        currentChoices = [];
+
+        if (isWorld) {
+            title.textContent = '🌍 ' + t('game.selectCountry');
+            hint.textContent = t('game.orTapMap');
+            const correctCountry = gameState.currentLocation.country;
+            const otherCountries = ALL_COUNTRIES.filter(c => c !== correctCountry);
+            const distractors = otherCountries.sort(() => 0.5 - Math.random()).slice(0, 3);
+            currentChoices = [correctCountry, ...distractors].sort(() => 0.5 - Math.random());
+
+            grid.innerHTML = currentChoices.map(country => {
+                const flag = COUNTRY_FLAGS[country] || '🌍';
+                return `
+                    <button type="button" class="choice-opt-btn" onclick="selectChoiceOption('country', '${escapeHTML(country)}')">
+                        <span style="font-size: 1.15rem;">${flag}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(country)}</span>
+                    </button>
+                `;
+            }).join('');
+        } else if (isDist) {
+            title.textContent = '🏙️ ' + t('game.selectKhan');
+            hint.textContent = t('game.orTapMap');
+            const locArea = gameState.currentLocation.area || '';
+            const matchedKhan = PP_KHANS.find(k => locArea.includes(k.id) || k.name.includes(locArea)) || PP_KHANS[0];
+            gameState.currentKhan = matchedKhan.id;
+
+            const otherKhans = PP_KHANS.filter(k => k.id !== matchedKhan.id);
+            const distractors = otherKhans.sort(() => 0.5 - Math.random()).slice(0, 3);
+            currentChoices = [matchedKhan, ...distractors].sort(() => 0.5 - Math.random());
+
+            grid.innerHTML = currentChoices.map(khan => `
+                <button type="button" class="choice-opt-btn" onclick="selectChoiceOption('district', '${escapeHTML(khan.id)}')">
+                    <span style="font-size: 1.05rem;">${khan.icon}</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(khan.id)}</span>
+                </button>
+            `).join('');
+        }
+    }
+
+    function selectChoiceOption(type, value) {
+        document.querySelectorAll('.choice-opt-btn').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent.includes(value));
+        });
+
+        playBeep(640, 'sine', 0.08);
+
+        if (type === 'country') {
+            gameState.chosenCountry = value;
+            const flag = COUNTRY_FLAGS[value] || '🌍';
+            const center = COUNTRY_CENTERS[value] || { lat: 20, lng: 0 };
+            placePin(center);
+            if (gameState.guessMap) gameState.guessMap.flyTo([center.lat, center.lng], 4, { duration: 0.6 });
+
+            const btn = document.getElementById('guess-btn');
+            btn.innerHTML = `<span>🎯 CONFIRM: ${flag} ${escapeHTML(value)}</span>`;
+            btn.classList.add('ready');
+            btn.disabled = false;
+
+            const pinStatus = document.getElementById('map-pin-status');
+            if (pinStatus) {
+                pinStatus.textContent = `✓ ${flag} ${value}`;
+                pinStatus.classList.add('placed');
+            }
+        } else if (type === 'district') {
+            gameState.chosenDistrict = value;
+            const khan = PP_KHANS.find(k => k.id === value);
+            const center = khan ? { lat: khan.lat, lng: khan.lng } : PP_CENTER;
+            placePin(center);
+            if (gameState.guessMap) gameState.guessMap.flyTo([center.lat, center.lng], 13, { duration: 0.5 });
+
+            const btn = document.getElementById('guess-btn');
+            btn.innerHTML = `<span>🎯 CONFIRM: ${khan ? khan.icon : '🏙️'} ${escapeHTML(value)}</span>`;
+            btn.classList.add('ready');
+            btn.disabled = false;
+
+            const pinStatus = document.getElementById('map-pin-status');
+            if (pinStatus) {
+                pinStatus.textContent = `✓ ${khan ? khan.icon : '🏙️'} ${value}`;
+                pinStatus.classList.add('placed');
+            }
+        }
+    }
+
+    function updateStreakHUD() {
+        const streakCard = document.getElementById('hud-streak-card');
+        const cfg = MODE_CONFIG[currentMode];
+        if (!streakCard) return;
+        if (cfg && cfg.isStreak) {
+            streakCard.style.display = 'flex';
+            const streak = gameState.streakCount || 0;
+            const mult = streak === 0 ? '1x' : streak === 1 ? '1x' : streak === 2 ? '1.25x' : streak === 3 ? '1.5x' : streak === 4 ? '2x' : '3x';
+            document.getElementById('hud-streak-num').textContent = streak;
+            document.getElementById('hud-streak-mult').textContent = `(${mult})`;
+        } else {
+            streakCard.style.display = 'none';
+        }
+    }
+
+    // ============================================================
