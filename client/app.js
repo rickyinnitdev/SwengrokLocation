@@ -763,3 +763,129 @@
     }
 
     // ============================================================
+    //  LEAFLET GUESS MAP CONTROLS
+    // ============================================================
+    let gameState = {
+        isMultiplayer: false,
+        simulated4P: false,
+        isHost: false,
+        roomCode: null,
+        roundIndex: 0,
+        totalScore: 0,
+        roundScore: 0,
+        roundSpeedBonus: 0,
+        roundDistance: 0,
+        currentLocation: null,
+        currentHeading: 0,
+        guessLatLng: null,
+        guessMap: null,
+        guessMarker: null,
+        resultMap: null,
+        timerInterval: null,
+        roundStartTime: 0,
+        roundsHistory: [],
+        usedLocIds: [],
+        simPlayers: [],
+        matchPlan: null,    // multiplayer: server-chosen [{ id, heading }] per round
+        activeMatch: null,  // local indicator of the running server match
+        mpGuesses: {},      // multiplayer: { [round]: { [playerId]: guess } }
+        mpPinLayer: null
+    };
+
+    // Leaflet is ~140 kB. Load it only when a map is actually opened.
+    let leafletPromise = null;
+    function ensureLeaflet() {
+        if (window.L) return Promise.resolve(window.L);
+        if (!leafletPromise) {
+            leafletPromise = new Promise((resolve, reject) => {
+                const css = document.createElement('link');
+                css.rel = 'stylesheet';
+                css.href = '/vendor/leaflet/leaflet.css';
+                document.head.appendChild(css);
+                const script = document.createElement('script');
+                script.src = '/vendor/leaflet/leaflet.js';
+                script.onload = () => resolve(window.L);
+                script.onerror = () => reject(new Error('Leaflet failed to load'));
+                document.head.appendChild(script);
+            });
+        }
+        return leafletPromise;
+    }
+
+    async function initGuessMap() {
+        if (!window.L) {
+            try { await ensureLeaflet(); }
+            catch (e) { showToast(t('toast.mapLoad')); return; }
+        }
+        if (gameState.guessMap) {
+            gameState.guessMap.invalidateSize();
+            return;
+        }
+
+        const cfg = MODE_CONFIG[currentMode] || {};
+        const isWorld = !!cfg.isWorld || !!cfg.isCountry;
+        const isAsia = !!cfg.isAsia;
+        const isCam = !!cfg.isCambodia;
+        const center = isWorld ? WORLD_CENTER : isAsia ? ASIA_CENTER : isCam ? [12.5, 104.9] : PP_CENTER;
+        const zoom = isWorld ? 2 : isAsia ? 4 : isCam ? 7 : 12;
+
+        gameState.guessMap = L.map('guess-map', {
+            center: center,
+            zoom: zoom,
+            minZoom: 1,
+            maxZoom: 18,
+            zoomControl: false,
+            attributionControl: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19
+        }).addTo(gameState.guessMap);
+
+        gameState.guessMap.on('click', (e) => {
+            placePin(e.latlng);
+        });
+
+        const wrapper = document.getElementById('map-wrapper');
+        new ResizeObserver(() => {
+            if (gameState.guessMap) gameState.guessMap.invalidateSize();
+        }).observe(wrapper);
+    }
+
+    function placePin(latlng) {
+        if (gameState.guessMarker) {
+            gameState.guessMarker.setLatLng(latlng);
+        } else {
+            const icon = L.divIcon({ className: 'marker-pin-guess', iconSize: [18, 18] });
+            gameState.guessMarker = L.marker(latlng, { icon, draggable: true }).addTo(gameState.guessMap);
+            gameState.guessMarker.on('dragend', (e) => {
+                gameState.guessLatLng = e.target.getLatLng();
+            });
+        }
+        gameState.guessLatLng = latlng;
+        playBeep(640, 'sine', 0.08);
+
+        const btn = document.getElementById('guess-btn');
+        btn.innerHTML = `<span>🎯 ${t('game.confirm')}</span>`;
+        btn.classList.add('ready');
+        btn.disabled = false;
+
+        const pinStatus = document.getElementById('map-pin-status');
+        if (pinStatus) {
+            pinStatus.textContent = '✓ ' + t('game.pinPlaced');
+            pinStatus.classList.add('placed');
+        }
+
+        if (gameState.simulated4P) {
+            const myChip = document.getElementById('sim-chip-player_me');
+            if (myChip) {
+                myChip.classList.add('guessed');
+                myChip.innerHTML = `
+                    <div class="hud-player-chip-avatar">${renderAvatarHTML(userProfile, '100%', '100%')}</div>
+                    <span>${escapeHTML(userProfile.name)} (Ready)</span>
+                `;
+            }
+        }
+    }
+
+    // ============================================================
