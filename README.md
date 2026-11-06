@@ -1,6 +1,6 @@
 # WanderPenh / SwengrokLocation
 
-Phnom Penh guessing game with solo, AI battle and server-backed private party rooms. The website and multiplayer server run together in one Cloudflare Worker. No PeerJS, TURN service, API key or third-party room service is required.
+Phnom Penh guessing game with solo, AI battle, server-scored ranked runs with leaderboards, and server-backed private party rooms. The first screen offers two doors: **In Cambodia** (Khmer by default) and **Around the World**. The website and multiplayer server run together in one Cloudflare Worker. No PeerJS, TURN service, API key or third-party room service is required.
 
 ## Deploy from the private GitHub repository
 
@@ -9,11 +9,15 @@ Phnom Penh guessing game with solo, AI battle and server-backed private party ro
 3. Select the repository, production branch **main**, and Worker name **wanderpenh** (must match name in wrangler.jsonc).
 4. Set the root directory to the repository root, build command to **npm run build**, and deploy command to **npx wrangler deploy**. Dependency installation uses the committed package-lock.json. Use Node.js 22 or newer.
 5. Deploy. Wrangler creates the ROOMS binding and SQLite-backed Durable Object using the migration in wrangler.jsonc. No account ID or secrets belong in the repository.
-6. Open the resulting **workers.dev** URL. Share that same URL with friends. /api/health should return service wanderpenh-rooms, version 3.
+6. Open the resulting **workers.dev** URL. Share that same URL with friends. /api/health should return service wanderpenh-rooms, version 4.
 
 Cloudflare's Git integration deploys subsequent pushes to main. The GitHub Actions workflow separately runs server checks and browser regression tests; it does not gate Cloudflare's build unless you configure that policy. Leave non-production branch deployments disabled until the initial Durable Object migration has deployed. A static ZIP upload alone cannot run these rooms.
 
-The configuration uses Workers and SQLite Durable Objects supported on the Free plan, subject to Cloudflare's limits. Do not enable paid services merely to deploy this project.
+The configuration uses Workers, SQLite Durable Objects and one D1 database, all supported on the Free plan, subject to Cloudflare's limits. Do not enable paid services merely to deploy this project.
+
+### Leaderboard database (D1)
+
+wrangler.jsonc binds a D1 database named **wanderpenh-db** as `DB` without a `database_id`, so Wrangler creates it on the first deploy. The Worker creates its own tables the first time they are needed (src/schema.js); there is no manual migration step. If your Cloudflare build refuses to auto-create it, create it once with `npx wrangler d1 create wanderpenh-db`, then add the returned `database_id` to the binding. A D1 id is not a secret. Without a database the game still works: the Ranked screen shows that the leaderboard is unavailable and party rooms play normally.
 
 ## Local development
 
@@ -31,6 +35,18 @@ npm run test:e2e
 ```
 
 Browser tests use installed Chrome locally; CI uses Playwright Chromium. To deploy from the terminal instead of Git integration, the account owner can run npx wrangler login, then npm run deploy.
+
+## Ranked, ratings and leaderboards
+
+- **Identity:** no accounts. Each browser makes a random player id and a secret, kept in localStorage; the server stores only a hash of the secret. Clearing site data loses the rank, so **Ranked → Backup and restore** shows a code that moves it to another device. Anyone holding the code can play as that player.
+- **Ranked runs:** a ranked run is started, timed and scored by the server (`src/ranked.js`, one Durable Object per device, using the same formulas as party rooms in `src/scoring.js`). Each round's clock starts when the player asks for it, guesses after the deadline count as zero, skipping is disabled and at most 30 runs can be started per hour. Ranked modes are the ones flagged `ranked: true` in `client/data/modes.js`. The location table ships to the browser, so the server stops forged *scores*, not someone looking up answers.
+- **Ratings and tiers:** each finished ranked run moves a rating (kept separately for Cambodia and World; `src/rating.js`). Tiers: Tourist, Moto Rider (900), Tuk-Tuk Driver (1100), City Guide (1300), Khan Master (1500), Legend of Penh (1700).
+- **Boards:** `GET /api/leaderboard?mode=classic&period=week|all&region=kh` (best score per player) and `?type=rating&region=kh`. Weeks reset on Monday 00:00 Phnom Penh time. Responses are cached for a minute and the affected boards are cleared when a run is saved.
+- **Party results:** a finished party records each player's total under `party:<mode>` when that player's browser sent its device identity. Party games never change ratings.
+
+## Tag-Team relay
+
+Teams of two (one team may have three). Each round one teammate is the **Viewer** and sees only the street, and the other is the **Pinner** and sees only the map; roles swap every round and the Pinner's guess scores for the whole team. The server never sends the Pinner the current location before the reveal, and never sends anyone a future round's location. If a partner disconnects, the remaining player sees both. Available in the party picker of both regions.
 
 ## Party rules
 
