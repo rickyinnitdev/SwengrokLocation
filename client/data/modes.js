@@ -3,6 +3,7 @@
 // Khmer copy is first-pass and should be reviewed by a native speaker.
 export const MODE_CONFIG = {
   landmarks: {
+    ranked: true,
     name: 'Landmark Blitz',
     nameKm: 'សម្គាល់ដីសំខាន់',
     badge: 'Best for beginners',
@@ -12,6 +13,7 @@ export const MODE_CONFIG = {
     region: 'kh', icon: 'temple', accent: 'gold', difficulty: 1, featured: true
   },
   classic: {
+    ranked: true,
     name: 'City Pulse',
     nameKm: 'ជីពចរទីក្រុង',
     badge: 'The full capital',
@@ -21,6 +23,7 @@ export const MODE_CONFIG = {
     region: 'kh', icon: 'city', accent: 'mekong', difficulty: 1
   },
   sprint: {
+    ranked: true,
     name: 'Tuk-Tuk Sprint',
     nameKm: 'ប្រណាំងទុកទុក',
     badge: 'Fast and loud',
@@ -30,6 +33,7 @@ export const MODE_CONFIG = {
     region: 'kh', icon: 'bolt', accent: 'lotus', difficulty: 2
   },
   bounty: {
+    ranked: true,
     name: 'Bounty Point Race',
     nameKm: 'ប្រណាំងពិន្ទុ',
     badge: 'Party competitive',
@@ -39,6 +43,7 @@ export const MODE_CONFIG = {
     region: 'kh', icon: 'target', accent: 'gold', difficulty: 3
   },
   nmpz: {
+    ranked: true,
     name: 'No-Move Challenge',
     nameKm: 'មិនកម្រើក',
     badge: 'Master deduction',
@@ -48,6 +53,7 @@ export const MODE_CONFIG = {
     region: 'kh', icon: 'eye', accent: 'mekong', difficulty: 3
   },
   world: {
+    ranked: true,
     name: 'World Explorer',
     nameKm: 'អ្នករុករកពិភពលោក',
     badge: 'Pin the world map',
@@ -66,6 +72,7 @@ export const MODE_CONFIG = {
     region: 'world', icon: 'flag', accent: 'lotus', difficulty: 1, featured: true
   },
   asia: {
+    ranked: true,
     name: 'Asia Adventure',
     nameKm: 'ផ្សងព្រេងអាស៊ី',
     badge: 'Southeast Asia and beyond',
@@ -84,6 +91,7 @@ export const MODE_CONFIG = {
     region: 'kh', icon: 'compass', accent: 'rice', difficulty: 2, featured: true
   },
   sniper: {
+    ranked: true,
     name: 'Bullseye Sniper',
     nameKm: 'អ្នកបាញ់ម៉ត់',
     badge: 'Ten-times precision',
