@@ -355,6 +355,14 @@
         <div class="player-chips-list" id="lobby-players-container"></div>
       </div>
 
+      <div id="lobby-teams-panel" class="lobby-teams" hidden>
+        <div class="field-label">
+          <span data-i18n="team.teams">Teams</span>
+          <span class="lobby-teams-hint" id="lobby-teams-hint" data-i18n="team.hint">Host: tap a player, then another to swap</span>
+        </div>
+        <div id="lobby-teams-list"></div>
+      </div>
+
       <button class="btn btn-ghost lobby-customize" type="button" onclick="openProfileModal()" aria-label="Customize your lobby character">
         <span id="lobby-customize-avatar" class="lobby-player-thumb"></span>
         <span data-i18n="party.customize">Edit character and profile</span>

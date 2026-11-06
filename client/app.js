@@ -2246,6 +2246,90 @@
         `).join('');
     }
 
+    function renderLobbyTeams() {
+        const panel = document.getElementById('lobby-teams-panel');
+        const list = document.getElementById('lobby-teams-list');
+        const hint = document.getElementById('lobby-teams-hint');
+        if (!panel || !list) return;
+        if (!isRealMultiplayer() || !isTeamMode() || !serverTeams.length) { panel.hidden = true; return; }
+        panel.hidden = false;
+        const canEdit = gameState.isHost && roomReady && !serverMatch;
+        if (hint) hint.hidden = !canEdit;
+        list.innerHTML = serverTeams.map((team, i) => `
+            <div class="lobby-team" style="--team-color:${TEAM_COLORS[i % TEAM_COLORS.length]};">
+                <div class="lobby-team-badge">${t('team.name', { n: i + 1 })}</div>
+                <div class="lobby-team-members">
+                    ${team.playerIds.map(id => {
+                        const p = playerById(id);
+                        if (!p) return '';
+                        return `<button type="button" class="lobby-team-member ${teamSwapPick === id ? 'picked' : ''}" ${canEdit ? '' : 'disabled'} onclick="pickTeamMember('${id}')">
+                            <span class="lobby-player-thumb">${renderAvatarHTML(p, '100%', '100%')}</span>
+                            <span>${escapeHTML(p.name)}</span>
+                        </button>`;
+                    }).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function pickTeamMember(id) {
+        if (!gameState.isHost || !roomReady || serverMatch || !isTeamMode()) return;
+        if (!teamSwapPick) { teamSwapPick = id; renderLobbyTeams(); return; }
+        if (teamSwapPick === id) { teamSwapPick = null; renderLobbyTeams(); return; }
+        const a = teamSwapPick, b = id;
+        teamSwapPick = null;
+        const swapped = serverTeams.map(team => ({
+            playerIds: team.playerIds.map(pid => pid === a ? b : pid === b ? a : pid)
+        }));
+        sendRoomMessage({ type: 'SET_TEAMS', teams: swapped });
+        renderLobbyTeams();
+    }
+
+    // The Viewer sees only the street, the Pinner sees only the map.
+    function applyRoleUI() {
+        const role = myRoleNow();
+        const body = document.body;
+        body.dataset.role = role || '';
+        const banner = document.getElementById('team-role-banner');
+        if (!banner) return;
+        const show = !!role && serverMatch?.phase === 'playing' && !gameState.roundSubmitted;
+        banner.hidden = !show;
+        if (!show) {
+            const mapPanel = document.getElementById('map-panel');
+            if (mapPanel && mapPanel.dataset.teamForced) { mapPanel.dataset.state = 'peek'; delete mapPanel.dataset.teamForced; }
+            return;
+        }
+        const team = myTeam();
+        const partner = team ? teamNames(team, true) : '';
+        const emoji = role === 'viewer' ? '👀' : role === 'pinner' ? '📍' : '🧭';
+        document.getElementById('team-role-emoji').textContent = emoji;
+        document.getElementById('team-role-title').textContent = t('team.role.' + role);
+        document.getElementById('team-role-sub').textContent = t('team.role.' + role + '.sub', { name: partner });
+        banner.dataset.role = role;
+        const mapPanel = document.getElementById('map-panel');
+        if (mapPanel && role === 'pinner') {
+            mapPanel.dataset.teamForced = '1';
+            mapPanel.dataset.state = 'full';
+            try { gameState.guessMap?.invalidateSize(); } catch {}
+        } else if (mapPanel && mapPanel.dataset.teamForced) {
+            mapPanel.dataset.state = 'peek';
+            delete mapPanel.dataset.teamForced;
+        }
+    }
+
+    // Keep the round's location in step with what the server will reveal to us.
+    function syncTeamLocation(m) {
+        const planned = m.plan[m.round - 1];
+        if (!planned || !planned.id) return;
+        const loc = findLocationById(planned.id);
+        if (!loc || gameState.currentLocation?.id === loc.id) return;
+        gameState.currentLocation = loc;
+        gameState.currentHeading = planned.heading;
+        recordSeenLocation(loc.id);
+        const own = m.guesses[m.round]?.[myPlayerId];
+        if (myRoleNow() !== 'pinner' && m.phase === 'playing' && !own) loadPano(loc.lat, loc.lng, planned.heading);
+    }
+
     function renderPartyModes() {
         const entries = regionModes();
         if (MODE_CONFIG[currentMode] && !entries.some(([key]) => key === currentMode)) {
@@ -2402,11 +2486,13 @@
         gameState.isHost = state.hostId === myPlayerId;
         currentMode = state.mode;
         serverMatch = state.match;
+        serverTeams = state.teams || [];
         document.getElementById('host-controls').style.display = gameState.isHost ? 'flex' : 'none';
         document.getElementById('client-waiting').style.display = gameState.isHost ? 'none' : 'block';
         const connected = lobbyPlayers.filter(p => p.connected).length;
         setLobbyStatus(connected < lobbyPlayers.length ? t('lobby.reconnecting') : connected < 2 ? t('lobby.open') : gameState.isHost ? t('lobby.host', { n: connected }) : t('lobby.client', { n: connected }));
         renderLobbyPlayers();
+        renderLobbyTeams();
         renderPartyModes();
         const customizeAvatar = document.getElementById('lobby-customize-avatar');
         document.getElementById('rotation-status').textContent = state.selection ? t('lobby.rotation', { n: state.selection.remaining }) : '';
@@ -2804,7 +2890,7 @@
         skipBrokenLocation, returnToStartPano, toggleMapExpand, submitPlayerGuess, advanceNextRound,
         resetToHome, backToHome, joinFromHome, nextCoachStep, closeCoach, setRegion, setLanguage, showFinalPodium,
         shareInviteLink, openRanked, copyInviteLink,
-        setSheet, cycleSheet
+        setSheet, cycleSheet, pickTeamMember, myRoleNow
     });
 
     Object.defineProperties(globalThis, {
@@ -2822,6 +2908,7 @@
         myPlayerId: { configurable: true, get: () => myPlayerId },
         serverClockOffset: { configurable: true, get: () => serverClockOffset },
         serverMatch: { configurable: true, get: () => serverMatch },
+        serverTeams: { configurable: true, get: () => serverTeams },
         roomSocket: { configurable: true, get: () => roomSocket }
     });
 
