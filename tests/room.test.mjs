@@ -188,3 +188,89 @@ test('New modes (world, country, asia, cambodia, sniper, district, streak) confi
   es.handle(as.id, msg(ms, 'PLAYER_GUESS', { guessLatLng: targetSniper }), ms.startedAt + 1000);
   assert.equal(ms.guesses[1][as.id].distScore, 10000);
 });
+
+function teamRoom(count = 4, mode = 'tagteam_kh') {
+  const e = new RoomEngine();
+  const players = [];
+  for (let i = 0; i < count; i++) players.push(e.join({ create: i === 0, mode, profile: { name: 'P' + i } }, 1000));
+  return { e, players, a: players[0], b: players[1], c: players[2], d: players[3] };
+}
+
+test('Tag-Team auto-pairs, validates host teams and supports an odd player out', () => {
+  const { e, players, a } = teamRoom(4);
+  assert.deepEqual(e.state.teams.map(t => t.playerIds.length), [2, 2]);
+  assert.deepEqual(e.state.teams.flatMap(t => t.playerIds).sort(), players.map(p => p.id).sort());
+
+  const custom = [{ playerIds: [players[0].id, players[2].id] }, { playerIds: [players[1].id, players[3].id] }];
+  e.handle(a.id, { type: 'SET_TEAMS', teams: custom }, 1000);
+  assert.deepEqual(e.state.teams.map(t => t.playerIds), custom.map(t => t.playerIds));
+
+  // A team set that drops a player must be rejected.
+  e.handle(a.id, { type: 'SET_TEAMS', teams: [{ playerIds: [players[0].id, players[1].id] }] }, 1000);
+  assert.deepEqual(e.state.teams.map(t => t.playerIds), custom.map(t => t.playerIds));
+
+  e.join({ profile: { name: 'Fifth' } }, 1000);
+  assert.deepEqual(e.state.teams.map(t => t.playerIds.length).sort(), [2, 3]);
+});
+
+test('Tag-Team rejects Viewer guesses, mirrors team scores and rotates roles', () => {
+  const { e, a, b, c, d } = teamRoom(4);
+  const m = start(e, a);
+  assert.equal(m.roles[a.id], 'pinner');
+  assert.equal(m.roles[b.id], 'viewer');
+  assert.equal(m.roles[c.id], 'pinner');
+  assert.equal(m.roles[d.id], 'viewer');
+
+  const target = Object.values(locations).flat().find(l => l.id === m.plan[0].id);
+  e.handle(b.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 1000);
+  assert.equal(m.guesses[1]?.[b.id], undefined, 'the Viewer cannot guess');
+
+  e.handle(a.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 1000);
+  e.handle(c.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 1000);
+  assert.equal(m.guesses[1][a.id].score, m.guesses[1][b.id].score);
+  assert.equal(m.teamGuesses[1][m.roles[a.id] === 'pinner' ? e.teamFor(a.id).id : 'team_1'].score, m.guesses[1][a.id].score);
+  assert.ok(m.guesses[1][a.id].score > 5000);
+
+  for (const p of [a, b, c, d]) e.handle(p.id, msg(m, 'ROUND_READY'), m.startedAt + 2000);
+  assert.equal(m.round, 2);
+  assert.equal(m.roles[b.id], 'pinner');
+  assert.equal(m.roles[a.id], 'viewer');
+  assert.equal(m.roles[d.id], 'pinner');
+  assert.equal(m.roles[c.id], 'viewer');
+});
+
+test('Tag-Team redacts the current location from the Pinner until the reveal', () => {
+  const { e, a, b } = teamRoom(2);
+  const m = start(e, a);
+  const pinner = m.roles[a.id] === 'pinner' ? a : b;
+  const viewer = pinner === a ? b : a;
+  const targetId = m.plan[0].id;
+
+  const before = e.snapshot(pinner.id);
+  assert.equal(before.match.plan[0].id, null);
+  assert.equal(before.match.role, 'pinner');
+  assert.equal(e.snapshot(viewer.id).match.plan[0].id, targetId, 'the Viewer needs the panorama');
+
+  const target = Object.values(locations).flat().find(l => l.id === targetId);
+  e.handle(pinner.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 1000);
+  const after = e.snapshot(pinner.id);
+  assert.equal(after.match.plan[0].id, targetId, 'reveal restores the location');
+});
+
+test('Tag-Team disconnected partner becomes both eyes and hands', () => {
+  const { e, a, b, c, d } = teamRoom(4);
+  const m = start(e, a);
+  const target = Object.values(locations).flat().find(l => l.id === m.plan[0].id);
+  e.handle(a.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 1000);
+  e.handle(c.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 1000);
+  for (const p of [a, b, c, d]) e.handle(p.id, msg(m, 'ROUND_READY'), m.startedAt + 2000);
+  assert.equal(m.round, 2);
+
+  // b is the round-2 Pinner. Once their grace period expires, a must see and pin.
+  e.disconnect(b.id, m.startedAt + 2500);
+  e.tick(m.startedAt + 2500 + GRACE_MS + 1);
+  assert.equal(e.state.players.some(p => p.id === b.id), false);
+  assert.equal(e.snapshot(a.id).match.role, 'both');
+  e.handle(a.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.deadline - 1000);
+  assert.ok(m.guesses[2][a.id].score > 0);
+});
