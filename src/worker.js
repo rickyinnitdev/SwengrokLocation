@@ -85,14 +85,30 @@ export class PartyRoom extends DurableObject {
   }
   sendAll(msg) {
     for (const ws of this.ctx.getWebSockets()) {
-      if (ws.deserializeAttachment()?.playerId && ws.deserializeAttachment()?.protocol !== GAME_PROTOCOL) {
+      const attachment = ws.deserializeAttachment();
+      if (attachment?.playerId && attachment?.protocol !== GAME_PROTOCOL) {
         try { ws.send(JSON.stringify({ type: 'ROOM_ERROR', message: 'The game has updated. Reload this page, then join again.' })); ws.close(1008, 'Update required'); } catch {}
         continue;
       }
-      if (ws.deserializeAttachment()?.playerId) { try { ws.send(JSON.stringify(msg)); } catch {} }
+      if (attachment?.playerId) { try { ws.send(JSON.stringify(msg)); } catch {} }
     }
   }
-  broadcast() { this.sendAll({ type: 'ROOM_STATE', serverNow: Date.now(), ...this.engine.snapshot() }); }
+  broadcast() {
+    // Each player gets their own snapshot so a Tag-Team Pinner never receives
+    // the current round's location before the reveal.
+    const serverNow = Date.now();
+    for (const ws of this.ctx.getWebSockets()) {
+      const attachment = ws.deserializeAttachment();
+      if (!attachment?.playerId) continue;
+      if (attachment.protocol !== GAME_PROTOCOL) {
+        try { ws.send(JSON.stringify({ type: 'ROOM_ERROR', message: 'The game has updated. Reload this page, then join again.' })); ws.close(1008, 'Update required'); } catch {}
+        continue;
+      }
+      try {
+        ws.send(JSON.stringify({ type: 'ROOM_STATE', serverNow, ...this.engine.snapshot(attachment.playerId) }));
+      } catch {}
+    }
+  }
   async webSocketClose(ws) {
     const id = ws.deserializeAttachment()?.playerId;
     if (id) this.engine.disconnect(id);
