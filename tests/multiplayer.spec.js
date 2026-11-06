@@ -1,5 +1,46 @@
 import { test, expect } from '@playwright/test';
 
+// Phase 2: the first visit opens the doors screen. Tests that start from the
+// home screen must pick Cambodia first, exactly like a player does.
+async function enterHome(page) {
+  await page.goto('/');
+  const door = page.locator('[data-pick-region="kh"]');
+  if (await door.isVisible()) await door.click();
+  await expect(page.locator('#start-screen')).toHaveClass(/active/);
+  if (await page.locator('#coach').isVisible()) await page.evaluate(() => closeCoach());
+}
+
+test('doors take two taps, the language toggle switches copy and the map sheet cycles', async ({ page }) => {
+  await page.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama stub</p>' }));
+  await page.goto('/');
+  await expect(page.locator('#doors-screen')).toHaveClass(/active/);
+
+  // Tap 1: the Cambodia door. Tap 2: Play now.
+  await page.locator('[data-pick-region="kh"]').click();
+  await expect(page.locator('#start-screen')).toHaveClass(/active/);
+  await expect(page.locator('#doors-screen')).not.toHaveClass(/active/);
+  await expect(page.locator('#lang-toggle')).toHaveText('EN');
+  await expect(page.locator('#play-now-btn')).toContainText('លេងឥឡូវ');
+  await expect(page.locator('#featured-modes-container')).toContainText('សម្គាល់ដីសំខាន់');
+  if (await page.locator('#coach').isVisible()) await page.evaluate(() => closeCoach());
+
+  await page.locator('#lang-toggle').click();
+  await expect(page.locator('#lang-toggle')).toHaveText('ខ្មែរ');
+  await expect(page.locator('#play-now-btn')).toContainText('Play now');
+  await expect(page.locator('#featured-modes-container')).toContainText('Landmark Blitz');
+
+  await page.locator('#lang-toggle').click();
+  await expect(page.locator('#play-now-btn')).toContainText('លេងឥឡូវ');
+
+  await page.locator('#play-now-btn').click();
+  await expect(page.locator('#game-screen')).toHaveClass(/active/);
+  await expect(page.locator('#map-panel')).toHaveAttribute('data-state', 'peek');
+  await page.locator('#expand-toggle').click();
+  await expect(page.locator('#map-panel')).toHaveAttribute('data-state', 'half');
+  await page.locator('#expand-toggle').click();
+  await expect(page.locator('#map-panel')).toHaveAttribute('data-state', 'full');
+});
+
 test('server confirms joins, mode sync, guesses, refresh recovery, complete match and rematch', async ({ browser }) => {
   const ca = await browser.newContext(), cb = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const a = await ca.newPage(), b = await cb.newPage();
@@ -9,10 +50,10 @@ test('server confirms joins, mode sync, guesses, refresh recovery, complete matc
     await p.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama provider stub</p>' }));
   }
   try {
-    await Promise.all([a.goto('/'), b.goto('/')]);
-    await a.getByRole('button', { name: /Play with Friends/ }).click();
+    await Promise.all([enterHome(a), b.goto('/')]);
+    await a.locator('#start-screen .quick-card.pink').click();
     await a.locator('#party-mode-select').selectOption('sprint');
-    await a.getByRole('button', { name: 'Create New Party Lobby' }).click();
+    await a.locator('#mp-modal button[onclick="createMultiplayerLobby()"]').click();
     await expect.poll(() => a.evaluate(() => roomReady)).toBe(true);
     const code = await a.locator('#room-code-text').innerText();
     await expect(a.locator('#start-party-btn')).toBeDisabled();
@@ -27,7 +68,7 @@ test('server confirms joins, mode sync, guesses, refresh recovery, complete matc
     await expect(b.locator('#profile-modal')).toHaveClass(/active/);
     await b.locator('#profile-name-input').fill('Lobby explorer');
     await b.evaluate(() => setStudioOption('hair', 'beanie'));
-    await b.getByRole('button', { name: 'Save & Equip Character' }).click();
+    await b.locator('#profile-modal button[onclick="saveProfile()"]').click();
     await expect(a.locator('#lobby-players-container')).toContainText('Lobby explorer');
     await expect.poll(() => a.evaluate(() => getLobbyPlayers().find(p => p.name === 'Lobby explorer')?.avatarConfig.hairStyle)).toBe('beanie');
     await b.screenshot({ path: 'test-results/party-mobile.png', fullPage: true });
@@ -41,6 +82,7 @@ test('server confirms joins, mode sync, guesses, refresh recovery, complete matc
     for (let round = 1; round <= 5; round++) {
       for (const p of [a, b]) {
         await p.waitForFunction(() => Date.now() + serverClockOffset >= serverMatch.startedAt);
+        await p.evaluate(() => setSheet('full'));
         await p.evaluate(() => {
           gameState.guessMap.fire('click', { latlng: L.latLng(gameState.currentLocation.lat, gameState.currentLocation.lng) });
         });
@@ -77,7 +119,7 @@ test('rooms stay isolated; shared skip, fixed-view mode and socket reconnect wor
   try {
     for (const p of pages) {
       await p.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama stub</p>' }));
-      await p.goto('/');
+      await enterHome(p);
     }
     expect(await host.evaluate(() => ALL_LOCATIONS.length)).toBe(392);
     await host.evaluate(() => { openMultiplayerModal(); document.getElementById('party-mode-select').value = 'nmpz'; createMultiplayerLobby(); });
@@ -103,7 +145,7 @@ test('rooms stay isolated; shared skip, fixed-view mode and socket reconnect wor
 });
 
 test('solo draw deck and history survive refresh without repeating the pool', async ({ page }) => {
-  await page.goto('/');
+  await enterHome(page);
   const first = await page.evaluate(() => {
     currentMode = 'classic';
     const result = [];
