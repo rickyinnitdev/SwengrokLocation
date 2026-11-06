@@ -1723,3 +1723,357 @@
     }
 
     // ============================================================
+    //  ROUND RESULT VIEW (SOLO & 4-PLAYER)
+    // ============================================================
+    function locationName(loc) {
+        if (!loc) return '—';
+        return getLang() === 'km' && loc.nameKm ? loc.nameKm : loc.name;
+    }
+
+    function locationSecondary(loc) {
+        if (!loc) return '';
+        return getLang() === 'km' ? loc.name : (loc.nameKm || loc.country || '');
+    }
+
+    function friendlyScale(distanceMeters) {
+        if (!Number.isFinite(distanceMeters)) return '';
+        if (distanceMeters < 2000) return t('scale.sameBlock');
+        if (distanceMeters < 15000) return t('scale.sameKhan');
+        if (distanceMeters < 60000) return t('scale.sameSide');
+        if (distanceMeters < 400000) return t('scale.acrossCity');
+        if (distanceMeters < 3000000) return t('scale.acrossCountry');
+        return t('scale.otherContinent');
+    }
+
+    function animateCount(el, to, { duration = 600, prefix = '', suffix = '' } = {}) {
+        if (!el) return;
+        const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const target = Math.round(to);
+        if (reduced) { el.textContent = prefix + target.toLocaleString() + suffix; return; }
+        const start = performance.now();
+        const tick = now => {
+            const p = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = prefix + Math.round(target * eased).toLocaleString() + suffix;
+            if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+    }
+
+    function showRoundResult() {
+        document.getElementById('res-next-btn').disabled = false;
+        if (isRealMultiplayer()) setTimeout(updateRoundReadyUI, 0);
+        document.getElementById('result-screen').classList.add('active');
+
+        const loc = gameState.currentLocation;
+        document.getElementById('res-location-name').textContent = locationName(loc);
+        document.getElementById('res-location-km').textContent = locationSecondary(loc);
+        animateCount(document.getElementById('res-round-score'), gameState.roundScore + gameState.roundSpeedBonus);
+        document.getElementById('res-distance').textContent = formatDistanceStr(gameState.roundDistance);
+        const scaleEl = document.getElementById('res-distance-scale');
+        if (scaleEl) scaleEl.textContent = friendlyScale(gameState.roundDistance);
+        document.getElementById('res-dist-pts').textContent = gameState.roundScore.toLocaleString();
+        document.getElementById('res-speed-pts').textContent = `+${gameState.roundSpeedBonus}`;
+
+        const nextBtn = document.getElementById('res-next-btn');
+        const cfg = MODE_CONFIG[currentMode];
+        const roundMeta = document.getElementById('res-round-meta');
+        if (roundMeta) roundMeta.textContent = `${t('game.round')} ${Math.min(gameState.roundIndex, cfg.rounds)} / ${cfg.rounds}`;
+        const totalMeta = document.getElementById('res-total-meta');
+        if (totalMeta) totalMeta.textContent = `${t('final.total')} ${gameState.totalScore.toLocaleString()}`;
+        if (gameState.roundIndex >= cfg.rounds) {
+            nextBtn.textContent = t('result.final') + ' 🏆';
+        } else {
+            nextBtn.textContent = `${t('result.next')} (${gameState.roundIndex + 1}/${cfg.rounds}) →`;
+        }
+
+        const banner = document.getElementById('res-mode-banner');
+        if (banner) {
+            const chip = (ok, text) => `<span class="banner-chip ${ok ? 'ok' : 'miss'}">${text}</span>`;
+            let bannerHTML = '';
+            if (cfg.isWorld) {
+                const country = gameState.currentLocation.country || 'World';
+                bannerHTML = `<span>${COUNTRY_FLAGS[country] || '🌍'}</span><span>${t('result.target')}: <strong>${escapeHTML(locationName(gameState.currentLocation))}</strong>, <em>${escapeHTML(country)}</em></span>`;
+            } else if (cfg.isCountry) {
+                const country = gameState.currentLocation.country || '—';
+                const isCorrect = (gameState.chosenCountry && gameState.chosenCountry.toLowerCase() === country.toLowerCase()) || gameState.roundDistance < 50000;
+                bannerHTML = `<span>${COUNTRY_FLAGS[country] || '🌍'}</span><span>${t('result.targetCountry')}: <strong>${escapeHTML(country)}</strong></span>${chip(isCorrect, isCorrect ? t('result.correct') : t('result.missed'))}`;
+            } else if (cfg.isAsia) {
+                const country = gameState.currentLocation.country || 'Asia';
+                bannerHTML = `<span>${COUNTRY_FLAGS[country] || '🌏'}</span><span>${t('result.destination')}: <strong>${escapeHTML(locationName(gameState.currentLocation))}</strong>, <em>${escapeHTML(country)}</em></span>`;
+            } else if (cfg.isDistrict) {
+                const area = gameState.currentLocation.area || 'Phnom Penh';
+                const isCorrect = !!gameState.roundMatchedChoice;
+                bannerHTML = `<span>🏙️</span><span>${t('result.khan')}: <strong>${escapeHTML(area)}</strong></span>${chip(isCorrect, isCorrect ? t('result.correct') : t('result.missed'))}`;
+            } else if (cfg.isSniper) {
+                const dist = gameState.roundDistance;
+                const isBullseye = dist <= 35;
+                const isGreat = dist <= 75;
+                const label = isBullseye ? t('result.perfect') : isGreat ? t('result.closeShot') : dist <= 150 ? t('result.nearby') : t('result.outside');
+                bannerHTML = `<span>🎯</span><span>${t('result.bullseye')}:</span>${chip(isBullseye || isGreat, label)}`;
+            } else if (cfg.isStreak) {
+                const streak = gameState.streakCount || 0;
+                const mult = streak >= 5 ? '5x' : streak === 4 ? '3x' : streak === 3 ? '2x' : streak === 2 ? '1.5x' : '1x';
+                bannerHTML = `<span>🔥</span><span>${t('result.streak')}: <strong>${streak}</strong></span>${chip(streak > 0, `${t('result.multiplier')} ${mult}`)}`;
+            } else if (cfg.isCambodia) {
+                bannerHTML = `<span>🇰🇭</span><span>${t('result.province')}: <strong>${escapeHTML(gameState.currentLocation.area || 'Cambodia')}</strong></span>`;
+            }
+            banner.style.display = bannerHTML ? 'block' : 'none';
+            banner.className = 'res-mode-banner neutral';
+            banner.innerHTML = bannerHTML ? `<div class="banner-line">${bannerHTML}</div>` : '';
+        }
+
+        const mpLeaderboard = document.getElementById('mp-round-leaderboard');
+        const mpList = document.getElementById('mp-round-players-list');
+
+        if (gameState.simulated4P && mpLeaderboard && mpList) {
+            mpLeaderboard.style.display = 'block';
+
+            const sortedPlayers = [...gameState.simPlayers].sort((a, b) => {
+                const distA = a.currentGuess ? a.currentGuess.dist : 99999;
+                const distB = b.currentGuess ? b.currentGuess.dist : 99999;
+                return distA - distB;
+            });
+
+            const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd', '4th'];
+            mpList.innerHTML = sortedPlayers.map((p, idx) => {
+                const g = p.currentGuess || { dist: 99999, score: 0 };
+                return `
+                    <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.isMe ? 'is-me' : ''}">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-weight: 900; font-size: 0.92rem; min-width: 48px; color: ${idx === 0 ? 'var(--gold-deep)' : 'var(--ink-2)'};">${medals[idx]}</span>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: var(--gold); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                                ${renderAvatarHTML(p, '100%', '100%')}
+                            </div>
+                            <div>
+                                <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                    ${escapeHTML(p.name)} ${p.isMe ? `<span style="font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--rice); color: var(--paper);">${t('party.you')}</span>` : ''}
+                                </div>
+                                <div style="font-size: 0.75rem; color: var(--ink-2);">${formatDistanceStr(g.dist)} ${t('result.away')} (${g.elapsed ? g.elapsed.toFixed(1) + 's' : ''})</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">+${g.score.toLocaleString()} pts</div>
+                            <div style="font-size: 0.72rem; color: var(--gold-deep); font-weight: 700;">${t('final.total')}: ${p.totalScore.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else if (isRealMultiplayer() && mpLeaderboard && mpList) {
+            mpLeaderboard.style.display = 'block';
+            renderMpRoundLeaderboard();
+        } else if (mpLeaderboard) {
+            mpLeaderboard.style.display = 'none';
+        }
+
+    function animateTukTuk(map, from, to) {
+        if (!map || !from || !to) return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const icon = L.divIcon({
+            className: 'tuktuk-ride',
+            html: '<div class="tuktuk-bubble">🛵</div>',
+            iconSize: [38, 38],
+            iconAnchor: [19, 19]
+        });
+        const marker = L.marker(from, { icon, interactive: false, zIndexOffset: 1000 }).addTo(map);
+        const start = performance.now();
+        const duration = 1600;
+        const step = now => {
+            const p = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - p, 2);
+            marker.setLatLng([from[0] + (to[0] - from[0]) * eased, from[1] + (to[1] - from[1]) * eased]);
+            if (p < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+    }
+
+    setTimeout(async () => {
+            try { await ensureLeaflet(); } catch (e) { return; }
+            if (gameState.resultMap) gameState.resultMap.remove();
+
+            gameState.resultMap = L.map('result-map', { zoomControl: true, attributionControl: false });
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(gameState.resultMap);
+
+            const actualLoc = [gameState.currentLocation.lat, gameState.currentLocation.lng];
+            const actualIcon = L.divIcon({ className: 'marker-pin-actual', iconSize: [18, 18] });
+            const countryOrArea = gameState.currentLocation.country ? `🌍 ${gameState.currentLocation.country}` : `📍 ${gameState.currentLocation.area || 'Phnom Penh'}`;
+            L.marker(actualLoc, { icon: actualIcon }).addTo(gameState.resultMap).bindPopup(`<b>📍 ${escapeHTML(locationName(gameState.currentLocation))}</b><br><span style="color:#53645f; font-size:11px;">${escapeHTML(countryOrArea)}</span>`).openPopup();
+
+            const boundsPoints = [actualLoc];
+
+            if (gameState.simulated4P) {
+                gameState.simPlayers.forEach(p => {
+                    if (!p.currentGuess) return;
+                    const guessLoc = [p.currentGuess.guessLatLng.lat, p.currentGuess.guessLatLng.lng];
+                    boundsPoints.push(guessLoc);
+
+                    const playerPinHtml = `
+                        <div class="marker-player-pin">
+                            <div class="marker-pin-bubble" style="border-color: ${p.aura || '#f59e0b'};">
+                                ${renderAvatarHTML(p, '100%', '100%')}
+                            </div>
+                            <div class="marker-pin-point" style="border-top-color: ${p.aura || '#f59e0b'};"></div>
+                            <div class="marker-pin-label" style="border-color: ${p.aura || '#f59e0b'};">${escapeHTML(p.name)}: ${formatDistanceStr(p.currentGuess.dist)}</div>
+                        </div>
+                    `;
+
+                    const playerIcon = L.divIcon({
+                        className: 'custom-leaflet-player-marker',
+                        html: playerPinHtml,
+                        iconSize: [40, 52],
+                        iconAnchor: [20, 50]
+                    });
+
+                    L.marker(guessLoc, { icon: playerIcon }).addTo(gameState.resultMap);
+
+                    L.polyline([actualLoc, guessLoc], {
+                        color: p.aura || '#f59e0b',
+                        weight: 3,
+                        dashArray: '6,6',
+                        opacity: 0.85
+                    }).addTo(gameState.resultMap);
+                });
+
+                if (boundsPoints.length > 1) {
+                    const bounds = L.latLngBounds(boundsPoints);
+                    gameState.resultMap.fitBounds(bounds.pad(0.25));
+                }
+            } else if (gameState.guessLatLng) {
+                const guessLoc = [gameState.guessLatLng.lat, gameState.guessLatLng.lng];
+                const guessIcon = L.divIcon({ className: 'marker-pin-guess', iconSize: [18, 18] });
+                L.marker(guessLoc, { icon: guessIcon }).addTo(gameState.resultMap).bindPopup(`<b>${t('game.yourGuess')}</b>`);
+
+                L.polyline([actualLoc, guessLoc], { color: '#E0A526', weight: 4, dashArray: '2,8', lineCap: 'round' }).addTo(gameState.resultMap);
+
+                const bounds = L.latLngBounds([actualLoc, guessLoc]);
+                gameState.resultMap.fitBounds(bounds.pad(0.3));
+                setTimeout(() => animateTukTuk(gameState.resultMap, guessLoc, actualLoc), 500);
+            } else {
+                gameState.resultMap.setView(actualLoc, 15);
+            }
+
+            gameState.mpPinLayer = null;
+            refreshMpResultPins();
+        }, 150);
+    }
+
+    function updateRoundReadyUI() {
+        if (!isRealMultiplayer()) return;
+        const btn = document.getElementById('res-next-btn');
+        const players = getLobbyPlayers();
+        const count = players.filter(p => readyPlayers.has(p.id)).length;
+        const ready = readyPlayers.has(myPlayerId);
+        btn.disabled = ready || readyPending || !roomReady;
+        btn.textContent = ready
+            ? t('result.waiting', { n: count, total: players.length })
+            : t('result.ready');
+    }
+
+    function advanceNextRound() {
+        if (isRealMultiplayer()) {
+            if (!gameState.roundSubmitted || readyPlayers.has(myPlayerId) || readyPending) return;
+            if (sendRoomMessage({ type: 'ROUND_READY', matchId, round: gameState.roundIndex })) readyPending = true;
+            updateRoundReadyUI();
+            return;
+        }
+        document.getElementById('result-screen').classList.remove('active');
+        const cfg = MODE_CONFIG[currentMode];
+        if (gameState.roundIndex >= cfg.rounds) {
+            showFinalPodium();
+        } else {
+            loadRound();
+        }
+    }
+
+    function showFinalPodium() {
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('final-screen').classList.add('active');
+
+        const total = gameState.totalScore;
+        document.getElementById('fin-total-score').textContent = total.toLocaleString();
+
+        let badge = '🏆', rating = t('final.rating.explore');
+        if (total >= 25000) { badge = '👑'; rating = t('final.rating.grandmaster'); }
+        else if (total >= 20000) { badge = '🌟'; rating = t('final.rating.expert'); }
+        else if (total >= 15000) { badge = '👏'; rating = t('final.rating.navigator'); }
+        else if (total >= 10000) { badge = '🛵'; rating = t('final.rating.apprentice'); }
+
+        document.getElementById('fin-badge').textContent = badge;
+        document.getElementById('fin-rating').textContent = rating;
+
+        const table = document.getElementById('fin-rounds-table');
+        if (gameState.simulated4P) {
+            const finalRanked = [...gameState.simPlayers].sort((a, b) => b.totalScore - a.totalScore);
+            const medals = ['🥇', '🥈', '🥉', ''];
+            table.innerHTML = `
+                <div class="field-label">${t('final.tournament')}</div>
+                ${finalRanked.map((p, idx) => `
+                    <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.isMe ? 'is-me' : ''}">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="final-rank final-place">${medals[idx]} ${t('final.place' + (idx + 1))}</span>
+                            <div class="final-avatar" style="border-color: ${p.aura || 'var(--line)'};">
+                                ${renderAvatarHTML(p, '100%', '100%')}
+                            </div>
+                            <span class="final-player">${escapeHTML(p.name)} ${p.isMe ? `(${t('final.you')})` : ''}</span>
+                        </div>
+                        <span class="final-points">${p.totalScore.toLocaleString()} ${t('final.points')}</span>
+                    </div>
+                `).join('')}
+            `;
+        } else {
+            const roundsHTML = gameState.roundsHistory.map(r => `
+                <div class="mp-leaderboard-row">
+                    <span class="final-rank">${t('final.roundShort', { n: r.round })}</span>
+                    <span class="final-area">${escapeHTML(r.area)}</span>
+                    <span>${formatDistanceStr(r.dist)}</span>
+                    <span class="final-points">${r.total.toLocaleString()} ${t('final.points')}</span>
+                </div>
+            `).join('');
+
+            let partyHTML = '';
+            if (isRealMultiplayer()) {
+                const me = myPlayerId || 'me';
+                const ranked = getLobbyPlayers()
+                    .map(p => ({ ...p, total: mpTotalFor(p.id) }))
+                    .sort((a, b) => b.total - a.total);
+                const medals = ['🥇', '🥈', '🥉'];
+                partyHTML = `
+                    <div class="field-label">${t('final.partyBoard')}</div>
+                    ${ranked.map((p, idx) => `
+                        <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="final-rank final-place">${medals[idx] || ''} ${t('final.place' + (idx + 1))}</span>
+                                <div class="final-avatar" style="border-color: ${getPlayerAura(p.id)};">
+                                    ${renderAvatarHTML(p, '100%', '100%')}
+                                </div>
+                                <span class="final-player">${escapeHTML(p.name)} ${p.id === me ? `(${t('final.you')})` : ''}</span>
+                            </div>
+                            <span class="final-points">${p.total.toLocaleString()} ${t('final.points')}</span>
+                        </div>
+                    `).join('')}
+                    <div class="final-hint">${t('result.waiting', { n: readyPlayers.size, total: getLobbyPlayers().length })}</div>
+                `;
+            }
+            table.innerHTML = partyHTML + roundsHTML;
+        }
+    }
+
+    function resetToHome() {
+        // Still connected to a party: go back to the waiting room for a rematch
+        if (isRealMultiplayer() && roomSocket) {
+            if (!gameState.isHost) { showToast(t('toast.waitHostLobby')); return; }
+            sendRoomMessage({ type: 'REMATCH' });
+            return;
+        }
+        document.getElementById('final-screen').classList.remove('active');
+        gameState.isMultiplayer = false;
+        gameState.matchPlan = null;
+        gameState.streakCount = 0;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
+        updateStreakHUD();
+        document.getElementById('start-screen').classList.add('active');
+        renderModeCards();
+    }
+
+    // ============================================================
