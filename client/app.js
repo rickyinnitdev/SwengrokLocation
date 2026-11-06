@@ -1202,3 +1202,301 @@
     }
 
     // ============================================================
+    //  4-PLAYER SIMULATION ENGINE & BOT ROSTER
+    // ============================================================
+    const SIM_BOTS = [
+        {
+            id: 'bot_sokha',
+            name: 'Sokha 🛵',
+            title: 'Daun Penh Tuk-Tuk Master',
+            avatarType: 'custom',
+            avatarConfig: {
+                hairStyle: 'fluffy',
+                hairColor: '#261b2b',
+                jacketStyle: 'cardigan',
+                jacketColor: '#0284c7',
+                shirtColor: '#ffffff',
+                skinColor: '#fee0d2',
+                bg: '#38bdf8',
+                squiggles: 'electric',
+                eyeStyle: 'happy',
+                blush: true
+            },
+            aura: '#38bdf8',
+            minDist: 100, maxDist: 480,
+            minDelay: 3200, maxDelay: 5800
+        },
+        {
+            id: 'bot_dara',
+            name: 'Dara 🛺',
+            title: 'BKK1 Cafe Hopper',
+            avatarType: 'custom',
+            avatarConfig: {
+                hairStyle: 'spiky',
+                hairColor: '#4a2810',
+                jacketStyle: 'hoodie',
+                jacketColor: '#ea580c',
+                shirtColor: '#fef08a',
+                skinColor: '#fee0d2',
+                bg: '#fbbf24',
+                squiggles: 'electric',
+                eyeStyle: 'curious',
+                blush: true
+            },
+            aura: '#f59e0b',
+            minDist: 320, maxDist: 980,
+            minDelay: 5500, maxDelay: 9200
+        },
+        {
+            id: 'bot_bopha',
+            name: 'Bopha 🌸',
+            title: 'Riverside Sunset Chaser',
+            avatarType: 'custom',
+            avatarConfig: {
+                hairStyle: 'fluffy',
+                hairColor: '#db2777',
+                jacketStyle: 'cardigan',
+                jacketColor: '#db2777',
+                shirtColor: '#fbcfe8',
+                skinColor: '#fee0d2',
+                bg: '#f472b6',
+                squiggles: 'sparkles',
+                eyeStyle: 'chill',
+                blush: true
+            },
+            aura: '#ec4899',
+            minDist: 650, maxDist: 1850,
+            minDelay: 8500, maxDelay: 13500
+        }
+    ];
+
+    let simBotTimers = [];
+
+    function start4PlayerSimulation() {
+        gameState.isMultiplayer = true;
+        gameState.simulated4P = true;
+        gameState.matchPlan = null;
+        gameState.simPlayers = [
+            {
+                id: 'player_me',
+                name: userProfile.name || 'ricy',
+                avatarType: userProfile.avatarType || 'custom',
+                avatarConfig: userProfile.avatarConfig,
+                aura: userProfile.aura || '#10b981',
+                isMe: true,
+                totalScore: 0
+            },
+            ...SIM_BOTS.map(b => ({
+                id: b.id,
+                name: b.name,
+                avatarType: b.avatarType,
+                avatarConfig: b.avatarConfig,
+                aura: b.aura,
+                isMe: false,
+                botConfig: b,
+                totalScore: 0
+            }))
+        ];
+
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+
+        gameState.roundIndex = 0;
+        gameState.totalScore = 0;
+        gameState.roundsHistory = [];
+        gameState.usedLocIds = [];
+        gameState.streakCount = 0;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
+        SIM_BOTS.forEach(b => { b.streakCount = 0; });
+
+        initGuessMap();
+        loadRound();
+    }
+
+    function initSimRound() {
+        simBotTimers.forEach(t => clearTimeout(t));
+        simBotTimers = [];
+
+        const hudCard = document.getElementById('hud-mp-status-card');
+        const chipsContainer = document.getElementById('hud-mp-chips');
+        if (!hudCard || !chipsContainer) return;
+
+        hudCard.style.display = 'flex';
+        chipsContainer.innerHTML = gameState.simPlayers.map(p => `
+            <div class="hud-player-chip" id="sim-chip-${p.id}">
+                <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
+                <span>${escapeHTML(p.name)}${p.isMe ? ' (You)' : ': 🤔'}</span>
+            </div>
+        `).join('');
+
+        gameState.simPlayers.forEach(p => {
+            p.currentGuess = null;
+            p.roundCompleted = false;
+        });
+
+        const target = gameState.currentLocation;
+        const cfg = MODE_CONFIG[currentMode];
+
+        gameState.simPlayers.filter(p => !p.isMe).forEach(bot => {
+            const delay = bot.botConfig.minDelay + Math.random() * (bot.botConfig.maxDelay - bot.botConfig.minDelay);
+            const tId = setTimeout(() => {
+                if (bot.roundCompleted) return;
+                generateBotGuess(bot, target, cfg.time);
+            }, delay);
+            simBotTimers.push(tId);
+        });
+    }
+
+    function generateBotGuess(bot, target, maxTime) {
+        if (bot.roundCompleted) return;
+        const bCfg = bot.botConfig;
+        const cfg = MODE_CONFIG[currentMode] || {};
+
+        let guessLatLng;
+        let actualDist;
+        let matchedChoice = false;
+        let botCountryName = null;
+        let botDistrictName = null;
+
+        if (cfg.isWorld) {
+            const worldMin = bot.id === 'bot_sokha' ? 80000 : bot.id === 'bot_dara' ? 300000 : 800000;
+            const worldMax = bot.id === 'bot_sokha' ? 450000 : bot.id === 'bot_dara' ? 1200000 : 3500000;
+            const dist = worldMin + Math.random() * (worldMax - worldMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.max(0.2, Math.cos(target.lat * Math.PI / 180)))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isCountry) {
+            const targetCountry = target.country || 'Cambodia';
+            const hitProb = bot.id === 'bot_sokha' ? 0.85 : bot.id === 'bot_dara' ? 0.65 : 0.40;
+            const isCorrect = Math.random() < hitProb;
+            if (isCorrect) {
+                botCountryName = targetCountry;
+                matchedChoice = true;
+                const cCenter = COUNTRY_CENTERS[targetCountry] || { lat: target.lat, lng: target.lng };
+                const jDist = 10000 + Math.random() * 140000;
+                const jAng = Math.random() * 2 * Math.PI;
+                guessLatLng = {
+                    lat: cCenter.lat + (jDist / 111320) * Math.cos(jAng),
+                    lng: cCenter.lng + (jDist / (111320 * Math.max(0.2, Math.cos(cCenter.lat * Math.PI / 180)))) * Math.sin(jAng)
+                };
+            } else {
+                const otherCountries = ALL_COUNTRIES.filter(c => c !== targetCountry);
+                botCountryName = otherCountries[Math.floor(Math.random() * otherCountries.length)] || 'France';
+                const cCenter = COUNTRY_CENTERS[botCountryName] || { lat: 0, lng: 0 };
+                const jDist = 20000 + Math.random() * 200000;
+                const jAng = Math.random() * 2 * Math.PI;
+                guessLatLng = {
+                    lat: cCenter.lat + (jDist / 111320) * Math.cos(jAng),
+                    lng: cCenter.lng + (jDist / (111320 * Math.max(0.2, Math.cos(cCenter.lat * Math.PI / 180)))) * Math.sin(jAng)
+                };
+            }
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isAsia) {
+            const asiaMin = bot.id === 'bot_sokha' ? 35000 : bot.id === 'bot_dara' ? 120000 : 400000;
+            const asiaMax = bot.id === 'bot_sokha' ? 200000 : bot.id === 'bot_dara' ? 500000 : 1500000;
+            const dist = asiaMin + Math.random() * (asiaMax - asiaMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.max(0.2, Math.cos(target.lat * Math.PI / 180)))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isDistrict) {
+            const targetKhan = PP_KHANS.find(k => (target.area || '').includes(k.id) || k.name.includes(target.area || '')) || PP_KHANS[0];
+            const hitProb = bot.id === 'bot_sokha' ? 0.80 : bot.id === 'bot_dara' ? 0.60 : 0.40;
+            const isCorrect = Math.random() < hitProb;
+            let chosenKhan = targetKhan;
+            if (!isCorrect) {
+                const others = PP_KHANS.filter(k => k.id !== targetKhan.id);
+                chosenKhan = others[Math.floor(Math.random() * others.length)] || targetKhan;
+            } else {
+                matchedChoice = true;
+            }
+            botDistrictName = chosenKhan.id;
+            const jDist = 200 + Math.random() * 900;
+            const jAng = Math.random() * 2 * Math.PI;
+            guessLatLng = {
+                lat: chosenKhan.lat + (jDist / 111320) * Math.cos(jAng),
+                lng: chosenKhan.lng + (jDist / (111320 * Math.cos(chosenKhan.lat * Math.PI / 180))) * Math.sin(jAng)
+            };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isSniper) {
+            const sniperMin = bot.id === 'bot_sokha' ? 12 : bot.id === 'bot_dara' ? 35 : 80;
+            const sniperMax = bot.id === 'bot_sokha' ? 55 : bot.id === 'bot_dara' ? 110 : 250;
+            const dist = sniperMin + Math.random() * (sniperMax - sniperMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isCambodia) {
+            const camMin = bot.id === 'bot_sokha' ? 250 : bot.id === 'bot_dara' ? 800 : 2500;
+            const camMax = bot.id === 'bot_sokha' ? 1200 : bot.id === 'bot_dara' ? 4000 : 15000;
+            const dist = camMin + Math.random() * (camMax - camMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else {
+            const dist = bCfg.minDist + Math.random() * (bCfg.maxDist - bCfg.minDist);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        }
+
+        const elapsed = Math.min(maxTime, Math.max(2.0, (Date.now() - gameState.roundStartTime) / 1000));
+        const timeRemaining = Math.max(0, maxTime - elapsed);
+        const scoreObj = scoreGuess(actualDist, timeRemaining, maxTime, matchedChoice);
+
+        let streakMultiplier = 1;
+        if (cfg.isStreak) {
+            if (actualDist <= 500) {
+                bot.streakCount = (bot.streakCount || 0) + 1;
+                streakMultiplier = bot.streakCount >= 5 ? 5 : bot.streakCount === 4 ? 3 : bot.streakCount === 3 ? 2 : bot.streakCount === 2 ? 1.5 : 1;
+            } else {
+                bot.streakCount = 0;
+            }
+        }
+
+        const finalDistScore = Math.round(scoreObj.distScore * streakMultiplier);
+        const finalRoundScore = finalDistScore + scoreObj.speedBonus;
+
+        bot.currentGuess = {
+            guessLatLng,
+            dist: actualDist,
+            score: finalRoundScore,
+            distScore: finalDistScore,
+            speedBonus: scoreObj.speedBonus,
+            elapsed,
+            matchedChoice,
+            botCountryName,
+            botDistrictName
+        };
+        bot.totalScore += finalRoundScore;
+        bot.roundCompleted = true;
+
+        const chip = document.getElementById(`sim-chip-${bot.id}`);
+        if (chip) {
+            chip.classList.add('guessed');
+            let chipExtra = '';
+            if (botCountryName) {
+                const flag = COUNTRY_FLAGS[botCountryName] || '🌍';
+                chipExtra = `${flag} ${botCountryName}`;
+            } else if (botDistrictName) {
+                chipExtra = `🏙️ ${botDistrictName}`;
+            } else {
+                chipExtra = `✓ (${elapsed.toFixed(1)}s)`;
+            }
+            chip.innerHTML = `
+                <div class="hud-player-chip-avatar">${renderAvatarHTML(bot, '100%', '100%')}</div>
+                <span>${escapeHTML(bot.name)}: ${escapeHTML(chipExtra)}</span>
+            `;
+        }
+    }
+
+    // ============================================================
