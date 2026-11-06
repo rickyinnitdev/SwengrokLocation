@@ -253,6 +253,16 @@ test('Tag-Team: viewer sees the street only, pinner sees the map only, teams sha
       expect(x).toBe(y);
     }
     await expect(a.locator('#fin-rounds-table .team-row')).toHaveCount(2);
+    // Finished parties are saved to the party board for players who sent a device identity.
+    await expect.poll(async () => {
+      const res = await a.request.get('/api/leaderboard?mode=party:tagteam_kh&period=all&region=kh');
+      return (await res.json()).rows.length;
+    }).toBeGreaterThanOrEqual(4);
+    const mine = await a.evaluate(async () => {
+      const id = JSON.parse(localStorage.getItem('wanderpenh_device')).playerId;
+      return (await (await fetch('/api/leaderboard?mode=party:tagteam_kh&period=all&region=kh&playerId=' + id)).json()).rows.find(r => r.isMe)?.value;
+    });
+    expect(mine).toBe(totals[0]);
     expect(errors).toEqual([]);
   } finally { for (const c of contexts) await c.close(); }
 });
