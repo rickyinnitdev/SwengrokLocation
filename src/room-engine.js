@@ -1,5 +1,6 @@
 import { locations, modes } from '../.generated/game-data.js';
 import { drawLocations } from './location-rotation.js';
+import { distance, scoreRound } from './scoring.js';
 
 export const MAX_PLAYERS = 8;
 export const GRACE_MS = 30000;
@@ -31,11 +32,7 @@ export function shuffled(array) {
   }
   return copy;
 }
-export function distance(a, b) {
-  const rad = Math.PI / 180;
-  const t = Math.sin((b.lat - a.lat) * rad / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin((b.lng - a.lng) * rad / 2) ** 2;
-  return 6371000 * 2 * Math.atan2(Math.sqrt(t), Math.sqrt(Math.max(0, 1 - t)));
-}
+export { distance };
 export function initialState() {
   return { players: [], hostId: null, mode: 'classic', match: null, teams: [], recent: [], rotation: { history: [] }, updatedAt: 0 };
 }
@@ -236,23 +233,8 @@ export class RoomEngine {
     const target = Object.values(locations).flat().find(l => l.id === m.plan[m.round - 1].id);
     const dist = point ? distance(target, point) : null;
     const elapsed = Math.max(0, Math.min(cfg.time, (now - m.startedAt) / 1000));
-    let distScore = 0;
-    if (dist !== null) {
-      if (cfg.pool === 'countries' || cfg.isWorld) {
-        distScore = dist <= 50000 ? 5000 : Math.round(5000 * Math.exp(-dist / 3500000));
-      } else if (cfg.pool === 'asia' || cfg.isAsia) {
-        distScore = dist <= 25000 ? 5000 : Math.round(5000 * Math.exp(-dist / 1200000));
-      } else if (cfg.pool === 'cambodia') {
-        distScore = dist <= 500 ? 5000 : Math.round(5000 * Math.exp(-dist / 30000));
-      } else if (cfg.isSniper) {
-        distScore = dist <= 35 ? 10000 : dist <= 75 ? 7500 : dist <= 150 ? 6000 : Math.round(5000 * Math.exp(-dist / 1500));
-      } else {
-        distScore = dist <= 25 ? 5000 : Math.round(5000 * Math.exp(-dist / 1500));
-      }
-    }
-    const speedBonus = point ? Math.round(Math.max(0, 1 - elapsed / cfg.time) * 1000) * (s.mode === 'sprint' ? 2 : 1) : 0;
-    const bountyBonus = cfg.isBounty && dist !== null && dist < 200 ? 500 : 0;
-    const result = { playerId: id, round: m.round, dist, elapsed, distScore, speedBonus, bountyBonus, score: distScore + speedBonus + bountyBonus, guessLatLng: point };
+    const { distScore, speedBonus, bountyBonus, score } = scoreRound(s.mode, cfg, dist, elapsed);
+    const result = { playerId: id, round: m.round, dist, elapsed, distScore, speedBonus, bountyBonus, score, guessLatLng: point };
     if (team) {
       result.teamId = team.id;
       for (const pid of team.playerIds) round[pid] = { ...result, playerId: pid };
