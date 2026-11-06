@@ -172,6 +172,7 @@ export class RoomEngine {
     m.startedAt = now + 800;
     m.deadline = m.startedAt + modes[this.state.mode].time * 1000;
     m.ready = [];
+    if (this.isTeamsMode()) m.roles = this.roundRoles();
   }
   handle(id, msg, now = Date.now()) {
     const s = this.state, p = s.players.find(p => p.id === id);
@@ -182,19 +183,29 @@ export class RoomEngine {
     } else if (msg.type === 'SET_MODE') {
       if (id !== s.hostId || s.match || !Object.hasOwn(modes, msg.mode)) return;
       s.mode = msg.mode;
+      this.syncTeams(true);
+    } else if (msg.type === 'SET_TEAMS') {
+      if (id !== s.hostId || s.match || !this.isTeamsMode() || !this.validTeams(msg.teams)) return;
+      this.applyTeams(msg.teams);
     } else if (msg.type === 'START_MATCH') {
       if (id !== s.hostId || s.match || s.players.filter(p => p.connected).length < 2 || s.players.some(p => !p.connected)) return;
+      if (this.isTeamsMode() && !this.validTeams(s.teams)) this.syncTeams(true);
+      if (this.isTeamsMode() && !this.validTeams(s.teams)) return;
       s.match = { id: crypto.randomUUID(), phase: 'playing', plan: this.makePlan(), round: 1, guesses: {}, ready: [], swaps: 0 };
       this.startRound(now);
     } else if (msg.type === 'REMATCH') {
-      if (id === s.hostId && s.match?.phase === 'final') s.match = null;
+      if (id === s.hostId && s.match?.phase === 'final') { s.match = null; this.syncTeams(); }
     } else if (msg.type === 'PLAYER_GUESS') {
       const m = s.match;
       if (!m || m.phase !== 'playing' || msg.matchId !== m.id || msg.round !== m.round || now < m.startedAt) return;
       this.guess(id, msg.guessLatLng, now);
     } else if (msg.type === 'ROUND_READY') {
       const m = s.match;
-      if (!m || msg.matchId !== m.id || msg.round !== m.round || !m.guesses[m.round]?.[id]) return;
+      if (!m || msg.matchId !== m.id || msg.round !== m.round) return;
+      const ready = this.isTeamsMode()
+        ? this.teamFor(id) && this.teamHasGuess(this.teamFor(id).id, m.round)
+        : !!m.guesses[m.round]?.[id];
+      if (!ready) return;
       if (!m.ready.includes(id)) m.ready.push(id);
       this.advance(now);
     } else if (msg.type === 'SKIP_LOCATION') {
