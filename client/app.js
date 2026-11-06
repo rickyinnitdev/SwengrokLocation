@@ -2040,7 +2040,17 @@
             `).join('');
 
             let partyHTML = '';
-            if (isRealMultiplayer()) {
+            if (isRealMultiplayer() && isTeamMode() && serverTeams.length) {
+                const me = myPlayerId || 'me';
+                const rankedTeams = serverTeams
+                    .map((team, i) => ({ team, i, guess: null, total: mpTotalFor(team.playerIds[0]) }))
+                    .sort((a, b) => b.total - a.total);
+                partyHTML = `
+                    <div class="field-label">${t('team.finalBoard')}</div>
+                    ${rankedTeams.map((r, idx) => renderTeamRow(r, idx, me, false)).join('')}
+                    <div class="final-hint">${t('result.waiting', { n: readyPlayers.size, total: getLobbyPlayers().length })}</div>
+                `;
+            } else if (isRealMultiplayer()) {
                 const me = myPlayerId || 'me';
                 const ranked = getLobbyPlayers()
                     .map(p => ({ ...p, total: mpTotalFor(p.id) }))
@@ -2647,11 +2657,50 @@
         }).join('');
     }
 
+    function renderTeamRow(r, idx, me, showRoundPoints) {
+        const g = r.guess;
+        const color = TEAM_COLORS[r.i % TEAM_COLORS.length];
+        const mine = r.team.playerIds.includes(me);
+        const medals = ['🥇', '🥈', '🥉'];
+        const detail = showRoundPoints
+            ? (!g ? t('result.stillGuessing') : g.dist === null ? t('result.noGuess') : `${formatDistanceStr(g.dist)}${g.elapsed !== null ? ` (${g.elapsed.toFixed(1)}s)` : ''}`)
+            : '';
+        const faces = r.team.playerIds.map(id => {
+            const p = playerById(id);
+            return p ? `<span class="team-row-face" style="border-color:${color};">${renderAvatarHTML(p, '100%', '100%')}</span>` : '';
+        }).join('');
+        return `
+            <div class="mp-leaderboard-row team-row ${idx === 0 && (g || !showRoundPoints) ? 'rank-1' : ''} ${mine ? 'is-me' : ''}" style="--team-color:${color};">
+                <div class="team-row-main">
+                    <span class="team-row-rank">${g || !showRoundPoints ? (medals[idx] || `${idx + 1}.`) : '…'}</span>
+                    <span class="team-row-faces">${faces}</span>
+                    <div>
+                        <div class="team-row-name">${escapeHTML(teamNames(r.team))}${mine ? ` <span class="team-row-you">${t('party.you')}</span>` : ''}</div>
+                        ${detail ? `<div class="team-row-detail">${detail}</div>` : ''}
+                    </div>
+                </div>
+                <div class="team-row-score">
+                    ${showRoundPoints && g ? `<div class="team-row-round">+${g.score.toLocaleString()} ${t('final.points')}</div>` : ''}
+                    <div class="team-row-total">${showRoundPoints ? t('final.total') + ': ' : ''}${r.total.toLocaleString()}${showRoundPoints ? '' : ' ' + t('final.points')}</div>
+                </div>
+            </div>
+        `;
+    }
+
     function renderMpRoundLeaderboard() {
         const list = document.getElementById('mp-round-players-list');
         if (!list) return;
         const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
         const me = myPlayerId || 'me';
+
+        if (isTeamMode() && serverTeams.length) {
+            const teamRows = serverTeams.map((team, i) => {
+                const lead = team.playerIds[0];
+                return { team, i, guess: guesses[lead] || null, total: mpTotalFor(lead) };
+            }).sort((a, b) => (a.guess ? (a.guess.dist ?? 1e8) : 1e9) - (b.guess ? (b.guess.dist ?? 1e8) : 1e9));
+            list.innerHTML = teamRows.map((r, idx) => renderTeamRow(r, idx, me, true)).join('');
+            return;
+        }
 
         const rows = getLobbyPlayers().map(p => ({ ...p, guess: guesses[p.id] || null, total: mpTotalFor(p.id) }));
         const rank = r => r.guess ? (r.guess.dist !== null ? r.guess.dist : 1e8) : 1e9;
@@ -2695,9 +2744,16 @@
         const me = myPlayerId || 'me';
         const actualLoc = [gameState.currentLocation.lat, gameState.currentLocation.lng];
 
+        const myTeamIds = isTeamMode() ? (myTeam()?.playerIds || []) : [];
+        const shownTeams = new Set();
         getLobbyPlayers().forEach(p => {
             const g = guesses[p.id];
             if (p.id === me || !g || !g.guessLatLng) return;
+            if (isTeamMode()) {
+                if (myTeamIds.includes(p.id)) return; // our own team pin is already drawn
+                const team = serverTeams.find(tm => tm.playerIds.includes(p.id));
+                if (team) { if (shownTeams.has(team.id)) return; shownTeams.add(team.id); }
+            }
             const aura = getPlayerAura(p.id);
             const guessLoc = [g.guessLatLng.lat, g.guessLatLng.lng];
             const html = `
