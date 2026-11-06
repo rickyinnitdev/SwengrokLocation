@@ -103,3 +103,61 @@ test('ranked: poor runs lose rating, names are cleaned, unknown boards are rejec
   expect((await ctx.get('/api/leaderboard?mode=party&period=all&region=kh')).status()).toBe(200);
   await ctx.dispose();
 });
+
+test('ranked UI: play a server-scored run, see the rank change and find yourself on the board', async ({ browser }) => {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama stub</p>' }));
+  try {
+    await page.goto('/');
+    await page.locator('[data-pick-region="kh"]').click();
+    if (await page.locator('#coach').isVisible()) await page.evaluate(() => closeCoach());
+    await page.locator('.ranked-strip').click();
+    await expect(page.locator('#ranked-screen')).toHaveClass(/active/);
+    await expect(page.locator('#rank-card .rank-card-tier')).toBeVisible();
+    await expect(page.locator('#rank-card')).toContainText('1,000');
+    await expect(page.locator('#board-list .board-row, #board-list .board-empty').first()).toBeVisible();
+    await page.screenshot({ path: 'test-results/ranked-mobile.png', fullPage: true });
+
+    // No restoring a made-up code.
+    await page.locator('.ranked-backup summary').click();
+    await page.locator('#restore-code').fill(`00000000-0000-4000-8000-000000000000:${'a'.repeat(32)}`);
+    await page.locator('.ranked-backup button', { hasText: /Restore|ស្ដារ/ }).click();
+    await expect(page.locator('#toast-notification')).toContainText(/not recognised|មិនស្គាល់/);
+
+    await page.locator(".ranked-mode-btn[onclick=\"startRankedRun('classic')\"]").click();
+    await expect(page.locator('#game-screen')).toHaveClass(/active/);
+    // The server's clock rules: no skipping a view in ranked.
+    await page.evaluate(() => skipBrokenLocation());
+    await expect(page.locator('#toast-notification')).toContainText(/cannot skip|មិនអាចរំលង/);
+
+    for (let round = 1; round <= 5; round++) {
+      await page.waitForFunction(n => gameState.roundIndex === n, round);
+      await page.waitForTimeout(1000); // the server gives each round a short head start
+      await page.evaluate(() => setSheet('full'));
+      await page.evaluate(() => {
+        gameState.guessMap.fire('click', { latlng: L.latLng(gameState.currentLocation.lat, gameState.currentLocation.lng) });
+      });
+      await page.locator('#guess-btn').click();
+      await expect(page.locator('#result-screen')).toHaveClass(/active/);
+      if (round < 5) await expect(page.locator('#res-next-btn')).toBeEnabled();
+      await page.locator('#res-next-btn').click();
+    }
+    await expect(page.locator('#final-screen')).toHaveClass(/active/);
+    expect(await page.evaluate(() => gameState.totalScore)).toBeGreaterThan(25000);
+    await expect(page.locator('.ranked-result')).toContainText('1,000');
+    await expect(page.locator('.ranked-result .ranked-delta.up')).toBeVisible();
+    await page.screenshot({ path: 'test-results/ranked-final-mobile.png', fullPage: true });
+
+    await page.locator('.ranked-result .btn').click();
+    await expect(page.locator('#ranked-screen')).toHaveClass(/active/);
+    await expect(page.locator('#board-list .board-row.is-me')).toBeVisible();
+    await page.locator('[data-board-tab="rating"]').click();
+    await expect(page.locator('#board-list .board-row.is-me .tier-badge')).toBeVisible();
+    await expect(page.locator('#rank-card')).not.toContainText(/Play a ranked run to get|លេងវគ្គចំណាត់ថ្នាក់ដើម្បី/);
+    await page.screenshot({ path: 'test-results/ranked-board-mobile.png', fullPage: true });
+    expect(errors).toEqual([]);
+  } finally { await context.close(); }
+});
