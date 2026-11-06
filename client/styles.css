@@ -1365,3 +1365,107 @@ select {
 }
 
 /* ==========================================================================
+   FINAL
+   ========================================================================== */
+#final-screen { overflow-y: auto; padding: var(--safe-top) 14px calc(20px + var(--safe-bottom)); }
+#final-screen.active { display: flex; align-items: center; justify-content: center; }
+.final-box {
+  width: min(680px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 2.5px solid var(--line);
+  border-radius: 26px;
+  box-shadow: var(--hard);
+  padding: 24px 20px;
+  text-align: center;
+}
+.final-badge-icon { font-size: 3.2rem; line-height: 1; }
+.final-box h2 { font-size: clamp(1.7rem, 5vw, 2.3rem); }
+.final-total { font-size: clamp(2.6rem, 9vw, 3.8rem); font-weight: 800; color: var(--rice); line-height: 1; font-variant-numeric: tabular-nums; }
+#fin-rating { font-weight: 800; color: var(--gold-deep); font-size: 1rem; }
+#fin-rounds-table { width: 100%; display: flex; flex-direction: column; gap: 6px; margin: 8px 0; text-align: left; }
+.final-rank { min-width: 32px; font-weight: 800; color: var(--gold-deep); white-space: nowrap; }
+.final-place { min-width: 92px; }
+.final-avatar {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--gold);
+  border: 2px solid var(--line);
+  flex: none;
+}
+.final-player { font-weight: 800; color: var(--ink); }
+.final-points { font-weight: 800; color: var(--rice); }
+.final-area { color: var(--ink-2); }
+.final-hint { font-size: 0.72rem; color: var(--ink-2); margin: 6px 0 14px; text-align: left; }
+.final-actions { display: flex; gap: 10px; width: 100%; }
+.final-actions .btn { flex: 1; }
+
+/* ==========================================================================
+   COACH MARKS
+   ========================================================================== */
+#coach {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 18px 14px calc(18px + var(--safe-bottom));
+  background: rgba(20, 32, 31, 0.5);
+  backdrop-filter: blur(2px);
+}
+#coach.active { display: flex; animation: fadeIn 0.2s ease; }
+.coach-card {
+  width: min(440px, 100%);
+  background: var(--card);
+  border: 2.5px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 8px 9px 0 rgba(20, 32, 31, 0.3);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: riseIn 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.coach-step { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--lotus); }
+.coach-card h3 { font-size: 1.25rem; }
+.coach-card p { font-size: 0.9rem; color: var(--ink-2); line-height: 1.55; }
+.coach-actions { display: flex; gap: 8px; margin-top: 4px; }
+.coach-actions .btn { flex: 1; }
+.coach-dots { display: flex; gap: 5px; }
+.coach-dots span { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.coach-dots span.on { background: var(--gold); }
+
+/* ==========================================================================
+   TOAST
+   ========================================================================== */
+#toast-notification {
+  position: fixed;
+  left: 50%;
+  bottom: calc(22px + var(--safe-bottom));
+  transform: translate(-50%, 16px);
+  z-index: 120;
+  background: var(--ink);
+  color: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 10px 18px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+#toast-notification.active { opacity: 1; transform: translate(-50%, 0); }
+
+/* ==========================================================================
