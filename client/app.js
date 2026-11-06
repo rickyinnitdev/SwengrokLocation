@@ -2451,7 +2451,7 @@
                 if (Date.now() - lastServerMessage > 40000) { socket.close(); return; }
                 socket.send('ping');
             }, 15000);
-            socket.send(JSON.stringify({ type: 'HELLO', protocol: WanderRotation.protocol, create: create && !roomSession, token: roomSession?.token, profile: sanitizeProfile(userProfile), mode: currentMode, seen: getSeenHistory().slice(-600) }));
+            socket.send(JSON.stringify({ type: 'HELLO', protocol: WanderRotation.protocol, create: create && !roomSession, token: roomSession?.token, profile: sanitizeProfile(userProfile), mode: currentMode, seen: getSeenHistory().slice(-600), identity: deviceIdentity() }));
         };
         socket.onmessage = event => {
             if (roomSocket !== socket) return;

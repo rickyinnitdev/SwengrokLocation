@@ -132,6 +132,7 @@ export class PartyRoom extends DurableObject {
       try {
         this.engine.tick(now);
         const p = this.engine.join(msg, now);
+        await this.linkIdentity(p, msg.identity);
         // A resume token replaces the old socket, without removing its player.
         for (const old of this.ctx.getWebSockets()) {
           if (old !== ws && old.deserializeAttachment()?.playerId === p.id) {
@@ -158,8 +159,28 @@ export class PartyRoom extends DurableObject {
       this.engine.tick(now);
       this.engine.handle(attachment.playerId, msg, now);
     }
+    await this.recordFinished();
     await this.persist();
     this.broadcast();
+  }
+  // Optional: lets a finished party show up on the leaderboard. Never blocks play.
+  async linkIdentity(player, identity) {
+    if (!this.env.DB || !identity || !validIdentity(identity.playerId, identity.secret)) return;
+    try {
+      await authenticate(this.env.DB, { playerId: identity.playerId, secret: identity.secret, name: player.profile.name });
+      player.deviceId = identity.playerId;
+    } catch (e) { console.error('party identity not linked:', e?.message); }
+  }
+  async recordFinished() {
+    const s = this.engine.state, m = s.match;
+    if (!this.env.DB || !m || m.phase !== 'final' || m.recorded) return;
+    m.recorded = true;
+    const cfg = modes[s.mode];
+    for (const p of s.players) {
+      if (!p.deviceId) continue;
+      const score = Object.values(m.guesses).reduce((sum, round) => sum + (round[p.id]?.score || 0), 0);
+      try { await recordRun(this.env.DB, { playerId: p.deviceId, mode: `party:${s.mode}`, region: cfg.region, score, rounds: cfg.rounds, ranked: false }); } catch (e) { console.error('party result not saved:', e?.message); }
+    }
   }
   sendAll(msg) {
     for (const ws of this.ctx.getWebSockets()) {
