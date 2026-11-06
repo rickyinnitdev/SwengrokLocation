@@ -222,6 +222,14 @@ export class RoomEngine {
   guess(id, ll, now) {
     const s = this.state, m = s.match, cfg = modes[s.mode];
     const round = m.guesses[m.round] ||= {};
+    const team = this.isTeamsMode() ? this.teamFor(id) : null;
+    if (this.isTeamsMode()) {
+      if (!team) return;
+      const role = m.roles?.[id];
+      if (role !== 'pinner' && role !== 'both') return;
+      // One guess per team per round, wherever it came from.
+      if (team.playerIds.some(pid => round[pid])) return;
+    }
     if (round[id]) return;
     const valid = ll && typeof ll.lat === 'number' && typeof ll.lng === 'number' && Number.isFinite(ll.lat) && Number.isFinite(ll.lng) && Math.abs(ll.lat) <= 90 && Math.abs(ll.lng) <= 180 && now <= m.deadline;
     const point = valid ? { lat: ll.lat, lng: ll.lng } : null;
@@ -244,7 +252,16 @@ export class RoomEngine {
     }
     const speedBonus = point ? Math.round(Math.max(0, 1 - elapsed / cfg.time) * 1000) * (s.mode === 'sprint' ? 2 : 1) : 0;
     const bountyBonus = cfg.isBounty && dist !== null && dist < 200 ? 500 : 0;
-    round[id] = { playerId: id, round: m.round, dist, elapsed, distScore, speedBonus, bountyBonus, score: distScore + speedBonus + bountyBonus, guessLatLng: point };
+    const result = { playerId: id, round: m.round, dist, elapsed, distScore, speedBonus, bountyBonus, score: distScore + speedBonus + bountyBonus, guessLatLng: point };
+    if (team) {
+      result.teamId = team.id;
+      for (const pid of team.playerIds) round[pid] = { ...result, playerId: pid };
+      m.teamGuesses ||= {};
+      m.teamGuesses[m.round] ||= {};
+      m.teamGuesses[m.round][team.id] = result;
+    } else {
+      round[id] = result;
+    }
     if (cfg.isBounty && point) m.deadline = Math.min(m.deadline, now + 15000);
   }
   advance(now) {
