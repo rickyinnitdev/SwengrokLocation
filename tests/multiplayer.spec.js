@@ -172,3 +172,87 @@ test('solo draw deck and history survive refresh without repeating the pool', as
   });
   expect(new Set([...first, ...partySpots, ...rest]).size).toBe(392);
 });
+
+test('Tag-Team: viewer sees the street only, pinner sees the map only, teams share the score', async ({ browser }) => {
+  const contexts = await Promise.all([0, 1, 2, 3].map(() => browser.newContext()));
+  const pages = await Promise.all(contexts.map(c => c.newPage()));
+  const [a] = pages;
+  const errors = [];
+  for (const p of pages) {
+    p.on('pageerror', e => errors.push(e.message));
+    await p.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama provider stub</p>' }));
+  }
+  try {
+    await enterHome(a);
+    await a.locator('#start-screen .quick-card.pink').click();
+    await a.locator('#party-mode-select').selectOption('tagteam_kh');
+    await a.locator('#mp-modal button[onclick="createMultiplayerLobby()"]').click();
+    await expect.poll(() => a.evaluate(() => roomReady)).toBe(true);
+    const code = await a.locator('#room-code-text').innerText();
+    for (const p of pages.slice(1)) await p.goto('/?room=' + code);
+    for (const p of pages) await expect(p.locator('#player-count')).toHaveText('4');
+
+    // Two teams of two are shown to everyone; only the host can swap players.
+    for (const p of pages) await expect(p.locator('.lobby-team')).toHaveCount(2);
+    await expect(pages[1].locator('.lobby-team-member').first()).toBeDisabled();
+    const before = await a.evaluate(() => JSON.stringify(serverTeams));
+    await a.locator('.lobby-team-member').nth(0).click();
+    await a.locator('.lobby-team-member').nth(2).click();
+    await expect.poll(() => a.evaluate(() => JSON.stringify(serverTeams))).not.toBe(before);
+    expect(await pages[3].evaluate(() => JSON.stringify(serverTeams))).toBe(await a.evaluate(() => JSON.stringify(serverTeams)));
+
+    await a.locator('#start-party-btn').click();
+    for (const p of pages) await expect(p.locator('#game-screen')).toHaveClass(/active/);
+
+    const ids = await Promise.all(pages.map(p => p.evaluate(() => myPlayerId)));
+    const teams = await a.evaluate(() => serverTeams);
+    for (let round = 1; round <= 6; round++) {
+      for (const p of pages) {
+        await p.waitForFunction(n => gameState.roundIndex === n && Date.now() + serverClockOffset >= serverMatch.startedAt, round);
+      }
+      const roles = await Promise.all(pages.map(p => p.evaluate(() => myRoleNow())));
+      expect(roles.filter(r => r === 'viewer')).toHaveLength(2);
+      expect(roles.filter(r => r === 'pinner')).toHaveLength(2);
+      for (const [i, p] of pages.entries()) {
+        const info = await p.evaluate(() => ({
+          loc: !!gameState.currentLocation,
+          src: document.getElementById('streetview-iframe').getAttribute('src'),
+          planId: serverMatch.plan[serverMatch.round - 1].id,
+          futureIds: serverMatch.plan.slice(serverMatch.round).filter(r => r.id).length,
+          mapShown: getComputedStyle(document.getElementById('map-panel')).display !== 'none',
+          streetShown: getComputedStyle(document.getElementById('streetview-container')).display !== 'none'
+        }));
+        expect(info.futureIds, 'future rounds are never sent').toBe(0);
+        if (roles[i] === 'pinner') {
+          expect(info.loc || info.planId || info.src, 'the Pinner never learns the location').toBeFalsy();
+          expect(info.mapShown && !info.streetShown).toBe(true);
+        } else {
+          expect(info.loc && info.src).toBeTruthy();
+          expect(info.streetShown && !info.mapShown).toBe(true);
+        }
+      }
+      for (const team of teams) {
+        const members = team.playerIds.map(id => ids.indexOf(id));
+        const viewer = pages[members.find(i => roles[i] === 'viewer')];
+        const pinner = pages[members.find(i => roles[i] === 'pinner')];
+        // The teammates "talk": the Viewer's knowledge reaches the Pinner.
+        const spot = await viewer.evaluate(() => ({ lat: gameState.currentLocation.lat, lng: gameState.currentLocation.lng }));
+        await pinner.evaluate(ll => gameState.guessMap.fire('click', { latlng: L.latLng(ll.lat, ll.lng) }), spot);
+        await pinner.locator('#guess-btn').click();
+      }
+      for (const p of pages) await expect(p.locator('#result-screen')).toHaveClass(/active/);
+      await expect(a.locator('#mp-round-players-list .team-row')).toHaveCount(2);
+      for (const p of pages) await p.locator('#res-next-btn').click();
+      if (round < 6) for (const p of pages) await p.waitForFunction(n => gameState.roundIndex === n, round + 1);
+    }
+    for (const p of pages) await expect(p.locator('#final-screen')).toHaveClass(/active/);
+    const totals = await Promise.all(pages.map(p => p.evaluate(() => gameState.totalScore)));
+    expect(totals[0]).toBeGreaterThan(30000);
+    for (const team of teams) {
+      const [x, y] = team.playerIds.map(id => totals[ids.indexOf(id)]);
+      expect(x).toBe(y);
+    }
+    await expect(a.locator('#fin-rounds-table .team-row')).toHaveCount(2);
+    expect(errors).toEqual([]);
+  } finally { for (const c of contexts) await c.close(); }
+});
