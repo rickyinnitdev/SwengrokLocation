@@ -1,6 +1,7 @@
 import { locations, modes } from '../.generated/game-data.js';
 import { drawLocations } from './location-rotation.js';
 import { distance, scoreRound } from './scoring.js';
+import { poolFor, poolKeyFor } from './pools.js';
 
 export const MAX_PLAYERS = 8;
 export const GRACE_MS = 30000;
@@ -145,18 +146,8 @@ export class RoomEngine {
     s.updatedAt = now;
     return player;
   }
-  pool() {
-    const p = modes[this.state.mode]?.pool;
-    if (p === 'landmarks') return locations.landmarks;
-    if (p === 'countries') return locations.countries || [];
-    if (p === 'cambodia') return locations.cambodia || [];
-    if (p === 'asia') return locations.asia || [];
-    return [...locations.landmarks, ...locations.classic];
-  }
-  poolKey() {
-    const p = modes[this.state.mode]?.pool;
-    return (p === 'landmarks' || p === 'countries' || p === 'cambodia' || p === 'asia') ? p : 'all';
-  }
+  pool() { return poolFor(modes[this.state.mode]); }
+  poolKey() { return poolKeyFor(modes[this.state.mode]); }
   makePlan() {
     const s = this.state, count = modes[s.mode].rounds;
     const pool = this.pool();
