@@ -1558,3 +1558,111 @@ select {
   box-shadow: 0 3px 0 rgba(34, 51, 49, 0.35);
   transform: rotate(-8deg);
 }
+
+/* ---------------------------------------------------------------
+   Tag-Team relay: lobby teams, role banner, eyes-only / hands-only
+   --------------------------------------------------------------- */
+.lobby-teams { margin: 14px 0; }
+.lobby-teams[hidden] { display: none; }
+.lobby-teams .field-label { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.lobby-teams-hint { font-size: 0.72rem; font-weight: 700; color: var(--ink-2); text-transform: none; letter-spacing: 0; }
+#lobby-teams-list { display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.lobby-team {
+  border: 2.5px solid var(--team-color, var(--line));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--team-color, var(--gold)) 12%, var(--card));
+  padding: 8px 10px 10px;
+}
+.lobby-team-badge {
+  display: inline-block;
+  font-weight: 900;
+  font-size: 0.72rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--team-color, var(--gold));
+  color: #fff;
+  margin-bottom: 6px;
+}
+.lobby-team-members { display: grid; gap: 6px; }
+.lobby-team-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 8px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+.lobby-team-member:disabled { cursor: default; opacity: 1; }
+.lobby-team-member.picked { outline: 3px solid var(--gold); outline-offset: 1px; background: color-mix(in srgb, var(--gold) 24%, var(--card)); }
+.lobby-team-member .lobby-player-thumb { width: 30px; height: 30px; flex: none; }
+
+.team-role-banner {
+  position: absolute;
+  top: calc(var(--safe-top) + 62px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100% - 24px);
+  padding: 8px 16px 8px 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 18px;
+  background: var(--gold);
+  color: var(--on-gold, #2a1d00);
+  box-shadow: 0 4px 0 rgba(34, 51, 49, 0.25);
+  pointer-events: none;
+}
+.team-role-banner[hidden] { display: none; }
+.team-role-banner[data-role='pinner'] { background: var(--lotus, #e4578a); color: #fff; }
+.team-role-banner[data-role='both'] { background: var(--mekong, #1f7fb8); color: #fff; }
+.team-role-emoji { font-size: 1.6rem; line-height: 1; }
+.team-role-copy { display: grid; gap: 1px; min-width: 0; }
+.team-role-copy strong { font-size: 0.95rem; font-weight: 900; }
+.team-role-copy span { font-size: 0.74rem; font-weight: 700; opacity: 0.92; }
+
+/* Viewer: street only. */
+body[data-role='viewer'] #map-panel,
+body[data-role='viewer'] #map-resizer { display: none; }
+body[data-role='viewer'] #streetview-container { grid-column: 1 / -1; }
+/* Pinner: map only. The panorama is not even loaded. */
+body[data-role='pinner'] #streetview-container { display: none; }
+body[data-role='pinner'] #map-resizer { display: none; }
+body[data-role='pinner'] #hud-top .hud-tool-btn { display: none; }
+body[data-role='pinner'] .sheet-handle { display: none; }
+@media (min-width: 900px) {
+  body[data-role='pinner'] #map-panel { grid-column: 1 / -1; border-left: 0; }
+  body[data-role='pinner'] #hud-top { right: 12px; }
+}
+
+/* Team rows on results and the final board */
+.team-row { border-left: 6px solid var(--team-color, var(--gold)); }
+.team-row-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.team-row-rank { font-weight: 900; min-width: 28px; font-size: 1rem; }
+.team-row-faces { display: inline-flex; }
+.team-row-face {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--team-color, var(--gold));
+  background: var(--gold);
+  flex: none;
+}
+.team-row-face + .team-row-face { margin-left: -10px; }
+.team-row-name { font-weight: 800; font-size: 0.92rem; }
+.team-row-you { font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--rice); color: var(--paper); }
+.team-row-detail { font-size: 0.75rem; color: var(--ink-2); }
+.team-row-score { text-align: right; }
+.team-row-round { font-weight: 900; font-size: 1.05rem; color: var(--rice); }
+.team-row-total { font-size: 0.74rem; font-weight: 700; color: var(--gold-deep); }
+
