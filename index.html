@@ -194,7 +194,7 @@
           <span class="quick-title" data-i18n="home.ranked">Ranked</span>
           <span class="quick-sub" data-i18n="home.rankedSub">Server-scored runs and weekly ranks</span>
         </span>
-        <span class="chip chip-gold" data-i18n="home.rankedSoon">Coming soon</span>
+        <span class="chip chip-gold" id="ranked-strip-chip" data-i18n="home.rankedOpen">Open</span>
       </button>
 
       <div>
@@ -553,6 +553,58 @@
         <button class="btn btn-primary" type="button" onclick="resetToHome()" data-i18n="final.playAgain">Play again</button>
         <button class="btn btn-ghost" type="button" onclick="backToHome()" data-i18n="final.home">Back to home</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       RANKED + LEADERBOARD
+       ====================================================================== -->
+  <section id="ranked-screen" class="screen" aria-labelledby="ranked-title">
+    <div class="ranked-wrap">
+      <header class="ranked-head">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="closeRanked()" data-i18n="ranked.back">← Back</button>
+        <h1 id="ranked-title" data-i18n="ranked.title">Ranked</h1>
+        <div class="region-switch" id="ranked-region-switch" role="group" aria-label="Region">
+          <button type="button" data-ranked-region="kh" onclick="setRankedRegion('kh')">🇰🇭 ក្នុងស្រុក</button>
+          <button type="button" data-ranked-region="world" onclick="setRankedRegion('world')">🌍 World</button>
+        </div>
+      </header>
+
+      <section class="rank-card" id="rank-card" aria-live="polite"></section>
+
+      <section class="ranked-block">
+        <div class="field-label" data-i18n="ranked.play">Play a ranked run</div>
+        <p class="ranked-note" data-i18n="ranked.note">The server keeps the clock and the score. No skipping, no restarts.</p>
+        <div id="ranked-modes" class="ranked-modes"></div>
+      </section>
+
+      <section class="ranked-block">
+        <div class="field-label" data-i18n="ranked.boards">Leaderboard</div>
+        <div class="board-tabs" role="tablist" aria-label="Leaderboard">
+          <button type="button" role="tab" data-board-tab="week" onclick="setBoardTab('week')" data-i18n="ranked.week">This week</button>
+          <button type="button" role="tab" data-board-tab="all" onclick="setBoardTab('all')" data-i18n="ranked.all">All time</button>
+          <button type="button" role="tab" data-board-tab="rating" onclick="setBoardTab('rating')" data-i18n="ranked.rating">Rank</button>
+        </div>
+        <label class="board-mode" id="board-mode-wrap">
+          <span data-i18n="ranked.mode">Mode</span>
+          <select id="board-mode" onchange="setBoardMode(this.value)"></select>
+        </label>
+        <div id="board-list" class="board-list" aria-live="polite"></div>
+        <div id="board-me" class="board-me"></div>
+      </section>
+
+      <details class="ranked-block ranked-backup">
+        <summary data-i18n="ranked.backup">Backup and restore my rank</summary>
+        <p class="ranked-note" data-i18n="ranked.backupNote">Your rank lives on this device. Save this code somewhere private to move it to another one. Anyone with the code can play as you.</p>
+        <div class="backup-row">
+          <input id="backup-code" type="text" readonly spellcheck="false" aria-label="Backup code" value="">
+          <button class="btn btn-sm btn-ink" type="button" onclick="copyBackupCode()" data-i18n="ranked.copy">Copy</button>
+        </div>
+        <div class="backup-row">
+          <input id="restore-code" type="text" spellcheck="false" autocomplete="off" placeholder="xxxxxxxx-xxxx-…:…" data-i18n-placeholder="ranked.restorePlaceholder" aria-label="Restore code">
+          <button class="btn btn-sm btn-ink" type="button" onclick="restoreBackupCode()" data-i18n="ranked.restore">Restore</button>
+        </div>
+      </details>
     </div>
   </section>
 
