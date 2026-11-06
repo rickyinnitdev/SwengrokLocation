@@ -310,10 +310,32 @@ export class RoomEngine {
     if (s.players.length) deadlines.push(s.updatedAt + ROOM_TTL);
     return deadlines.length ? Math.max(now + 1, Math.min(...deadlines)) : null;
   }
-  snapshot() {
+  snapshot(viewerId) {
     const s = this.state;
     const pool = this.pool(), key = this.poolKey();
     const remaining = s.rotation.decks?.[key]?.length ?? pool.filter(l => !s.rotation.history.includes(l.id)).length;
-    return { hostId: s.hostId, mode: s.mode, selection: { poolSize: pool.length, remaining }, players: s.players.map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId })), match: s.match };
+    let match = s.match;
+    if (match) {
+      match = { ...match, plan: match.plan.map(round => ({ ...round })) };
+      if (this.isTeamsMode() && viewerId) {
+        const team = this.teamFor(viewerId);
+        match.role = match.roles?.[viewerId] || null;
+        match.teamId = team?.id || null;
+        // The Pinner must not learn the current target until the team guess
+        // has been accepted (the reveal). Viewers still get the location so
+        // they can load the panorama.
+        if (match.role === 'pinner' && !(team && this.teamHasGuess(team.id, match.round))) {
+          match.plan[match.round - 1] = { ...match.plan[match.round - 1], id: null, redacted: true };
+        }
+      }
+    }
+    return {
+      hostId: s.hostId,
+      mode: s.mode,
+      selection: { poolSize: pool.length, remaining },
+      players: s.players.map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId })),
+      teams: s.teams.map(team => ({ id: team.id, playerIds: [...team.playerIds] })),
+      match
+    };
   }
 }
