@@ -1,9 +1,80 @@
 import { DurableObject } from 'cloudflare:workers';
 import { RoomEngine, EMOTES } from './room-engine.js';
 import { GAME_PROTOCOL } from './location-rotation.js';
+import { modes } from '../.generated/game-data.js';
+import { RankedPlayer } from './ranked.js';
+import { authenticate, getRatings, topBoard, myStanding, recordRun, validIdentity, boardCacheKey, HttpError } from './leaderboard.js';
+import { weekKey, weekStartMs } from './rating.js';
+
+export { RankedPlayer };
+
+const json = (body, status = 200) => Response.json(body, { status });
+
+async function readBody(request, url) {
+  if (request.method !== 'POST') throw new HttpError(405, 'POST required.');
+  if (request.headers.get('Origin') !== url.origin) throw new HttpError(403, 'Origin not allowed.');
+  const text = await request.text();
+  if (text.length > 2048) throw new HttpError(413, 'Request too large.');
+  try { const body = JSON.parse(text); if (body && typeof body === 'object') return body; } catch {}
+  throw new HttpError(400, 'Invalid JSON.');
+}
+
+function boardParams(q) {
+  const type = q.get('type') === 'rating' ? 'rating' : 'score';
+  const region = q.get('region') === 'world' ? 'world' : 'kh';
+  const period = q.get('period') === 'all' ? 'all' : 'week';
+  const mode = q.get('mode') || 'classic';
+  if (type === 'score' && mode !== 'party') {
+    const base = mode.startsWith('party:') ? mode.slice(6) : mode;
+    if (!modes[base] || (mode === base && !modes[base].ranked)) throw new HttpError(400, 'Unknown board.');
+  }
+  return { type, region, period, mode };
+}
+
+async function leaderboard(request, env, ctx, url) {
+  if (!env.DB) throw new HttpError(503, 'The leaderboard is not available yet.');
+  const params = boardParams(url.searchParams);
+  const playerId = url.searchParams.get('playerId');
+  const now = Date.now();
+  const cacheKey = boardCacheKey(params, now);
+  let rows;
+  const hit = await caches.default.match(cacheKey);
+  if (hit) rows = await hit.json();
+  else {
+    rows = await topBoard(env.DB, params, now);
+    ctx.waitUntil(caches.default.put(cacheKey, new Response(JSON.stringify(rows), { headers: { 'Cache-Control': 'public, max-age=60' } })));
+  }
+  const me = playerId && validIdentity(playerId, 'a'.repeat(32)) ? await myStanding(env.DB, playerId, params, now) : null;
+  return json({
+    ...params,
+    weekStart: weekStartMs(weekKey(now)),
+    rows: rows.map(({ playerId: id, ...row }) => ({ ...row, isMe: id === playerId })),
+    me
+  });
+}
+
+async function api(request, env, ctx, url) {
+  const path = url.pathname;
+  if (path === '/api/leaderboard') return leaderboard(request, env, ctx, url);
+  if (path === '/api/me' || path.startsWith('/api/ranked/')) {
+    if (!env.DB) throw new HttpError(503, 'The leaderboard is not available yet.');
+    const body = await readBody(request, url);
+    const name = await authenticate(env.DB, body);
+    if (path === '/api/me') return json({ name, ratings: await getRatings(env.DB, body.playerId) });
+    const action = path.slice('/api/ranked/'.length);
+    if (!['start', 'guess', 'next'].includes(action)) throw new HttpError(404, 'Not found.');
+    const stub = env.RANKED.get(env.RANKED.idFromName(body.playerId));
+    const forward = await stub.fetch(`https://ranked/${action}`, {
+      method: 'POST',
+      body: JSON.stringify({ mode: body.mode, round: body.round, guessLatLng: body.guessLatLng, playerId: body.playerId, name })
+    });
+    return new Response(forward.body, { status: forward.status, headers: { 'Content-Type': 'application/json' } });
+  }
+  return new Response('Not found', { status: 404 });
+}
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (url.pathname === '/api/health') return Response.json({ service: 'wanderpenh-rooms', version: GAME_PROTOCOL });
     const room = url.pathname.match(/^\/api\/rooms\/(WP-[A-Z0-9]{5,6})$/);
@@ -12,7 +83,14 @@ export default {
       if (request.headers.get('Origin') !== url.origin) return new Response('Origin not allowed', { status: 403 });
       return env.ROOMS.get(env.ROOMS.idFromName(room[1])).fetch(request);
     }
-    if (url.pathname.startsWith('/api/')) return new Response('Not found', { status: 404 });
+    if (url.pathname.startsWith('/api/')) {
+      try { return await api(request, env, ctx, url); }
+      catch (e) {
+        if (e instanceof HttpError) return json({ error: e.message }, e.status);
+        console.error('api error', e?.message);
+        return json({ error: 'Something went wrong. Try again.' }, 500);
+      }
+    }
     return env.ASSETS.fetch(request);
   }
 };
