@@ -2805,8 +2805,361 @@
         });
     }
 
-    function openRanked() {
-        showToast(t('toast.rankedSoon'));
+    // ============================================================
+    //  RANKED: device identity, server-scored runs and leaderboards
+    // ============================================================
+    const DEVICE_KEY = 'wanderpenh_device';
+    const TIER_ICONS = { tourist: '🎒', moto: '🛵', tuktuk: '🛺', guide: '🧭', khan: '🏙️', legend: '👑' };
+    let deviceMemo = null;
+    let rankedRegion = null;
+    let boardTab = 'week';
+    let boardMode = 'classic';
+    let myRatings = null;
+    let boardData = null;
+    let boardState = 'idle';      // idle | loading | ready | offline
+    let boardRequest = 0;
+
+    function randomHex(bytes) {
+        return [...crypto.getRandomValues(new Uint8Array(bytes))].map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+    function newUuid() {
+        if (crypto.randomUUID) return crypto.randomUUID();
+        const h = randomHex(16);
+        return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
+    }
+    function validDevice(d) {
+        return !!d && /^[0-9a-f-]{36}$/.test(d.playerId) && /^[0-9a-f]{32,64}$/.test(d.secret);
+    }
+    // A random id plus a secret kept on this device. No account is needed.
+    function deviceIdentity() {
+        if (deviceMemo) return deviceMemo;
+        try {
+            const saved = JSON.parse(localStorage.getItem(DEVICE_KEY));
+            if (validDevice(saved)) return (deviceMemo = { playerId: saved.playerId, secret: saved.secret });
+        } catch {}
+        deviceMemo = { playerId: newUuid(), secret: randomHex(16) };
+        try { localStorage.setItem(DEVICE_KEY, JSON.stringify(deviceMemo)); } catch {}
+        return deviceMemo;
+    }
+
+    async function rankedFetch(path, body = {}) {
+        try {
+            const res = await fetch(path, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...deviceIdentity(), name: cleanText(userProfile.name, 'Explorer', 20), ...body })
+            });
+            return { ok: res.ok, status: res.status, data: await res.json().catch(() => ({})) };
+        } catch {
+            return { ok: false, status: 0, data: {} };
+        }
+    }
+
+    function rankedModesFor(region) {
+        return Object.entries(MODE_CONFIG).filter(([, m]) => m.ranked && m.region === region);
+    }
+    function tierName(id) { return t('tier.' + id); }
+    function tierBadgeHTML(id, small = false) {
+        return `<span class="tier-badge tier-${id} ${small ? 'sm' : ''}" role="img" aria-label="${escapeHTML(tierName(id))}">${TIER_ICONS[id] || '🎒'}</span>`;
+    }
+
+    function openRanked(mode) {
+        rankedRegion = (mode && MODE_CONFIG[mode]?.region) || rankedRegion || currentRegion;
+        if (mode) { boardTab = 'week'; boardMode = mode; }
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('ranked-screen').classList.add('active');
+        document.getElementById('ranked-screen').scrollTop = 0;
+        paintRankedScreen();
+        refreshRankedScreen();
+    }
+    function closeRanked() { backToHome(); }
+
+    function setRankedRegion(region) {
+        if (region !== 'kh' && region !== 'world') return;
+        rankedRegion = region;
+        boardMode = defaultBoardMode();
+        paintRankedScreen();
+        loadBoard();
+    }
+    function setBoardTab(tab) {
+        boardTab = tab;
+        paintRankedScreen();
+        loadBoard();
+    }
+    function setBoardMode(mode) {
+        boardMode = mode;
+        loadBoard();
+    }
+    function defaultBoardMode() {
+        return rankedModesFor(rankedRegion)[0]?.[0] || 'classic';
+    }
+    function boardModeOptions() {
+        const solo = rankedModesFor(rankedRegion).map(([key, m]) => ({ value: key, label: `${t('ranked.solo')} · ${modeName(m)}` }));
+        const party = Object.entries(MODE_CONFIG)
+            .filter(([, m]) => m.region === rankedRegion && (m.ranked || m.teams))
+            .map(([key, m]) => ({ value: 'party:' + key, label: `${t('ranked.party')} · ${modeName(m)}` }));
+        return [...solo, ...party, { value: 'party', label: t('ranked.partyAll') }];
+    }
+
+    async function refreshRankedScreen() {
+        const me = await rankedFetch('/api/me');
+        myRatings = me.ok ? me.data.ratings : null;
+        paintRankRank();
+        loadBoard();
+    }
+
+    function paintRankedScreen() {
+        if (!rankedRegion) rankedRegion = currentRegion;
+        document.querySelectorAll('#ranked-region-switch [data-ranked-region]').forEach(btn => {
+            btn.setAttribute('aria-pressed', btn.dataset.rankedRegion === rankedRegion ? 'true' : 'false');
+        });
+        const modes = rankedModesFor(rankedRegion);
+        document.getElementById('ranked-modes').innerHTML = modes.map(([key, m]) => `
+            <button class="ranked-mode-btn" type="button" onclick="startRankedRun('${key}')">
+                <span aria-hidden="true">${m.icon === 'flame' ? '🔥' : '📍'}</span>
+                <span>${escapeHTML(modeName(m))}<small>${t('mode.perRound', { n: m.time })} · ${t('mode.rounds', { n: m.rounds })}</small></span>
+            </button>`).join('');
+        document.querySelectorAll('.board-tabs [data-board-tab]').forEach(btn => {
+            btn.setAttribute('aria-selected', btn.dataset.boardTab === boardTab ? 'true' : 'false');
+        });
+        const wrap = document.getElementById('board-mode-wrap');
+        wrap.hidden = boardTab === 'rating';
+        const options = boardModeOptions();
+        if (!options.some(o => o.value === boardMode)) boardMode = defaultBoardMode();
+        const select = document.getElementById('board-mode');
+        select.innerHTML = options.map(o => `<option value="${escapeHTML(o.value)}">${escapeHTML(o.label)}</option>`).join('');
+        select.value = boardMode;
+        const code = document.getElementById('backup-code');
+        if (code) code.value = backupCodeValue();
+        paintRankRank();
+        paintBoard();
+    }
+
+    function paintRankRank() {
+        const card = document.getElementById('rank-card');
+        if (!card) return;
+        const r = myRatings && myRatings[rankedRegion];
+        if (!r) {
+            card.innerHTML = `<div class="rank-card-main"><span class="rank-card-hint">${boardState === 'offline' ? t('ranked.offline') : t('ranked.loading')}</span></div>`;
+            return;
+        }
+        const span = r.next ? r.next.min - r.tierMin : 1;
+        const pct = r.next ? Math.max(4, Math.min(100, Math.round((r.rating - r.tierMin) / span * 100))) : 100;
+        const hint = r.games === 0 ? t('ranked.runs0')
+            : r.next ? t('ranked.progress', { n: r.next.min - r.rating, tier: tierName(r.next.id) })
+            : t('ranked.maxTier');
+        card.innerHTML = `
+            ${tierBadgeHTML(r.tier)}
+            <div class="rank-card-main">
+                <div class="rank-card-tier">${escapeHTML(tierName(r.tier))}</div>
+                <div class="rank-card-rating">${r.rating.toLocaleString()} · ${t('ranked.games', { n: r.games })}</div>
+                <div class="rank-bar"><span style="width:${pct}%"></span></div>
+                <div class="rank-card-hint">${hint}</div>
+            </div>`;
+    }
+
+    async function loadBoard() {
+        const token = ++boardRequest;
+        boardState = 'loading';
+        paintBoard();
+        const rating = boardTab === 'rating';
+        const params = new URLSearchParams({
+            type: rating ? 'rating' : 'score',
+            period: rating ? 'week' : boardTab,
+            mode: boardMode,
+            region: rankedRegion,
+            playerId: deviceIdentity().playerId
+        });
+        try {
+            const res = await fetch('/api/leaderboard?' + params);
+            if (token !== boardRequest) return;
+            if (!res.ok) throw new Error('status ' + res.status);
+            boardData = await res.json();
+            boardState = 'ready';
+        } catch {
+            if (token !== boardRequest) return;
+            boardData = null;
+            boardState = 'offline';
+        }
+        paintBoard();
+        paintRankRank();
+    }
+
+    function paintBoard() {
+        const list = document.getElementById('board-list');
+        const meBox = document.getElementById('board-me');
+        if (!list || !meBox) return;
+        if (boardState === 'loading' || boardState === 'idle') {
+            list.innerHTML = `<div class="board-empty">${t('ranked.loading')}</div>`;
+            meBox.innerHTML = '';
+            return;
+        }
+        if (boardState === 'offline' || !boardData) {
+            list.innerHTML = `<div class="board-empty">${t('ranked.offline')}</div>`;
+            meBox.innerHTML = '';
+            return;
+        }
+        const isRating = boardData.type === 'rating';
+        const medals = ['🥇', '🥈', '🥉'];
+        if (!boardData.rows.length) list.innerHTML = `<div class="board-empty">${t('ranked.empty')}</div>`;
+        else list.innerHTML = boardData.rows.map(row => `
+            <div class="board-row ${row.isMe ? 'is-me' : ''} ${row.rank === 1 ? 'top-1' : ''}">
+                <span class="board-rank">${medals[row.rank - 1] || row.rank}</span>
+                <span class="board-name">${isRating ? tierBadgeHTML(row.tier, true) : ''}<span>${escapeHTML(row.name)}${row.isMe ? ` <small>(${t('ranked.you')})</small>` : ''}</span></span>
+                <span class="board-value">${row.value.toLocaleString()}${isRating ? '' : ' ' + t('ranked.pts')}</span>
+            </div>`).join('');
+        const inList = boardData.rows.some(row => row.isMe);
+        let foot = '';
+        if (boardData.me && !inList) foot = `<div><strong>${t('ranked.yourRank')}:</strong> #${boardData.me.rank} · ${boardData.me.value.toLocaleString()}${isRating ? '' : ' ' + t('ranked.pts')}</div>`;
+        else if (!boardData.me && boardData.rows.length) foot = `<div>${t('ranked.notRanked')}</div>`;
+        if (!isRating && boardData.period === 'week') foot += `<div class="board-foot">${t('ranked.weekStarts')}</div>`;
+        meBox.innerHTML = foot;
+    }
+
+    function backupCodeValue() {
+        const id = deviceIdentity();
+        return `${id.playerId}:${id.secret}`;
+    }
+    async function copyBackupCode() {
+        const input = document.getElementById('backup-code');
+        try { await navigator.clipboard.writeText(input.value); showToast(t('ranked.copied')); }
+        catch { input.select(); }
+    }
+    async function restoreBackupCode() {
+        const raw = document.getElementById('restore-code').value.trim().toLowerCase();
+        const m = raw.match(/^([0-9a-f-]{36}):([0-9a-f]{32,64})$/);
+        if (!m) { showToast(t('ranked.restoreFailed')); return; }
+        let res;
+        try {
+            const r = await fetch('/api/me', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ playerId: m[1], secret: m[2], restore: true })
+            });
+            res = { ok: r.ok, data: await r.json().catch(() => ({})) };
+        } catch { res = { ok: false }; }
+        if (!res.ok) { showToast(t('ranked.restoreFailed')); return; }
+        deviceMemo = { playerId: m[1], secret: m[2] };
+        try { localStorage.setItem(DEVICE_KEY, JSON.stringify(deviceMemo)); } catch {}
+        document.getElementById('restore-code').value = '';
+        showToast(t('ranked.restored'));
+        paintRankedScreen();
+        refreshRankedScreen();
+    }
+
+    // ---- a ranked run: every round is started, timed and scored by the server ----
+    async function startRankedRun(mode) {
+        const cfg = MODE_CONFIG[mode];
+        if (!cfg?.ranked) return;
+        const buttons = document.querySelectorAll('.ranked-mode-btn');
+        buttons.forEach(b => { b.disabled = true; });
+        showToast(t('ranked.starting'));
+        const res = await rankedFetch('/api/ranked/start', { mode });
+        buttons.forEach(b => { b.disabled = false; });
+        if (!res.ok) {
+            showToast(res.status === 429 ? t('ranked.rateLimited') : res.status === 503 ? t('ranked.offline') : t('ranked.failed'));
+            return;
+        }
+        const d = res.data;
+        gameState.isMultiplayer = false;
+        gameState.simulated4P = false;
+        gameState.streakCount = 0;
+        const mpCard = document.getElementById('hud-mp-status-card');
+        if (mpCard) mpCard.style.display = 'none';
+        gameState.ranked = {
+            mode, runId: d.runId, offset: d.serverNow - Date.now(), startedAt: d.startedAt, deadline: d.deadline,
+            pending: false, rating: null, saved: false, before: myRatings && myRatings[cfg.region] || null
+        };
+        beginMatch(mode, d.plan, 1);
+    }
+
+    async function submitRankedGuess(point, attempt = 1) {
+        const run = gameState.ranked;
+        if (!run || gameState.roundSubmitted || run.pending) return;
+        run.pending = true;
+        clearInterval(gameState.timerInterval);
+        const btn = document.getElementById('guess-btn');
+        btn.disabled = true;
+        btn.innerHTML = `<span>${t('game.confirming')}</span>`;
+        const res = await rankedFetch('/api/ranked/guess', {
+            round: gameState.roundIndex,
+            guessLatLng: point ? { lat: point.lat, lng: point.lng } : null
+        });
+        run.pending = false;
+        if (!res.ok) {
+            if (res.status === 409 || res.status === 404) { showToast(t('ranked.expired')); abandonRankedRun(); return; }
+            if (attempt < 3) { setTimeout(() => submitRankedGuess(point, attempt + 1), 1500 * attempt); return; }
+            showToast(t('ranked.failed'));
+            btn.disabled = !gameState.guessLatLng;
+            return;
+        }
+        const d = res.data;
+        gameState.roundSubmitted = true;
+        gameState.totalScore = d.total;
+        gameState.roundScore = d.distScore;
+        gameState.roundSpeedBonus = d.speedBonus + d.bountyBonus;
+        gameState.roundDistance = d.dist === null ? 10000 : d.dist;
+        gameState.roundMatchedChoice = false;
+        gameState.roundsHistory.push({
+            round: d.round, area: gameState.currentLocation.name, dist: gameState.roundDistance,
+            distScore: d.distScore, speedBonus: d.speedBonus + d.bountyBonus, total: d.score
+        });
+        if (d.done) { run.rating = d.rating; run.saved = !!d.leaderboard && !!d.rating; myRatings = null; }
+        playSuccessChime();
+        showRoundResult();
+    }
+
+    async function advanceRankedRound() {
+        const run = gameState.ranked;
+        if (!run || run.pending || !gameState.roundSubmitted) return;
+        const cfg = MODE_CONFIG[currentMode];
+        if (gameState.roundIndex >= cfg.rounds) {
+            document.getElementById('result-screen').classList.remove('active');
+            showFinalPodium();
+            return;
+        }
+        const nextBtn = document.getElementById('res-next-btn');
+        run.pending = true;
+        nextBtn.disabled = true;
+        const res = await rankedFetch('/api/ranked/next');
+        run.pending = false;
+        if (!res.ok) {
+            nextBtn.disabled = false;
+            if (res.status === 409 || res.status === 404) { showToast(t('ranked.expired')); abandonRankedRun(); }
+            else showToast(t('ranked.failed'));
+            return;
+        }
+        run.startedAt = res.data.startedAt;
+        run.deadline = res.data.deadline;
+        run.offset = res.data.serverNow - Date.now();
+        document.getElementById('result-screen').classList.remove('active');
+        loadRound();
+    }
+
+    function abandonRankedRun() {
+        clearInterval(gameState.timerInterval);
+        gameState.ranked = null;
+        gameState.matchPlan = null;
+        openRanked();
+    }
+
+    function rankedSummaryHTML(run) {
+        const open = `<button class="btn btn-sm btn-ghost" type="button" onclick="openRanked('${run.mode}')">${t('ranked.openBoard')}</button>`;
+        if (!run.saved || !run.rating) {
+            return `<div class="ranked-result"><div class="ranked-result-main"><strong>${t('ranked.finalTitle')}</strong><span class="rank-card-hint">${t('ranked.notSaved')}</span></div>${open}</div>`;
+        }
+        const r = run.rating;
+        const sign = r.delta > 0 ? '+' : '';
+        return `
+            <div class="ranked-result">
+                ${tierBadgeHTML(r.tier)}
+                <div class="ranked-result-main">
+                    <strong>${escapeHTML(tierName(r.tier))}</strong>
+                    <span>${r.before.toLocaleString()} → <b>${r.after.toLocaleString()}</b></span>
+                    <span class="ranked-delta ${r.delta >= 0 ? 'up' : 'down'}">${t('ranked.change')}: ${sign}${r.delta}</span>
+                </div>
+                ${open}
+            </div>`;
     }
 
     function leaveLobby() {
