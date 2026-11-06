@@ -1554,6 +1554,10 @@
             gameState.currentLocation = plannedLoc;
             gameState.currentHeading = planned.heading;
             recordSeenLocation(plannedLoc.id);
+        } else if (planned && planned.redacted) {
+            // Tag-Team Pinner: the server withholds the location until the reveal.
+            gameState.currentLocation = null;
+            gameState.currentHeading = planned.heading;
         } else {
             gameState.currentLocation = getNextUniqueLocation();
             gameState.currentHeading = getRandomHeading();
@@ -1591,8 +1595,13 @@
         updateStreakHUD();
         setupChoiceShelf();
 
-        loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading);
+        if (gameState.currentLocation && myRoleNow() !== 'pinner') {
+            loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading);
+        } else if (!gameState.currentLocation) {
+            document.getElementById('streetview-iframe').removeAttribute('src');
+        }
         startRoundTimer(cfg.time);
+        applyRoleUI();
 
         if (gameState.simulated4P) {
             initSimRound();
@@ -2382,6 +2391,11 @@
         roomReady = false;
         roomSession = null;
         serverMatch = null;
+        serverTeams = [];
+        teamSwapPick = null;
+        document.body.dataset.role = '';
+        const roleBanner = document.getElementById('team-role-banner');
+        if (roleBanner) roleBanner.hidden = true;
         myPlayerId = null;
         lobbyPlayers = [];
         matchId = null;
@@ -2513,11 +2527,14 @@
         const m = state.match;
         const newMatch = matchId !== m.id;
         const changedRound = !newMatch && gameState.roundIndex !== m.round;
-        const changedLocation = !newMatch && gameState.matchPlan?.[m.round - 1]?.id !== m.plan[m.round - 1].id;
+        // A redacted (null) id turning into a real one is a reveal, not a new location.
+        const oldPlanId = gameState.matchPlan?.[m.round - 1]?.id, newPlanId = m.plan[m.round - 1].id;
+        const changedLocation = !newMatch && !!oldPlanId && !!newPlanId && oldPlanId !== newPlanId;
         if (newMatch) {
             matchId = m.id;
             gameState.activeMatch = { mode: state.mode };
             gameState.mpGuesses = m.guesses;
+            gameState.ranked = null;
             beginMatch(state.mode, m.plan, m.round);
         } else if (changedRound || changedLocation) {
             gameState.matchPlan = m.plan;
@@ -2527,13 +2544,14 @@
             loadRound();
         }
         gameState.mpGuesses = m.guesses;
+        if (isTeamMode()) { gameState.matchPlan = m.plan; syncTeamLocation(m); }
         readyPlayers = new Set(m.ready);
         readyPending = false;
         // Rebuild local totals from accepted server guesses, including after a refresh.
         gameState.roundsHistory = Object.entries(m.guesses).flatMap(([round, guesses]) => {
             const g = guesses[myPlayerId];
             if (!g) return [];
-            return [{ round: +round, area: ALL_LOCATIONS.find(l => l.id === m.plan[+round - 1].id)?.name || 'Phnom Penh', dist: g.dist, distScore: g.distScore, speedBonus: g.speedBonus + g.bountyBonus, total: g.score }];
+            return [{ round: +round, area: findLocationById(m.plan[+round - 1].id)?.name || 'Phnom Penh', dist: g.dist, distScore: g.distScore, speedBonus: g.speedBonus + g.bountyBonus, total: g.score }];
         });
         gameState.totalScore = gameState.roundsHistory.reduce((sum, g) => sum + g.total, 0);
         const own = m.guesses[m.round]?.[myPlayerId];
@@ -2560,6 +2578,7 @@
             showFinalPodium();
         }
         renderMpHudChips();
+        applyRoleUI();
         if (document.getElementById('result-screen').classList.contains('active')) {
             renderMpRoundLeaderboard();
             refreshMpResultPins();
