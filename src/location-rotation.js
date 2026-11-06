@@ -1,5 +1,5 @@
 // Shared by the server and solo/AI browser play. Each pool has a saved draw deck.
-export const GAME_PROTOCOL = 3;
+export const GAME_PROTOCOL = 4;
 export function rotationRandom(n) {
   const limit = Math.floor(0x100000000 / n) * n;
   let value;
