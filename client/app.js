@@ -464,3 +464,218 @@
     }
 
     // ============================================================
+    //  LANGUAGE, REGION, THEME & HELP
+    // ============================================================
+    const REGION_KEY = 'wanderpenh_region';
+    const THEME_KEY = 'wanderpenh_theme';
+    const COACH_KEY = 'wanderpenh_coach_done';
+    let currentRegion = 'kh';
+    let currentMode = 'classic';
+
+    const MODE_ICONS = {
+        temple: '<path d="M4 20h16M6 20v-7h12v7M8 13V9h8v4M10 9V6h4v3M11 6 12 3l1 3M9 20v-3h6v3"/>',
+        city: '<path d="M3 21h18M5 21V9h5v12M14 21V5h5v16M7 12h1M7 15h1M16 8h1M16 11h1M16 14h1M16 17h1"/>',
+        bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
+        target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1"/>',
+        eye: '<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+        globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.4 3 14.6 0 18M12 3c-3 3.4-3 14.6 0 18"/>',
+        flag: '<path d="M5 21V4M5 4c4-2 7 2 11 0v9c-4 2-7-2-11 0"/>',
+        compass: '<circle cx="12" cy="12" r="9"/><path d="m16 8-2.5 5.5L8 16l2.5-5.5Z"/>',
+        flame: '<path d="M12 22c4 0 7-2.7 7-6.5 0-4.5-5-6-4-12-3 1.5-5 4.5-5 7.5 0 1.2.3 2.2.8 3-1.5-.4-2.6-1.6-3.3-3C6.4 13.4 5 15 5 17c0 3 3.2 5 7 5Z"/>',
+        lotus: '<path d="M12 21c-5 0-9-3-9-6 2 0 3.6.6 5 1.7C7.4 13.4 9 10 12 7c3 3 4.6 6.4 4 9.7 1.4-1.1 3-1.7 5-1.7 0 3-4 6-9 6Z"/><path d="M12 7c-1-2-1-4 0-5 1 1 1 3 0 5Z"/>'
+    };
+
+    function modeIcon(name) {
+        return `<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${MODE_ICONS[name] || MODE_ICONS.compass}</svg>`;
+    }
+
+    function modeName(m) {
+        return getLang() === 'km' && m.nameKm ? m.nameKm : m.name;
+    }
+
+    function modeDesc(m) {
+        return getLang() === 'km' && m.descKm ? m.descKm : m.desc;
+    }
+
+    function readSavedRegion() {
+        try {
+            const saved = localStorage.getItem(REGION_KEY);
+            return saved === 'kh' || saved === 'world' ? saved : null;
+        } catch (e) { return null; }
+    }
+
+    function regionModes(region = currentRegion) {
+        return Object.entries(MODE_CONFIG).filter(([, m]) => m.region === region);
+    }
+
+    function defaultModeForRegion(region = currentRegion) {
+        return region === 'world' ? 'world' : 'classic';
+    }
+
+    function setRegion(region, { persist = true, reveal = false } = {}) {
+        currentRegion = region === 'world' ? 'world' : 'kh';
+        if (persist) {
+            try { localStorage.setItem(REGION_KEY, currentRegion); } catch (e) {}
+        }
+        if (!MODE_CONFIG[currentMode] || MODE_CONFIG[currentMode].region !== currentRegion) {
+            currentMode = defaultModeForRegion();
+        }
+        if (reveal) {
+            document.getElementById('doors-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+            maybeShowCoach();
+        }
+        renderModeCards();
+        updateHomeChrome();
+    }
+
+    function setLanguage(next) {
+        const lang = setLang(next);
+        const btn = document.getElementById('lang-toggle');
+        if (btn) btn.textContent = lang === 'km' ? 'EN' : 'ខ្មែរ';
+        applyI18n();
+        updateProfileUI();
+        renderModeCards();
+        updateHomeChrome();
+        renderLobbyPlayers();
+        renderCoach();
+        return lang;
+    }
+
+    function applyTheme(theme) {
+        document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light';
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'dark' ? '#0F1E1F' : '#FFF8EE');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+    }
+
+    function toggleTheme() {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+        applyTheme(next);
+    }
+
+    function poolCountFor(mode) {
+        const cfg = MODE_CONFIG[mode] || {};
+        if (cfg.pool === 'landmarks') return LOCATIONS_DB.landmarks.length;
+        if (cfg.pool === 'countries') return LOCATIONS_DB.countries.length;
+        if (cfg.pool === 'cambodia') return LOCATIONS_DB.cambodia.length;
+        if (cfg.pool === 'asia') return LOCATIONS_DB.asia.length;
+        return ALL_LOCATIONS.length;
+    }
+
+    function updateHomeChrome() {
+        const region = REGION_CONFIG[currentRegion];
+        const heroRegion = document.getElementById('hero-region-name');
+        if (heroRegion) heroRegion.textContent = getLang() === 'km' ? region.nameKm : region.name;
+        const heroKm = document.getElementById('hero-km-line');
+        if (heroKm) {
+            heroKm.textContent = currentRegion === 'kh'
+                ? 'រុករក និងស្វែងយល់ទីក្រុងភ្នំពេញ'
+                : 'រុករកពិភពលោកទាំងមូលពីបន្ទប់របស់អ្នក';
+        }
+        document.querySelectorAll('#region-switch [data-region]').forEach(btn => {
+            btn.setAttribute('aria-pressed', btn.dataset.region === currentRegion ? 'true' : 'false');
+        });
+
+        const m = MODE_CONFIG[currentMode] || MODE_CONFIG[defaultModeForRegion()];
+        const name = document.getElementById('ticket-mode-name');
+        const nameKm = document.getElementById('ticket-mode-km');
+        const meta = document.getElementById('ticket-meta');
+        if (name) name.textContent = getLang() === 'km' ? (m.nameKm || m.name) : m.name;
+        if (nameKm) nameKm.textContent = getLang() === 'km' ? m.name : (m.nameKm || '');
+        if (meta) meta.textContent = `${t('mode.rounds', { n: m.rounds })} · ${t('mode.perRound', { n: m.time })}`;
+
+        const count = document.getElementById('location-count');
+        if (count) count.textContent = poolCountFor(currentMode).toLocaleString();
+        const profileRegion = document.querySelector('.hero-kicker [id="hero-region-name"]');
+
+        const partySelect = document.getElementById('party-mode-select');
+        if (partySelect && document.getElementById('mp-modal') && document.getElementById('mp-modal').classList.contains('active')) {
+            renderPartyModes();
+        }
+    }
+
+    function modeCardHTML(key, m) {
+        const stars = '★'.repeat(m.difficulty || 1) + '☆'.repeat(Math.max(0, 3 - (m.difficulty || 1)));
+        const secondary = getLang() === 'km' ? m.name : (m.nameKm || '');
+        return `
+            <article class="mode-card ${currentMode === key ? 'selected' : ''}" data-accent="${m.accent || 'gold'}" onclick="handleModeCardClick('${key}')">
+                ${m.featured ? `<span class="mode-badge">${t('mode.featured')}</span>` : ''}
+                <div class="mode-top">
+                    <span class="mode-stamp">${modeIcon(m.icon)}</span>
+                    <div class="mode-title-wrap">
+                        <h3 class="mode-title">${escapeHTML(modeName(m))}</h3>
+                        <span class="mode-km">${escapeHTML(secondary)}</span>
+                    </div>
+                </div>
+                <p class="mode-desc">${escapeHTML(modeDesc(m))}</p>
+                <div class="mode-chips">
+                    <span class="chip">${t('mode.rounds', { n: m.rounds })}</span>
+                    <span class="chip">${t('mode.perRound', { n: m.time })}</span>
+                    <span class="chip" title="${t('mode.difficulty')}">${stars}</span>
+                </div>
+                <div class="mode-play-row">
+                    <button class="btn btn-primary btn-sm" type="button" onclick="event.stopPropagation(); startModeGame('${key}', false);">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                        ${t('mode.play')}
+                    </button>
+                </div>
+            </article>`;
+    }
+
+    function renderModeCards() {
+        const featuredBox = document.getElementById('featured-modes-container');
+        const moreBox = document.getElementById('modes-selection-container');
+        if (!featuredBox || !moreBox) return;
+        const all = regionModes();
+        const featured = all.filter(([, m]) => m.featured);
+        const rest = all.filter(([, m]) => !m.featured);
+        featuredBox.innerHTML = featured.map(([key, m]) => modeCardHTML(key, m)).join('');
+        moreBox.innerHTML = rest.map(([key, m]) => modeCardHTML(key, m)).join('');
+        const moreWrap = document.getElementById('more-modes');
+        const moreToggle = document.getElementById('more-toggle');
+        if (moreWrap && moreToggle) {
+            const hasRest = rest.length > 0;
+            moreToggle.hidden = !hasRest;
+            if (!hasRest) moreWrap.hidden = true;
+        }
+        updateLaunchBar();
+    }
+
+    function handleModeCardClick(key) {
+        if (!MODE_CONFIG[key]) return;
+        if (currentMode === key) {
+            playBeep(580, 'sine', 0.06);
+        } else {
+            selectGameMode(key);
+        }
+    }
+
+    function startModeGame(key, is4Player) {
+        if (!MODE_CONFIG[key]) return;
+        currentMode = key;
+        updateHomeChrome();
+        if (is4Player) start4PlayerSimulation();
+        else startQuickPlay(key);
+    }
+
+    function selectGameMode(key) {
+        currentMode = key;
+        playBeep(520, 'sine', 0.05);
+        renderModeCards();
+        updateHomeChrome();
+    }
+
+    function startQuickPlay(mode = currentMode) {
+        currentMode = MODE_CONFIG[mode] ? mode : defaultModeForRegion();
+        updateHomeChrome();
+        startSinglePlayerGame();
+    }
+
+    function updateLaunchBar() {
+        updateHomeChrome();
+    }
+
+    // ============================================================
