@@ -223,3 +223,82 @@ a {
   to { opacity: 1; }
 }
 
+/* ==========================================================================
+   DOORS
+   ========================================================================== */
+#doors-screen {
+  z-index: 60;
+  overflow-y: auto;
+  padding: var(--safe-top) 18px var(--safe-bottom);
+  background:
+    radial-gradient(circle at 88% 8%, rgba(224, 165, 38, 0.24), transparent 46%),
+    radial-gradient(circle at 4% 88%, rgba(31, 127, 184, 0.16), transparent 42%),
+    var(--paper);
+}
+.doors-wrap {
+  max-width: 960px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  padding: 24px 0;
+}
+.doors-head { text-align: center; }
+.doors-kicker {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  border-bottom: 2px solid var(--gold);
+  padding-bottom: 4px;
+  margin-bottom: 12px;
+}
+.doors-head h1 {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  margin-bottom: 10px;
+}
+.doors-head p { color: var(--ink-2); max-width: 44ch; margin: 0 auto; font-weight: 500; }
+.doors-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.door {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 240px;
+  padding: 24px;
+  border: 2.5px solid var(--line);
+  border-radius: 28px;
+  box-shadow: 7px 8px 0 rgba(34, 51, 49, 0.2);
+  text-align: left;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.door:hover { transform: translateY(-4px) rotate(-0.6deg); box-shadow: 10px 12px 0 rgba(34, 51, 49, 0.22); }
+.door:active { transform: translateY(2px); box-shadow: 2px 3px 0 rgba(34, 51, 49, 0.2); }
+.door-kh { background: var(--gold); color: var(--on-gold); }
+.door-world { background: var(--mekong); color: #fff; }
+.door-art { position: absolute; right: -10px; bottom: -14px; width: 150px; height: 150px; opacity: 0.95; pointer-events: none; }
+.door-km { font-size: clamp(1.6rem, 4vw, 2.3rem); font-weight: 700; line-height: 1.35; }
+.door-en { font-size: 1.05rem; font-weight: 800; letter-spacing: -0.01em; }
+.door-desc { font-size: 0.86rem; font-weight: 600; max-width: 22ch; opacity: 0.86; margin-top: auto; }
+.door-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 2px;
+}
+.doors-foot { text-align: center; font-size: 0.78rem; color: var(--ink-2); font-weight: 600; }
+
