@@ -344,7 +344,7 @@
       </div>
 
       <div class="party-settings">
-        <label class="field-label" for="lobby-mode-select"><span data-i18n="party.mode">Game mode</span> <span id="party-mode-owner">· Host chooses</span></label>
+        <label class="field-label" for="lobby-mode-select"><span data-i18n="party.mode">Game mode</span> <span id="party-mode-owner">· <span data-i18n="party.hostChooses">Host chooses</span></span></label>
         <select id="lobby-mode-select" onchange="selectPartyMode(this.value)"></select>
         <p id="lobby-mode-description" class="party-mode-detail"></p>
         <p id="rotation-status" class="party-settings-note" role="status"></p>
@@ -369,7 +369,7 @@
       </button>
 
       <div>
-        <div class="field-label">Quick emote</div>
+        <div class="field-label" data-i18n="party.quickEmote">Quick emote</div>
         <div class="emote-shelf">
           <button class="emote-pill" type="button" onclick="sendLobbyEmote('🛵 Vroom!')">🛵 Vroom!</button>
           <button class="emote-pill" type="button" onclick="sendLobbyEmote('📍 Easy spot!')">📍 Easy spot!</button>

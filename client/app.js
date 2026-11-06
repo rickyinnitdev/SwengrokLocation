@@ -1332,7 +1332,7 @@
         chipsContainer.innerHTML = gameState.simPlayers.map(p => `
             <div class="hud-player-chip" id="sim-chip-${p.id}">
                 <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
-                <span>${escapeHTML(p.name)}${p.isMe ? ' (You)' : ': 🤔'}</span>
+                <span>${escapeHTML(p.name)}${p.isMe ? ` (${t('party.you')})` : ': 🤔'}</span>
             </div>
         `).join('');
 
@@ -1871,7 +1871,7 @@
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">+${g.score.toLocaleString()} pts</div>
+                            <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">+${g.score.toLocaleString()} ${t('final.points')}</div>
                             <div style="font-size: 0.72rem; color: var(--gold-deep); font-weight: 700;">${t('final.total')}: ${p.totalScore.toLocaleString()}</div>
                         </div>
                     </div>
@@ -2271,7 +2271,7 @@
                 <div class="lobby-player-thumb">${renderAvatarHTML(p, '100%', '100%')}</div>
                 <div style="flex: 1; overflow: hidden;">
                     <div style="font-weight: 800; font-size: 0.88rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                        ${escapeHTML(p.name)} ${p.isHost ? `<span style="color: var(--gold-deep); font-size: 0.72rem;">(${t('party.host')})</span>` : ''} ${p.id === (myPlayerId || 'me') ? '<span style="color: var(--rice); font-size: 0.72rem;">(YOU)</span>' : ''}
+                        ${escapeHTML(p.name)} ${p.isHost ? `<span style="color: var(--gold-deep); font-size: 0.72rem;">(${t('party.host')})</span>` : ''} ${p.id === (myPlayerId || 'me') ? `<span style="color: var(--rice); font-size: 0.72rem;">(${t('party.you')})</span>` : ''}
                     </div>
                     <div style="font-size: 0.72rem; color: var(--ink-2); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                         ${p.connected === false ? t('party.reconnecting') : escapeHTML(p.title || 'Explorer')}
@@ -2642,7 +2642,7 @@
         guessPending = true;
         const btn = document.getElementById('guess-btn');
         btn.disabled = true;
-        btn.innerHTML = '<span>Confirming guess…</span>';
+        btn.innerHTML = `<span>${t('game.confirming')}</span>`;
     }
 
     function sendMpGuess() { /* Solo and AI results stay local. Party guesses use submitRoomGuess. */ }
@@ -2667,7 +2667,7 @@
             return `
                 <div class="hud-player-chip ${g ? 'guessed' : ''}">
                     <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
-                    <span>${escapeHTML(p.name)}${p.id === me ? ' (You)' : ''}: ${status}</span>
+                    <span>${escapeHTML(p.name)}${p.id === me ? ` (${t('party.you')})` : ''}: ${status}</span>
                 </div>
             `;
         }).join('');
@@ -2725,9 +2725,9 @@
         const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd'];
         list.innerHTML = rows.map((p, idx) => {
             const g = p.guess;
-            const detail = !g ? 'Still guessing…'
-                : g.dist === null ? 'No guess (time ran out)'
-                : `${formatDistanceStr(g.dist)} away${g.elapsed !== null ? ` (${g.elapsed.toFixed(1)}s)` : ''}`;
+            const detail = !g ? t('result.stillGuessing')
+                : g.dist === null ? t('result.noGuess')
+                : `${formatDistanceStr(g.dist)} ${t('result.away')}${g.elapsed !== null ? ` (${g.elapsed.toFixed(1)}s)` : ''}`;
             return `
                 <div class="mp-leaderboard-row ${idx === 0 && g ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
                     <div style="display: flex; align-items: center; gap: 10px;">
@@ -2743,7 +2743,7 @@
                         </div>
                     </div>
                     <div style="text-align: right;">
-                        <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">${g ? `+${g.score.toLocaleString()} pts` : ''}</div>
+                        <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">${g ? `+${g.score.toLocaleString()} ${t('final.points')}` : ''}</div>
                         <div style="font-size: 0.72rem; color: var(--gold-deep); font-weight: 700;">${t('final.total')}: ${p.total.toLocaleString()}</div>
                     </div>
                 </div>
@@ -3334,7 +3334,7 @@
         selectPartyMode, leaveLobby, copyInviteLink, shareTelegram, sendLobbyEmote, startMultiplayerGame,
         skipBrokenLocation, returnToStartPano, toggleMapExpand, submitPlayerGuess, advanceNextRound,
         resetToHome, backToHome, joinFromHome, nextCoachStep, closeCoach, setRegion, setLanguage, showFinalPodium,
-        shareInviteLink, openRanked, copyInviteLink,
+        shareInviteLink, openRanked, closeRanked, setRankedRegion, setBoardTab, setBoardMode, startRankedRun, copyBackupCode, restoreBackupCode, copyInviteLink,
         setSheet, cycleSheet, pickTeamMember, myRoleNow
     });
 
