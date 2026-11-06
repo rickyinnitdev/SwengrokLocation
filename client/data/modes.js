@@ -101,7 +101,28 @@ export const MODE_CONFIG = {
     time: 25, rounds: 10, pool: 'all', nmpz: false, isStreak: true,
     region: 'kh', icon: 'flame', accent: 'gold', difficulty: 2
   },
+  // Party-only relay: teammates split the eyes and the hands. Khmer copy is
+  // first-pass. TODO(km-review): confirm the Tag-Team name and role words.
+  tagteam_kh: {
+    name: 'Tag-Team Relay',
+    nameKm: 'ដង្ហែក្រុមជាដៃគូ',
+    badge: 'Party relay',
+    desc: 'One teammate sees the street, the other holds the map. Swap roles every round.',
+    descKm: 'ដៃគូម្នាក់មើលផ្លូវ ម្នាក់ទៀតកាន់ផែនទី។ ប្តូរតួនាទីរាល់វគ្គ។',
+    time: 60, rounds: 6, pool: 'all', nmpz: false, teams: true,
+    region: 'kh', icon: 'people', accent: 'rice', difficulty: 2
+  },
+  tagteam_world: {
+    name: 'World Tag-Team',
+    nameKm: 'ដង្ហែក្រុមពិភពលោក',
+    badge: 'Party relay',
+    desc: 'A world-map relay for two-player teams. One sees, one pins, then swap.',
+    descKm: 'ការប្រកួតផែនទីពិភពលោកសម្រាប់ក្រុមពីរនាក់។ ម្នាក់មើល ម្នាក់ដាក់ម្ជុល បន្ទាប់មកប្តូរ។',
+    time: 60, rounds: 6, pool: 'countries', nmpz: false, teams: true, isWorld: true,
+    region: 'world', icon: 'people', accent: 'rice', difficulty: 3
+  },
   cambodia: {
+    ranked: true,
     name: 'Angkor & Beyond',
     nameKm: 'អង្គរ និងលើសពីនេះ',
     badge: 'All of Cambodia',
