@@ -1108,3 +1108,97 @@
     }
 
     // ============================================================
+    //  TIMER & ACCURACY SCORING SYSTEM
+    // ============================================================
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3;
+        const φ1 = lat1 * Math.PI / 180;
+        const φ2 = lat2 * Math.PI / 180;
+        const Δφ = (lat2 - lat1) * Math.PI / 180;
+        const Δλ = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                  Math.cos(φ1) * Math.cos(φ2) *
+                  Math.sin(Δλ/2) * Math.sin(Δλ/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function formatDistanceStr(distMeters) {
+        if (distMeters === null) return 'No guess';
+        if (distMeters < 1000) return `${Math.round(distMeters)} m`;
+        return `${(distMeters / 1000).toFixed(2)} km`;
+    }
+
+    function scoreGuess(distMeters, timeRemaining, maxTime, matchedChoice = false) {
+        const cfg = MODE_CONFIG[currentMode] || {};
+        let distScore = 0;
+        if (distMeters !== null) {
+            if (matchedChoice) {
+                distScore = 5000;
+            } else if (cfg.isWorld || cfg.isCountry) {
+                distScore = distMeters <= 50000 ? 5000 : Math.round(5000 * Math.exp(-distMeters / 3500000));
+            } else if (cfg.isAsia) {
+                distScore = distMeters <= 25000 ? 5000 : Math.round(5000 * Math.exp(-distMeters / 1200000));
+            } else if (cfg.isCambodia) {
+                distScore = distMeters <= 500 ? 5000 : Math.round(5000 * Math.exp(-distMeters / 30000));
+            } else if (cfg.isSniper) {
+                distScore = distMeters <= 35 ? 10000 : distMeters <= 75 ? 7500 : distMeters <= 150 ? 6000 : Math.max(0, Math.round(5000 * Math.exp(-distMeters / 1500)));
+            } else {
+                distScore = distMeters <= 25 ? 5000 : Math.max(0, Math.round(5000 * Math.exp(-distMeters / 1500)));
+            }
+        }
+
+        // Speed bonus: up to 1000 pts (doubled in sprint mode)
+        const speedRatio = Math.max(0, timeRemaining / maxTime);
+        const speedMultiplier = currentMode === 'sprint' ? 2 : 1;
+        const speedBonus = distMeters !== null ? Math.round(speedRatio * 1000) * speedMultiplier : 0;
+
+        return {
+            distScore,
+            speedBonus,
+            total: distScore + speedBonus
+        };
+    }
+
+    function startRoundTimer(seconds) {
+        clearInterval(gameState.timerInterval);
+        let remaining = seconds;
+        gameState.roundStartTime = isRealMultiplayer() && serverMatch ? serverMatch.startedAt - serverClockOffset : Date.now();
+
+        const timerCard = document.getElementById('hud-timer-card');
+        const timerVal = document.getElementById('hud-timer-num');
+        const circle = document.getElementById('timer-svg-circle');
+        const totalOffset = 75.4; // 2 * PI * 12
+
+        timerCard.classList.remove('danger');
+        timerVal.textContent = remaining;
+        circle.style.strokeDashoffset = 0;
+        circle.style.stroke = 'var(--rice)';
+
+        gameState.timerInterval = setInterval(() => {
+            remaining = Math.max(0, Math.ceil(isRealMultiplayer() && serverMatch ? (serverMatch.deadline - (Date.now() + serverClockOffset)) / 1000 : seconds - (Date.now() - gameState.roundStartTime) / 1000));
+            timerVal.textContent = remaining;
+
+            const progress = remaining / seconds;
+            circle.style.strokeDashoffset = totalOffset * (1 - progress);
+
+            if (progress < 0.25) {
+                circle.style.stroke = 'var(--lotus)';
+                timerCard.classList.add('danger');
+                playBeep(880, 'sine', 0.04);
+            } else if (progress < 0.5) {
+                circle.style.stroke = 'var(--gold-deep)';
+            }
+
+            if (remaining <= 0) {
+                clearInterval(gameState.timerInterval);
+                playBuzzer();
+                if (gameState.guessLatLng) {
+                    submitPlayerGuess();
+                } else {
+                    submitTimeoutZero();
+                }
+            }
+        }, 1000);
+    }
+
+    // ============================================================
