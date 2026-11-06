@@ -1500,3 +1500,226 @@
     }
 
     // ============================================================
+    //  MATCH FLOW (SOLO & MULTIPLAYER)
+    // ============================================================
+    function getModeLocationPool() {
+        const cfg = MODE_CONFIG[currentMode];
+        if (cfg.pool === 'landmarks') return LOCATIONS_DB.landmarks;
+        if (cfg.pool === 'countries') return LOCATIONS_DB.countries;
+        if (cfg.pool === 'cambodia') return LOCATIONS_DB.cambodia;
+        if (cfg.pool === 'asia') return LOCATIONS_DB.asia;
+        return ALL_LOCATIONS;
+    }
+
+    function startSinglePlayerGame() {
+        gameState.isMultiplayer = false;
+        gameState.simulated4P = false;
+        gameState.matchPlan = null;
+        const mpCard = document.getElementById('hud-mp-status-card');
+        if (mpCard) mpCard.style.display = 'none';
+
+        document.getElementById('start-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.add('active');
+
+        gameState.roundIndex = 0;
+        gameState.totalScore = 0;
+        gameState.roundsHistory = [];
+        gameState.usedLocIds = [];
+        gameState.streakCount = 0;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
+
+        initGuessMap();
+        loadRound();
+    }
+
+    function loadRound() {
+        gameState.roundSubmitted = false;
+        guessPending = false;
+        readyPending = false;
+        readyPlayers.clear();
+        gameState.guessLatLng = null;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
+        gameState.roundIndex++;
+        const cfg = MODE_CONFIG[currentMode];
+
+        document.getElementById('hud-round-indicator').textContent = `${gameState.roundIndex} / ${cfg.rounds}`;
+        document.getElementById('hud-score-indicator').textContent = gameState.totalScore.toLocaleString();
+
+        const planned = gameState.matchPlan && gameState.matchPlan[gameState.roundIndex - 1];
+        const allPoolLocations = [...ALL_LOCATIONS, ...LOCATIONS_DB.countries, ...LOCATIONS_DB.cambodia, ...(LOCATIONS_DB.asia || [])];
+        const plannedLoc = planned && allPoolLocations.find(l => l.id === planned.id);
+        if (plannedLoc) {
+            gameState.currentLocation = plannedLoc;
+            gameState.currentHeading = planned.heading;
+            recordSeenLocation(plannedLoc.id);
+        } else {
+            gameState.currentLocation = getNextUniqueLocation();
+            gameState.currentHeading = getRandomHeading();
+        }
+
+        if (gameState.guessMarker) {
+            gameState.guessMap.removeLayer(gameState.guessMarker);
+            gameState.guessMarker = null;
+            gameState.guessLatLng = null;
+        }
+        const btn = document.getElementById('guess-btn');
+        btn.innerHTML = `<span>${t('game.confirmWait')}</span>`;
+        btn.classList.remove('ready');
+        btn.disabled = true;
+
+        const pinStatus = document.getElementById('map-pin-status');
+        if (pinStatus) {
+            pinStatus.textContent = t('game.pinHint');
+            pinStatus.classList.remove('placed');
+        }
+
+        const isWorld = !!cfg.isWorld || !!cfg.isCountry;
+        const isAsia = !!cfg.isAsia;
+        const isCam = !!cfg.isCambodia;
+        const center = isWorld ? WORLD_CENTER : isAsia ? ASIA_CENTER : isCam ? [12.5, 104.9] : PP_CENTER;
+        const zoom = isWorld ? 2 : isAsia ? 4 : isCam ? 7 : 12;
+        if (gameState.guessMap) {
+            gameState.guessMap.setView(center, zoom);
+        }
+
+        const modePill = document.getElementById('hud-mode-pill');
+        if (modePill) {
+            modePill.innerHTML = `<span>${cfg.badge}</span> ${cfg.name}`;
+        }
+        updateStreakHUD();
+        setupChoiceShelf();
+
+        loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading);
+        startRoundTimer(cfg.time);
+
+        if (gameState.simulated4P) {
+            initSimRound();
+        } else if (isRealMultiplayer()) {
+            renderMpHudChips();
+        }
+    }
+
+    function submitPlayerGuess() {
+        if (isRealMultiplayer()) { if (gameState.guessLatLng) submitRoomGuess(gameState.guessLatLng); return; }
+        if (!gameState.guessLatLng || gameState.roundSubmitted) return;
+        gameState.roundSubmitted = true;
+        clearInterval(gameState.timerInterval);
+
+        const elapsedSeconds = (Date.now() - gameState.roundStartTime) / 1000;
+        const cfg = MODE_CONFIG[currentMode] || {};
+        const timeRemaining = Math.max(0, cfg.time - elapsedSeconds);
+
+        const dist = calculateDistance(
+            gameState.currentLocation.lat, gameState.currentLocation.lng,
+            gameState.guessLatLng.lat, gameState.guessLatLng.lng
+        );
+
+        let matchedChoice = false;
+        if (cfg.isCountry && gameState.chosenCountry && gameState.currentLocation.country) {
+            matchedChoice = (gameState.chosenCountry.toLowerCase() === gameState.currentLocation.country.toLowerCase());
+        } else if (cfg.isDistrict && gameState.chosenDistrict && gameState.currentLocation.area) {
+            const locArea = gameState.currentLocation.area.toLowerCase();
+            const chosen = gameState.chosenDistrict.toLowerCase();
+            matchedChoice = locArea.includes(chosen) || chosen.includes(locArea);
+        }
+
+        const scoreObj = scoreGuess(dist, timeRemaining, cfg.time, matchedChoice);
+
+        let streakMultiplier = 1;
+        if (cfg.isStreak) {
+            if (dist <= 500) {
+                gameState.streakCount = (gameState.streakCount || 0) + 1;
+                streakMultiplier = gameState.streakCount >= 5 ? 5 : gameState.streakCount === 4 ? 3 : gameState.streakCount === 3 ? 2 : gameState.streakCount === 2 ? 1.5 : 1;
+            } else {
+                gameState.streakCount = 0;
+            }
+            updateStreakHUD();
+        }
+
+        const finalDistScore = Math.round(scoreObj.distScore * streakMultiplier);
+        const finalRoundScore = finalDistScore + scoreObj.speedBonus;
+
+        gameState.totalScore += finalRoundScore;
+        gameState.roundScore = finalDistScore;
+        gameState.roundSpeedBonus = scoreObj.speedBonus;
+        gameState.roundDistance = dist;
+        gameState.roundMatchedChoice = matchedChoice;
+
+        gameState.roundsHistory.push({
+            round: gameState.roundIndex,
+            area: gameState.currentLocation.name,
+            dist,
+            distScore: finalDistScore,
+            speedBonus: scoreObj.speedBonus,
+            total: finalRoundScore,
+            matchedChoice,
+            streak: gameState.streakCount || 0
+        });
+
+        playSuccessChime();
+
+        if (gameState.simulated4P) {
+            const target = gameState.currentLocation;
+            gameState.simPlayers.filter(p => !p.isMe && !p.roundCompleted).forEach(bot => {
+                generateBotGuess(bot, target, cfg.time);
+            });
+
+            const me = gameState.simPlayers.find(p => p.isMe);
+            if (me) {
+                me.currentGuess = {
+                    guessLatLng: gameState.guessLatLng,
+                    dist,
+                    score: finalRoundScore,
+                    distScore: finalDistScore,
+                    speedBonus: scoreObj.speedBonus,
+                    elapsed: elapsedSeconds,
+                    matchedChoice
+                };
+                me.totalScore = gameState.totalScore;
+                me.roundCompleted = true;
+            }
+
+            const myChip = document.getElementById('sim-chip-player_me');
+            if (myChip) {
+                myChip.classList.add('guessed');
+                myChip.innerHTML = `
+                    <div class="hud-player-chip-avatar">${renderAvatarHTML(userProfile, '100%', '100%')}</div>
+                    <span>${escapeHTML(userProfile.name)}: ✓ (${elapsedSeconds.toFixed(1)}s)</span>
+                `;
+            }
+        }
+
+        sendMpGuess(dist, finalRoundScore, gameState.guessLatLng, elapsedSeconds);
+
+        showRoundResult();
+    }
+
+    function submitTimeoutZero() {
+        if (isRealMultiplayer()) { submitRoomGuess(null); return; }
+        if (gameState.roundSubmitted) return;
+        gameState.roundSubmitted = true;
+        const cfg = MODE_CONFIG[currentMode] || {};
+        if (cfg.isStreak) {
+            gameState.streakCount = 0;
+            updateStreakHUD();
+        }
+        // Reset last round's numbers so the result card doesn't show stale points
+        gameState.roundScore = 0;
+        gameState.roundSpeedBonus = 0;
+        gameState.roundDistance = 10000;
+        gameState.roundMatchedChoice = false;
+        sendMpGuess(null, 0, null, null);
+        gameState.roundsHistory.push({
+            round: gameState.roundIndex,
+            area: gameState.currentLocation.name,
+            dist: 10000,
+            distScore: 0,
+            speedBonus: 0,
+            total: 0
+        });
+        showRoundResult();
+    }
+
+    // ============================================================
