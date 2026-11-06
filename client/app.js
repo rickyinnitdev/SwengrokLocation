@@ -2077,3 +2077,594 @@
     }
 
     // ============================================================
+    //  CLOUDFLARE MULTIPLAYER ROOMS (server coordinates all players)
+    // ============================================================
+    let roomSocket = null;
+    let heartbeatTimer = null;
+    let lastServerMessage = 0;
+    let roomSession = null;
+    let reconnectTimer = null;
+    let reconnectAttempts = 0;
+    let serverClockOffset = 0;
+    let serverMatch = null;
+    let guessPending = false;
+    let readyPending = false;
+    let myPlayerId = null;
+    let connectionTimer = null;
+    let roomReady = false;
+    let readyPlayers = new Set();
+    let matchId = null;
+    let lobbyPlayers = [];          // player list as last synced from the host (clients only)
+
+    const MAX_ROOM_PLAYERS = 8;
+    const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const LOBBY_EMOTES = ['🛵 Vroom!', '📍 Easy spot!', '🤔 No clue!', '🔥 Ready!', '👑 GG!'];
+    const MP_AURAS = ['#10b981', '#f59e0b', '#38bdf8', '#ec4899', '#8b5cf6', '#f43f5e', '#facc15', '#14b8a6'];
+
+    function isRealMultiplayer() {
+        return gameState.isMultiplayer && !gameState.simulated4P;
+    }
+
+    function openMultiplayerModal() {
+        renderPartyModes();
+        document.getElementById('mp-modal').classList.add('active');
+        setTimeout(() => document.getElementById('join-code-input')?.focus(), 50);
+    }
+
+    function generateRoomCode() {
+        const bytes = crypto.getRandomValues(new Uint8Array(6));
+        return 'WP-' + Array.from(bytes, b => ROOM_CODE_CHARS[b % ROOM_CODE_CHARS.length]).join('');
+    }
+
+    function setLobbyStatus(text) {
+        const el = document.getElementById('lobby-status-text');
+        if (el) el.textContent = text;
+        const waiting = document.getElementById('client-connection-text');
+        if (waiting) waiting.textContent = text;
+        const start = document.getElementById('start-party-btn');
+        const spinner = document.querySelector('#client-waiting .spinner');
+        if (spinner) spinner.style.display = roomReady ? 'none' : 'block';
+        if (start) {
+            start.disabled = !roomReady || getLobbyPlayers().filter(p => p.connected !== false).length < 2 || getLobbyPlayers().some(p => p.connected === false) || !!serverMatch;
+            start.title = !roomReady ? t('lobby.connectingTitle') : getLobbyPlayers().length < 2 ? t('lobby.inviteTitle') : t('lobby.readyTitle');
+        }
+    }
+
+    function createMultiplayerLobby() {
+        closeModal('mp-modal');
+        teardownRoom();
+        currentMode = document.getElementById('party-mode-select').value || currentMode;
+        const code = generateRoomCode();
+        gameState.isMultiplayer = true;
+        gameState.simulated4P = false;
+        gameState.isHost = true;
+        gameState.roomCode = code;
+        gameState.activeMatch = null;
+
+        openLobbyUI(code, true);
+        initRoomConnection(code, true);
+    }
+
+    function joinMultiplayerLobby() {
+        const input = document.getElementById('join-code-input');
+        let code = input.value.trim().toUpperCase().replace(/\s+/g, '');
+        if (!code) {
+            showToast(t('toast.roomCodeRequired'));
+            input.focus();
+            return;
+        }
+        if (!code.startsWith('WP-')) code = 'WP-' + code.replace(/^WP-?/, '');
+        if (!/^WP-[A-Z0-9]{5,6}$/.test(code)) {
+            showToast(t('toast.roomCodeInvalid'));
+            input.focus();
+            return;
+        }
+
+        closeModal('mp-modal');
+        teardownRoom();
+        gameState.isMultiplayer = true;
+        gameState.simulated4P = false;
+        gameState.isHost = false;
+        gameState.roomCode = code;
+
+        openLobbyUI(code, false);
+        initRoomConnection(code, false);
+    }
+
+    function openLobbyUI(code, isHost) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('lobby-screen').classList.add('active');
+        document.getElementById('room-code-text').textContent = code;
+
+        document.getElementById('host-controls').style.display = isHost ? 'flex' : 'none';
+        document.getElementById('client-waiting').style.display = isHost ? 'none' : 'block';
+
+        renderLobbyPlayers();
+        renderPartyModes();
+    }
+
+    function myLobbyEntry() {
+        return { id: myPlayerId || 'me', ...sanitizeProfile(userProfile), isHost: gameState.isHost };
+    }
+
+    function getLobbyPlayers() {
+        return lobbyPlayers.length ? lobbyPlayers : [myLobbyEntry()];
+    }
+
+    function getPlayerAura(id) {
+        const idx = getLobbyPlayers().findIndex(p => p.id === id);
+        return MP_AURAS[Math.max(0, idx) % MP_AURAS.length];
+    }
+
+    function renderLobbyPlayers() {
+        const container = document.getElementById('lobby-players-container');
+        const players = getLobbyPlayers();
+
+        document.getElementById('player-count').textContent = players.length;
+        container.innerHTML = players.map(p => `
+            <div class="lobby-player-card">
+                <div class="lobby-player-thumb">${renderAvatarHTML(p, '100%', '100%')}</div>
+                <div style="flex: 1; overflow: hidden;">
+                    <div style="font-weight: 800; font-size: 0.88rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        ${escapeHTML(p.name)} ${p.isHost ? `<span style="color: var(--gold-deep); font-size: 0.72rem;">(${t('party.host')})</span>` : ''} ${p.id === (myPlayerId || 'me') ? '<span style="color: var(--rice); font-size: 0.72rem;">(YOU)</span>' : ''}
+                    </div>
+                    <div style="font-size: 0.72rem; color: var(--ink-2); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
+                        ${p.connected === false ? t('party.reconnecting') : escapeHTML(p.title || 'Explorer')}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderPartyModes() {
+        const entries = regionModes();
+        if (MODE_CONFIG[currentMode] && !entries.some(([key]) => key === currentMode)) {
+            entries.unshift([currentMode, MODE_CONFIG[currentMode]]);
+        }
+        for (const [id, descriptionId] of [['party-mode-select', 'party-mode-description'], ['lobby-mode-select', 'lobby-mode-description']]) {
+            const select = document.getElementById(id);
+            if (!select) continue;
+            select.innerHTML = entries.map(([key, cfg]) => '<option value="' + key + '">' + escapeHTML(modeName(cfg)) + '</option>').join('');
+            if (MODE_CONFIG[currentMode]) select.value = currentMode;
+            select.disabled = id === 'lobby-mode-select' && (!gameState.isHost || !roomReady || !!serverMatch);
+            const cfg = MODE_CONFIG[select.value] || MODE_CONFIG[currentMode];
+            if (cfg) {
+                document.getElementById(descriptionId).textContent =
+                    `${t('mode.perRound', { n: cfg.time })} · ${t('mode.rounds', { n: cfg.rounds })} · ${poolCountFor(select.value)} ${t('home.size')}. ${modeDesc(cfg)}`;
+            }
+        }
+        document.querySelectorAll('#party-region-switch [data-region]').forEach(btn => {
+            btn.setAttribute('aria-pressed', btn.dataset.region === currentRegion ? 'true' : 'false');
+        });
+    }
+
+    function selectPartyMode(mode) {
+        if (!MODE_CONFIG[mode]) return;
+        if (isRealMultiplayer()) {
+            if (!gameState.isHost || !roomReady || serverMatch) return;
+            sendRoomMessage({ type: 'SET_MODE', mode });
+        } else {
+            currentMode = mode;
+            if (MODE_CONFIG[mode].region !== currentRegion) {
+                currentRegion = MODE_CONFIG[mode].region;
+                try { localStorage.setItem(REGION_KEY, currentRegion); } catch (e) {}
+            }
+            renderPartyModes();
+            renderModeCards();
+            updateHomeChrome();
+        }
+    }
+
+    function teardownRoom() {
+        clearInterval(heartbeatTimer);
+        clearTimeout(connectionTimer);
+        clearTimeout(reconnectTimer);
+        const old = roomSocket;
+        roomSocket = null;
+        if (old) {
+            if (old.readyState === WebSocket.OPEN) old.send(JSON.stringify({ type: 'LEAVE' }));
+            old.close();
+        }
+        roomReady = false;
+        roomSession = null;
+        serverMatch = null;
+        myPlayerId = null;
+        lobbyPlayers = [];
+        matchId = null;
+        readyPlayers.clear();
+        guessPending = false;
+        readyPending = false;
+    }
+
+    function sendRoomMessage(msg) {
+        if (!roomReady || roomSocket?.readyState !== WebSocket.OPEN) {
+            showToast(t('toast.reconnectingWait'));
+            return false;
+        }
+        roomSocket.send(JSON.stringify(msg));
+        return true;
+    }
+
+    function initRoomConnection(code, create, resume = false) {
+        if (!resume) {
+            reconnectAttempts = 0;
+            roomSession = null;
+            try { roomSession = JSON.parse(sessionStorage.getItem('wanderpenh_room_' + code)); } catch {}
+        }
+        roomReady = false;
+        setLobbyStatus(resume ? 'Reconnecting to your party…' : create ? 'Opening your party room…' : 'Connecting to ' + code + '…');
+        const url = new URL('/api/rooms/' + encodeURIComponent(code), location.origin);
+        url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const socket = new WebSocket(url);
+        roomSocket = socket;
+        clearTimeout(connectionTimer);
+        connectionTimer = setTimeout(() => {
+            if (roomSocket !== socket || roomReady) return;
+            leaveLobby();
+            showToast(t('toast.serverUnreachable'));
+        }, 15000);
+        socket.onopen = () => {
+            if (roomSocket !== socket) return;
+            lastServerMessage = Date.now();
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = setInterval(() => {
+                if (roomSocket !== socket || socket.readyState !== WebSocket.OPEN) return;
+                if (Date.now() - lastServerMessage > 40000) { socket.close(); return; }
+                socket.send('ping');
+            }, 15000);
+            socket.send(JSON.stringify({ type: 'HELLO', protocol: WanderRotation.protocol, create: create && !roomSession, token: roomSession?.token, profile: sanitizeProfile(userProfile), mode: currentMode, seen: getSeenHistory().slice(-600) }));
+        };
+        socket.onmessage = event => {
+            if (roomSocket !== socket) return;
+            lastServerMessage = Date.now();
+            if (event.data === 'pong') return;
+            let msg;
+            try { msg = JSON.parse(event.data); } catch { return; }
+            if (msg.type === 'WELCOME') {
+                myPlayerId = msg.playerId;
+                roomSession = { token: msg.token };
+                try { sessionStorage.setItem('wanderpenh_room_' + code, JSON.stringify(roomSession)); } catch {}
+                const invite = new URL(location.href);
+                invite.searchParams.set('room', code);
+                history.replaceState(null, '', invite);
+            } else if (msg.type === 'ROOM_STATE') {
+                clearTimeout(connectionTimer);
+                reconnectAttempts = 0;
+                roomReady = true;
+                applyRoomState(msg);
+            } else if (msg.type === 'ROOM_ERROR') {
+                if (msg.message === 'ROOM_EXISTS' && create) {
+                    teardownRoom();
+                    gameState.roomCode = generateRoomCode();
+                    openLobbyUI(gameState.roomCode, true);
+                    initRoomConnection(gameState.roomCode, true);
+                    return;
+                }
+                try { sessionStorage.removeItem('wanderpenh_room_' + code); } catch {}
+                leaveLobby();
+                showToast(msg.message || 'Unable to join this party.');
+            } else if (msg.type === 'LOBBY_EMOTE') {
+                showToast(cleanText(msg.sender, 'Explorer', 24) + ': ' + msg.emote);
+            }
+        };
+        socket.onclose = () => {
+            if (roomSocket !== socket) return;
+            clearInterval(heartbeatTimer);
+            clearTimeout(connectionTimer);
+            roomReady = false;
+            guessPending = false;
+            readyPending = false;
+            setLobbyStatus('Connection interrupted. Rejoining your party…');
+            if (!roomSession || reconnectAttempts >= 6) {
+                leaveLobby();
+                showToast(t('toast.roomLost'));
+                return;
+            }
+            showToast(t('toast.reconnecting'));
+            reconnectTimer = setTimeout(() => initRoomConnection(code, false, true), Math.min(4000, 500 * 2 ** reconnectAttempts++));
+        };
+        socket.onerror = () => { /* onclose handles retry and feedback */ };
+    }
+
+    function applyRoomState(state) {
+        serverClockOffset = state.serverNow - Date.now();
+        lobbyPlayers = state.players.map(p => ({ ...sanitizeProfile(p), id: p.id, isHost: p.isHost, connected: p.connected }));
+        gameState.isHost = state.hostId === myPlayerId;
+        currentMode = state.mode;
+        serverMatch = state.match;
+        document.getElementById('host-controls').style.display = gameState.isHost ? 'flex' : 'none';
+        document.getElementById('client-waiting').style.display = gameState.isHost ? 'none' : 'block';
+        const connected = lobbyPlayers.filter(p => p.connected).length;
+        setLobbyStatus(connected < lobbyPlayers.length ? t('lobby.reconnecting') : connected < 2 ? t('lobby.open') : gameState.isHost ? t('lobby.host', { n: connected }) : t('lobby.client', { n: connected }));
+        renderLobbyPlayers();
+        renderPartyModes();
+        const customizeAvatar = document.getElementById('lobby-customize-avatar');
+        document.getElementById('rotation-status').textContent = state.selection ? t('lobby.rotation', { n: state.selection.remaining }) : '';
+        if (customizeAvatar) customizeAvatar.innerHTML = renderAvatarHTML(userProfile, '100%', '100%');
+        const customizeButton = document.querySelector('.lobby-customize');
+        if (customizeButton) customizeButton.disabled = !roomReady;
+        if (state.match) closeModal('profile-modal');
+        if (!state.match) {
+            if (matchId) {
+                matchId = null;
+                clearInterval(gameState.timerInterval);
+                gameState.activeMatch = null;
+                gameState.matchPlan = null;
+                openLobbyUI(gameState.roomCode, gameState.isHost);
+            }
+            return;
+        }
+        const m = state.match;
+        const newMatch = matchId !== m.id;
+        const changedRound = !newMatch && gameState.roundIndex !== m.round;
+        const changedLocation = !newMatch && gameState.matchPlan?.[m.round - 1]?.id !== m.plan[m.round - 1].id;
+        if (newMatch) {
+            matchId = m.id;
+            gameState.activeMatch = { mode: state.mode };
+            gameState.mpGuesses = m.guesses;
+            beginMatch(state.mode, m.plan, m.round);
+        } else if (changedRound || changedLocation) {
+            gameState.matchPlan = m.plan;
+            gameState.roundIndex = m.round - 1;
+            document.getElementById('result-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            loadRound();
+        }
+        gameState.mpGuesses = m.guesses;
+        readyPlayers = new Set(m.ready);
+        readyPending = false;
+        // Rebuild local totals from accepted server guesses, including after a refresh.
+        gameState.roundsHistory = Object.entries(m.guesses).flatMap(([round, guesses]) => {
+            const g = guesses[myPlayerId];
+            if (!g) return [];
+            return [{ round: +round, area: ALL_LOCATIONS.find(l => l.id === m.plan[+round - 1].id)?.name || 'Phnom Penh', dist: g.dist, distScore: g.distScore, speedBonus: g.speedBonus + g.bountyBonus, total: g.score }];
+        });
+        gameState.totalScore = gameState.roundsHistory.reduce((sum, g) => sum + g.total, 0);
+        const own = m.guesses[m.round]?.[myPlayerId];
+        if (own) {
+            const firstResult = !gameState.roundSubmitted;
+            gameState.roundSubmitted = true;
+            guessPending = false;
+            clearInterval(gameState.timerInterval);
+            gameState.guessLatLng = own.guessLatLng;
+            gameState.roundScore = own.distScore;
+            gameState.roundSpeedBonus = own.speedBonus + own.bountyBonus;
+            gameState.roundDistance = own.dist;
+            if (firstResult && m.phase !== 'final') showRoundResult();
+        } else if (m.phase === 'playing') {
+            gameState.roundStartTime = m.startedAt - serverClockOffset;
+            if (!guessPending) {
+                const btn = document.getElementById('guess-btn');
+                btn.disabled = !gameState.guessLatLng;
+                if (gameState.guessLatLng) btn.innerHTML = '<span>Confirm guess</span>';
+            }
+        }
+        if (m.phase === 'final') {
+            document.getElementById('result-screen').classList.remove('active');
+            showFinalPodium();
+        }
+        renderMpHudChips();
+        if (document.getElementById('result-screen').classList.contains('active')) {
+            renderMpRoundLeaderboard();
+            refreshMpResultPins();
+            updateRoundReadyUI();
+        }
+    }
+
+    function beginMatch(mode, plan, round = 1) {
+        currentMode = mode;
+        gameState.matchPlan = plan;
+        gameState.mpGuesses = {};
+        gameState.roundIndex = round - 1;
+        gameState.totalScore = 0;
+        gameState.roundsHistory = [];
+        gameState.usedLocIds = [];
+
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('game-screen').classList.add('active');
+        initGuessMap();
+        loadRound();
+    }
+
+    function startMultiplayerGame() {
+        if (!gameState.isHost || !roomReady || getLobbyPlayers().length < 2 || serverMatch) return;
+        sendRoomMessage({ type: 'START_MATCH' });
+    }
+
+    function submitRoomGuess(point) {
+        if (gameState.roundSubmitted || guessPending) return;
+        if (serverMatch && Date.now() + serverClockOffset < serverMatch.startedAt) {
+            showToast(t('toast.roundStarting'));
+            return;
+        }
+        if (!sendRoomMessage({ type: 'PLAYER_GUESS', matchId, round: gameState.roundIndex, guessLatLng: point ? { lat: point.lat, lng: point.lng } : null })) return;
+        guessPending = true;
+        const btn = document.getElementById('guess-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<span>Confirming guess…</span>';
+    }
+
+    function sendMpGuess() { /* Solo and AI results stay local. Party guesses use submitRoomGuess. */ }
+
+    function mpTotalFor(playerId) {
+        return Object.values(gameState.mpGuesses || {})
+            .reduce((sum, round) => sum + (round[playerId] ? round[playerId].score : 0), 0);
+    }
+
+    function renderMpHudChips() {
+        if (!isRealMultiplayer()) return;
+        const hudCard = document.getElementById('hud-mp-status-card');
+        const chips = document.getElementById('hud-mp-chips');
+        if (!hudCard || !chips) return;
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+
+        hudCard.style.display = 'flex';
+        chips.innerHTML = getLobbyPlayers().map(p => {
+            const g = guesses[p.id];
+            const status = g ? (g.elapsed !== null ? `✓ (${g.elapsed.toFixed(1)}s)` : '⌛') : '🤔';
+            return `
+                <div class="hud-player-chip ${g ? 'guessed' : ''}">
+                    <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
+                    <span>${escapeHTML(p.name)}${p.id === me ? ' (You)' : ''}: ${status}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderMpRoundLeaderboard() {
+        const list = document.getElementById('mp-round-players-list');
+        if (!list) return;
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+
+        const rows = getLobbyPlayers().map(p => ({ ...p, guess: guesses[p.id] || null, total: mpTotalFor(p.id) }));
+        const rank = r => r.guess ? (r.guess.dist !== null ? r.guess.dist : 1e8) : 1e9;
+        rows.sort((a, b) => rank(a) - rank(b));
+
+        const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd'];
+        list.innerHTML = rows.map((p, idx) => {
+            const g = p.guess;
+            const detail = !g ? 'Still guessing…'
+                : g.dist === null ? 'No guess (time ran out)'
+                : `${formatDistanceStr(g.dist)} away${g.elapsed !== null ? ` (${g.elapsed.toFixed(1)}s)` : ''}`;
+            return `
+                <div class="mp-leaderboard-row ${idx === 0 && g ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-weight: 900; font-size: 0.92rem; min-width: 48px; color: ${idx === 0 && g ? 'var(--gold-deep)' : 'var(--ink-2)'};">${g ? (medals[idx] || `${idx + 1}th`) : '…'}</span>
+                        <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid ${getPlayerAura(p.id)}; background: var(--gold); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+                            ${renderAvatarHTML(p, '100%', '100%')}
+                        </div>
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                ${escapeHTML(p.name)} ${p.id === me ? `<span style="font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--rice); color: var(--paper);">${t('party.you')}</span>` : ''}
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--ink-2);">${detail}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">${g ? `+${g.score.toLocaleString()} pts` : ''}</div>
+                        <div style="font-size: 0.72rem; color: var(--gold-deep); font-weight: 700;">${t('final.total')}: ${p.total.toLocaleString()}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function refreshMpResultPins() {
+        if (!isRealMultiplayer() || !gameState.resultMap || !gameState.currentLocation) return;
+        if (gameState.mpPinLayer) gameState.mpPinLayer.remove();
+        gameState.mpPinLayer = L.layerGroup().addTo(gameState.resultMap);
+
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+        const actualLoc = [gameState.currentLocation.lat, gameState.currentLocation.lng];
+
+        getLobbyPlayers().forEach(p => {
+            const g = guesses[p.id];
+            if (p.id === me || !g || !g.guessLatLng) return;
+            const aura = getPlayerAura(p.id);
+            const guessLoc = [g.guessLatLng.lat, g.guessLatLng.lng];
+            const html = `
+                <div class="marker-player-pin">
+                    <div class="marker-pin-bubble" style="border-color: ${aura};">${renderAvatarHTML(p, '100%', '100%')}</div>
+                    <div class="marker-pin-point" style="border-top-color: ${aura};"></div>
+                    <div class="marker-pin-label" style="border-color: ${aura};">${escapeHTML(p.name)}: ${formatDistanceStr(g.dist)}</div>
+                </div>
+            `;
+            L.marker(guessLoc, {
+                icon: L.divIcon({ className: 'custom-leaflet-player-marker', html, iconSize: [40, 52], iconAnchor: [20, 50] })
+            }).addTo(gameState.mpPinLayer);
+            L.polyline([actualLoc, guessLoc], { color: aura, weight: 3, dashArray: '6,6', opacity: 0.85 }).addTo(gameState.mpPinLayer);
+        });
+    }
+
+    function sendLobbyEmote(text) {
+        if (LOBBY_EMOTES.includes(text)) sendRoomMessage({ type: 'LOBBY_EMOTE', emote: text });
+    }
+
+    function copyInviteLink() {
+        const code = gameState.roomCode;
+        const link = window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(code);
+        navigator.clipboard.writeText(link).then(() => {
+            showToast(t('toast.linkCopied', { code }));
+        }).catch(() => {
+            prompt(t('toast.linkPrompt'), link);
+        });
+    }
+
+    function inviteLink() {
+        const code = gameState.roomCode || '';
+        return window.location.origin + window.location.pathname + (code ? '?room=' + encodeURIComponent(code) : '');
+    }
+
+    function shareInviteLink() {
+        const url = inviteLink();
+        const text = t('party.shareText', { code: gameState.roomCode || '' });
+        if (navigator.share) {
+            navigator.share({ title: 'WanderPenh', text, url }).catch(() => {});
+            return;
+        }
+        // Desktop fallback: copy the same link Telegram would receive.
+        navigator.clipboard.writeText(url).then(() => {
+            showToast(t('toast.linkCopied', { code: gameState.roomCode || '' }));
+        }).catch(() => {
+            prompt(t('toast.linkPrompt'), url);
+        });
+    }
+
+    function openRanked() {
+        showToast(t('toast.rankedSoon'));
+    }
+
+    function leaveLobby() {
+        closeModal('profile-modal');
+        try { sessionStorage.removeItem('wanderpenh_room_' + gameState.roomCode); } catch {}
+        clearInterval(gameState.timerInterval);
+        teardownRoom();
+        gameState.isMultiplayer = false;
+        gameState.isHost = false;
+        gameState.roomCode = null;
+        gameState.matchPlan = null;
+        gameState.activeMatch = null;
+        const mpCard = document.getElementById('hud-mp-status-card');
+        if (mpCard) mpCard.style.display = 'none';
+
+        // Drop ?room= so a refresh doesn't rejoin the party
+        if (window.location.search) history.replaceState(null, '', window.location.pathname);
+
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('start-screen').classList.add('active');
+        renderModeCards();
+    }
+
+    function backToHome() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('result-screen').classList.remove('active');
+        document.getElementById('game-screen').classList.remove('active');
+        document.getElementById('start-screen').classList.add('active');
+        gameState.roundSubmitted = false;
+        clearInterval(gameState.timerInterval);
+        updateHomeChrome();
+        renderModeCards();
+    }
+
+    function joinFromHome() {
+        const value = document.getElementById('home-join-input').value.trim();
+        if (!value) return;
+        document.getElementById('join-code-input').value = value;
+        joinMultiplayerLobby();
+    }
+
+    function telegramShareUrl() {
+        const code = gameState.roomCode || '';
+        const url = window.location.origin + window.location.pathname + (code ? '?room=' + encodeURIComponent(code) : '');
+        const text = `Join my WanderPenh party${code ? ' — ' + code : ''}`;
+        return `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`;
+    }
+
+    function shareTelegram() {
+        window.open(telegramShareUrl(), '_blank', 'noopener');
+    }
+
+    // ============================================================
