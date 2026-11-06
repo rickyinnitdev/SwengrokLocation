@@ -1469,3 +1469,52 @@ select {
 #toast-notification.active { opacity: 1; transform: translate(-50%, 0); }
 
 /* ==========================================================================
+   SMALL SCREENS
+   ========================================================================== */
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-art { display: none; }
+  .featured-grid { grid-template-columns: 1fr 1fr; }
+  .play-strip { grid-template-columns: 1fr; }
+  .quick-stack { flex-direction: row; }
+  .quick-card { min-width: 0; }
+  .quick-card .quick-sub { display: none; }
+  #start-screen .top-actions button[onclick="openTutorialModal()"],
+  #sound-toggle-btn { display: none; }
+}
+@media (max-width: 620px) {
+  .doors-grid { grid-template-columns: 1fr; }
+  .door { min-height: 190px; }
+  .featured-grid { grid-template-columns: 1fr; }
+  .modes-grid { grid-template-columns: 1fr; }
+  .topbar { gap: 8px; }
+  .brand-name { font-size: 1.05rem; }
+  .brand-sub { display: none; }
+  .profile-name { display: none; }
+  .profile-pill { padding-right: 4px; }
+  #start-screen .top-actions button[onclick="openTutorialModal()"],
+  #sound-toggle-btn { display: none; }
+  .region-switch { order: 3; width: 100%; }
+  .region-switch button { flex: 1; }
+  .top-actions { margin-left: auto; }
+  .quick-stack { flex-direction: column; }
+  .quick-card .quick-sub { display: block; }
+  #hud-player-name { display: none; }
+  #hud-top { gap: 6px; }
+  .hud-group { gap: 5px; }
+  .hud-card { padding: 4px 8px; min-height: 34px; border-radius: 10px; }
+  .result-stats-grid { gap: 6px; }
+  .result-stat-box { padding: 8px; }
+  .hud-tool-btn span { display: none; }
+  .hud-tool-btn { width: 44px; justify-content: center; padding: 0; }
+  .hud-label { display: none; }
+  #fin-rounds-table .mp-leaderboard-row { font-size: 0.76rem; gap: 6px; padding: 7px 8px; }
+  .final-points { white-space: nowrap; }
+}
+@media (max-width: 380px) {
+  .home-layout { padding-left: 12px; padding-right: 12px; }
+  .ticket-stub { width: 66px; }
+  .top-actions .btn-icon-only:nth-child(2) { display: none; }
+}
+
+/* ==========================================================================
