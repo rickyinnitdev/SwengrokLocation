@@ -539,6 +539,7 @@
         updateHomeChrome();
         renderLobbyPlayers();
         renderCoach();
+        if (document.getElementById('ranked-screen')?.classList.contains('active')) paintRankedScreen();
         return lang;
     }
 
@@ -751,6 +752,7 @@
     }
 
     function skipBrokenLocation() {
+        if (gameState.ranked) { showToast(t('ranked.noSkip')); return; }
         if (gameState.matchPlan) {
             if (gameState.isHost) { sendRoomMessage({ type: 'SKIP_LOCATION' }); showToast(t('toast.skipHost')); }
             else showToast(t('toast.skipGuest'));
@@ -767,6 +769,7 @@
     //  LEAFLET GUESS MAP CONTROLS
     // ============================================================
     let gameState = {
+        ranked: null,
         isMultiplayer: false,
         simulated4P: false,
         isHost: false,
@@ -1163,7 +1166,8 @@
     function startRoundTimer(seconds) {
         clearInterval(gameState.timerInterval);
         let remaining = seconds;
-        gameState.roundStartTime = isRealMultiplayer() && serverMatch ? serverMatch.startedAt - serverClockOffset : Date.now();
+        const run = gameState.ranked;
+        gameState.roundStartTime = run ? run.startedAt - run.offset : isRealMultiplayer() && serverMatch ? serverMatch.startedAt - serverClockOffset : Date.now();
 
         const timerCard = document.getElementById('hud-timer-card');
         const timerVal = document.getElementById('hud-timer-num');
@@ -1176,7 +1180,7 @@
         circle.style.stroke = 'var(--rice)';
 
         gameState.timerInterval = setInterval(() => {
-            remaining = Math.max(0, Math.ceil(isRealMultiplayer() && serverMatch ? (serverMatch.deadline - (Date.now() + serverClockOffset)) / 1000 : seconds - (Date.now() - gameState.roundStartTime) / 1000));
+            remaining = Math.max(0, Math.ceil(run ? Math.min(seconds, (run.deadline - (Date.now() + run.offset)) / 1000) : isRealMultiplayer() && serverMatch ? (serverMatch.deadline - (Date.now() + serverClockOffset)) / 1000 : seconds - (Date.now() - gameState.roundStartTime) / 1000));
             timerVal.textContent = remaining;
 
             const progress = remaining / seconds;
@@ -1274,6 +1278,7 @@
     let simBotTimers = [];
 
     function start4PlayerSimulation() {
+        gameState.ranked = null;
         gameState.isMultiplayer = true;
         gameState.simulated4P = true;
         gameState.matchPlan = null;
@@ -1513,6 +1518,7 @@
     }
 
     function startSinglePlayerGame() {
+        gameState.ranked = null;
         gameState.isMultiplayer = false;
         gameState.simulated4P = false;
         gameState.matchPlan = null;
@@ -1612,6 +1618,7 @@
     }
 
     function submitPlayerGuess() {
+        if (gameState.ranked) { if (gameState.guessLatLng) submitRankedGuess(gameState.guessLatLng); return; }
         if (isRealMultiplayer()) { if (gameState.guessLatLng) submitRoomGuess(gameState.guessLatLng); return; }
         if (!gameState.guessLatLng || gameState.roundSubmitted) return;
         gameState.roundSubmitted = true;
@@ -1707,6 +1714,7 @@
     }
 
     function submitTimeoutZero() {
+        if (gameState.ranked) { submitRankedGuess(null); return; }
         if (isRealMultiplayer()) { submitRoomGuess(null); return; }
         if (gameState.roundSubmitted) return;
         gameState.roundSubmitted = true;
@@ -1980,6 +1988,7 @@
     }
 
     function advanceNextRound() {
+        if (gameState.ranked) { advanceRankedRound(); return; }
         if (isRealMultiplayer()) {
             if (!gameState.roundSubmitted || readyPlayers.has(myPlayerId) || readyPending) return;
             if (sendRoomMessage({ type: 'ROUND_READY', matchId, round: gameState.roundIndex })) readyPending = true;
@@ -2074,11 +2083,17 @@
                     <div class="final-hint">${t('result.waiting', { n: readyPlayers.size, total: getLobbyPlayers().length })}</div>
                 `;
             }
-            table.innerHTML = partyHTML + roundsHTML;
+            table.innerHTML = (gameState.ranked ? rankedSummaryHTML(gameState.ranked) : '') + partyHTML + roundsHTML;
         }
     }
 
     function resetToHome() {
+        if (gameState.ranked) {
+            const again = gameState.ranked.mode;
+            document.getElementById('final-screen').classList.remove('active');
+            startRankedRun(again);
+            return;
+        }
         // Still connected to a party: go back to the waiting room for a rematch
         if (isRealMultiplayer() && roomSocket) {
             if (!gameState.isHost) { showToast(t('toast.waitHostLobby')); return; }
@@ -3184,6 +3199,7 @@
     }
 
     function backToHome() {
+        gameState.ranked = null;
         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
         document.getElementById('result-screen').classList.remove('active');
         document.getElementById('game-screen').classList.remove('active');
