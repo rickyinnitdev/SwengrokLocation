@@ -327,6 +327,9 @@ export class RoomEngine {
         if (match.role === 'pinner' && !(team && this.teamHasGuess(team.id, match.round))) {
           match.plan[match.round - 1] = { ...match.plan[match.round - 1], id: null, redacted: true };
         }
+        // Future rounds are never needed by the client in advance; hide them so
+        // nobody can read ahead to a round where they will be the Pinner.
+        for (let i = match.round; i < match.plan.length; i++) match.plan[i] = { ...match.plan[i], id: null, redacted: true };
       }
     }
     return {

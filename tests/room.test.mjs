@@ -257,6 +257,15 @@ test('Tag-Team redacts the current location from the Pinner until the reveal', (
   assert.equal(after.match.plan[0].id, targetId, 'reveal restores the location');
 });
 
+test('Tag-Team hides future rounds from every player', () => {
+  const { e, a, b } = teamRoom(2);
+  const m = start(e, a);
+  for (const p of [a, b]) {
+    const plan = e.snapshot(p.id).match.plan;
+    assert.ok(plan.slice(1).every(r => r.id === null), 'no future location ids are sent');
+  }
+});
+
 test('Tag-Team disconnected partner becomes both eyes and hands', () => {
   const { e, a, b, c, d } = teamRoom(4);
   const m = start(e, a);
