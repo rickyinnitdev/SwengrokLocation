@@ -17,3 +17,4 @@ skills-lock.json
 data/*.raw.*
 /netlify.toml
 /avatar_preview.svg
+.annotate/

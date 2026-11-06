@@ -72,11 +72,22 @@ export class RoomEngine {
     s.updatedAt = now;
     return player;
   }
-  pool() { return modes[this.state.mode].pool === 'landmarks' ? locations.landmarks : Object.values(locations).flat(); }
+  pool() {
+    const p = modes[this.state.mode]?.pool;
+    if (p === 'landmarks') return locations.landmarks;
+    if (p === 'countries') return locations.countries || [];
+    if (p === 'cambodia') return locations.cambodia || [];
+    if (p === 'asia') return locations.asia || [];
+    return [...locations.landmarks, ...locations.classic];
+  }
+  poolKey() {
+    const p = modes[this.state.mode]?.pool;
+    return (p === 'landmarks' || p === 'countries' || p === 'cambodia' || p === 'asia') ? p : 'all';
+  }
   makePlan() {
     const s = this.state, count = modes[s.mode].rounds;
     const pool = this.pool();
-    const picks = drawLocations(pool, count, s.rotation, modes[s.mode].pool === 'landmarks' ? 'landmarks' : 'all');
+    const picks = drawLocations(pool, count, s.rotation, this.poolKey());
     s.recent = s.rotation.history;
     return picks.map(l => ({ id: l.id, heading: randomInt(360) }));
   }
@@ -113,7 +124,7 @@ export class RoomEngine {
     } else if (msg.type === 'SKIP_LOCATION') {
       const m = s.match;
       if (id !== s.hostId || !m || m.phase !== 'playing' || Object.keys(m.guesses[m.round] || {}).length || m.swaps >= 5) return;
-      const next = drawLocations(this.pool(), 1, s.rotation, modes[s.mode].pool === 'landmarks' ? 'landmarks' : 'all', m.plan.map(r => r.id))[0];
+      const next = drawLocations(this.pool(), 1, s.rotation, this.poolKey(), m.plan.map(r => r.id))[0];
       if (!next) return;
       m.plan[m.round - 1] = { id: next.id, heading: randomInt(360) };
       s.recent = s.rotation.history;
@@ -130,7 +141,20 @@ export class RoomEngine {
     const target = Object.values(locations).flat().find(l => l.id === m.plan[m.round - 1].id);
     const dist = point ? distance(target, point) : null;
     const elapsed = Math.max(0, Math.min(cfg.time, (now - m.startedAt) / 1000));
-    const distScore = dist === null ? 0 : dist <= 25 ? 5000 : Math.round(5000 * Math.exp(-dist / 1500));
+    let distScore = 0;
+    if (dist !== null) {
+      if (cfg.pool === 'countries' || cfg.isWorld) {
+        distScore = dist <= 50000 ? 5000 : Math.round(5000 * Math.exp(-dist / 3500000));
+      } else if (cfg.pool === 'asia' || cfg.isAsia) {
+        distScore = dist <= 25000 ? 5000 : Math.round(5000 * Math.exp(-dist / 1200000));
+      } else if (cfg.pool === 'cambodia') {
+        distScore = dist <= 500 ? 5000 : Math.round(5000 * Math.exp(-dist / 30000));
+      } else if (cfg.isSniper) {
+        distScore = dist <= 35 ? 10000 : dist <= 75 ? 7500 : dist <= 150 ? 6000 : Math.round(5000 * Math.exp(-dist / 1500));
+      } else {
+        distScore = dist <= 25 ? 5000 : Math.round(5000 * Math.exp(-dist / 1500));
+      }
+    }
     const speedBonus = point ? Math.round(Math.max(0, 1 - elapsed / cfg.time) * 1000) * (s.mode === 'sprint' ? 2 : 1) : 0;
     const bountyBonus = cfg.isBounty && dist !== null && dist < 200 ? 500 : 0;
     round[id] = { playerId: id, round: m.round, dist, elapsed, distScore, speedBonus, bountyBonus, score: distScore + speedBonus + bountyBonus, guessLatLng: point };
@@ -172,7 +196,7 @@ export class RoomEngine {
   }
   snapshot() {
     const s = this.state;
-    const pool = this.pool(), key = modes[s.mode].pool === 'landmarks' ? 'landmarks' : 'all';
+    const pool = this.pool(), key = this.poolKey();
     const remaining = s.rotation.decks?.[key]?.length ?? pool.filter(l => !s.rotation.history.includes(l.id)).length;
     return { hostId: s.hostId, mode: s.mode, selection: { poolSize: pool.length, remaining }, players: s.players.map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId })), match: s.match };
   }

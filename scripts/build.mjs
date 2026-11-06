@@ -15,7 +15,11 @@ locations.classic.push(...extra.locations);
 const all = Object.values(locations).flat();
 if (new Set(all.map(l => l.id)).size !== all.length) throw new Error('Duplicate location IDs');
 for (const l of all) {
-  if (!Number.isFinite(l.lat) || !Number.isFinite(l.lng) || l.lat < 11.4 || l.lat > 11.8 || l.lng < 104.7 || l.lng > 105.1) throw new Error(`Bad coordinate: ${l.id}`);
+  if (l.country || l.isCambodiaWide) {
+    if (!Number.isFinite(l.lat) || !Number.isFinite(l.lng) || l.lat < -90 || l.lat > 90 || l.lng < -180 || l.lng > 180) throw new Error(`Bad coordinate: ${l.id}`);
+  } else {
+    if (!Number.isFinite(l.lat) || !Number.isFinite(l.lng) || l.lat < 11.4 || l.lat > 11.8 || l.lng < 104.7 || l.lng > 105.1) throw new Error(`Bad coordinate: ${l.id}`);
+  }
 }
 fs.mkdirSync('.generated', { recursive: true });
 fs.writeFileSync('.generated/game-data.js', `export const locations = ${JSON.stringify(locations)};\nexport const modes = ${JSON.stringify(modes)};\n`);

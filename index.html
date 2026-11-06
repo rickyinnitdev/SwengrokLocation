@@ -848,6 +848,38 @@
             background: rgba(6, 78, 59, 0.85);
         }
 
+        .choice-opt-btn {
+            background: var(--bg-surface);
+            border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+            font-size: 0.82rem;
+            font-weight: 800;
+            color: var(--text-main);
+            cursor: pointer;
+            transition: all 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+            text-align: left;
+            width: 100%;
+        }
+        .choice-opt-btn:hover {
+            border-color: var(--brand-primary);
+            background: var(--bg-surface-hover);
+            transform: translateY(-2px);
+        }
+        .choice-opt-btn.selected {
+            border-color: var(--brand-primary);
+            background: rgba(16, 185, 129, 0.25);
+            color: #6ee7b7;
+            box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+        }
+        .choice-opt-btn:active {
+            transform: scale(0.97);
+        }
+
         /* Bottom Confirm Action Bar */
         #guess-action-bar {
             padding: 10px 14px;
@@ -1753,6 +1785,13 @@
                     <span style="font-size: 0.72rem; font-weight: 800; color: var(--text-secondary); text-transform: uppercase;">SCORE</span>
                     <span style="font-size: 1.1rem; font-weight: 900; color: #6ee7b7;" id="hud-score-indicator">0</span>
                 </div>
+                <div class="hud-card" id="hud-streak-card" style="display: none; border-color: rgba(245, 158, 11, 0.6); background: rgba(245, 158, 11, 0.15); padding: 4px 12px; gap: 6px;">
+                    <span style="font-size: 1rem;">🔥</span>
+                    <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase;">STREAK</span>
+                    <span style="font-size: 1.05rem; font-weight: 900; color: #fde047;" id="hud-streak-num">0</span>
+                    <span style="font-size: 0.72rem; color: #fde047; font-weight: 800;" id="hud-streak-mult">(1x)</span>
+                </div>
+                <div class="hud-card" id="hud-mode-pill" style="display: none; padding: 4px 12px; font-size: 0.75rem; font-weight: 800; color: #6ee7b7; border-color: rgba(16, 185, 129, 0.4);"></div>
                 <!-- Party Live Chips -->
                 <div class="hud-card" id="hud-mp-status-card">
                     <span style="font-size: 0.72rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase;">PARTY:</span>
@@ -1786,6 +1825,15 @@
 
         <!-- Floating Unified Guess Map Console -->
         <div id="map-panel">
+            <!-- Dynamic Choice Shelf (for Country Guessing and District Detective) -->
+            <div id="mode-choice-shelf" style="display: none; padding: 10px 12px 6px; background: rgba(13, 19, 34, 0.98); border-bottom: 1px solid rgba(255,255,255,0.08);">
+                <div style="font-size: 0.72rem; font-weight: 800; color: var(--brand-accent); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: space-between;">
+                    <span id="mode-choice-title">🌍 Select Country:</span>
+                    <span id="mode-choice-hint" style="color: var(--text-muted); font-size: 0.68rem;">or click map</span>
+                </div>
+                <div id="mode-choice-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;"></div>
+            </div>
+
             <div id="map-wrapper">
                 <div class="map-floating-bar">
                     <button class="map-tool-pill" id="expand-toggle" onclick="toggleMapExpand(event)" title="Toggle big map view (Space)">
@@ -1809,6 +1857,7 @@
          ============================================================ -->
     <div id="result-screen" class="screen">
         <div class="result-card">
+            <div id="res-mode-banner" style="display: none; font-size: 1.05rem; font-weight: 900; padding: 10px 16px; border-radius: var(--radius-md); text-align: center; border: 1.5px solid transparent;"></div>
             <div id="result-map-container">
                 <div id="result-map"></div>
             </div>
@@ -2066,10 +2115,262 @@
             { id: "st_66", name: "Monivong Boulevard North / Chaktomuk Approach", lat: 11.5765, lng: 104.9200, area: "Daun Penh" },
             { id: "st_67", name: "Chroy Changvar Water Treatment Sunrise Point", lat: 11.5780, lng: 104.9280, area: "Chroy Changvar" },
             { id: "st_68", name: "Pochentong Pagoda & Market (Wat Pochentong)", lat: 11.5540, lng: 104.8510, area: "Por Senchey" }
+        ],
+        cambodia: [
+            { id: "cam_01", name: "Angkor Wat Central Causeway", lat: 13.4125, lng: 103.8670, province: "Siem Reap", isCambodiaWide: true },
+            { id: "cam_02", name: "Bayon Temple Stone Faces", lat: 13.4413, lng: 103.8587, province: "Siem Reap", isCambodiaWide: true },
+            { id: "cam_03", name: "Ta Prohm Temple Jungle Gate", lat: 13.4348, lng: 103.8893, province: "Siem Reap", isCambodiaWide: true },
+            { id: "cam_04", name: "Pub Street Night Hub", lat: 13.3551, lng: 103.8547, province: "Siem Reap", isCambodiaWide: true },
+            { id: "cam_05", name: "Bokor Hill Palace & Old Casino", lat: 10.6272, lng: 104.0242, province: "Kampot", isCambodiaWide: true },
+            { id: "cam_06", name: "Kep Crab Market Boardwalk", lat: 10.4828, lng: 104.2941, province: "Kep", isCambodiaWide: true },
+            { id: "cam_07", name: "Battambang Colonial Riverfront", lat: 13.1022, lng: 103.1995, province: "Battambang", isCambodiaWide: true },
+            { id: "cam_08", name: "Preah Vihear Mountain Cliff Temple", lat: 14.3912, lng: 104.6800, province: "Preah Vihear", isCambodiaWide: true },
+            { id: "cam_09", name: "Koh Rong Long Set Beach Pier", lat: 10.7025, lng: 103.2268, province: "Preah Sihanouk", isCambodiaWide: true },
+            { id: "cam_10", name: "Oudong Royal Stupas Mountain", lat: 11.8152, lng: 104.7523, province: "Kandal", isCambodiaWide: true },
+            { id: "cam_11", name: "Sambor Prei Kuk Ancient Brick Sanctuary", lat: 12.8710, lng: 105.0402, province: "Kampong Thom", isCambodiaWide: true },
+            { id: "cam_12", name: "Ochheuteal Beach Walkway", lat: 10.6083, lng: 103.5255, province: "Preah Sihanouk", isCambodiaWide: true },
+            { id: "cam_13", name: "Kirirom Pine Forest Plateau", lat: 11.3167, lng: 104.0667, province: "Kampong Speu", isCambodiaWide: true },
+            { id: "cam_14", name: "Kratie Mekong River Dolphin Pool", lat: 12.5933, lng: 106.0181, province: "Kratie", isCambodiaWide: true },
+            { id: "cam_15", name: "Kampong Cham Mekong Bamboo Bridge", lat: 11.9922, lng: 105.4678, province: "Kampong Cham", isCambodiaWide: true },
+            { id: "cam_16", name: "Koh Kong Cardamom Mangrove Trail", lat: 11.6150, lng: 102.9850, province: "Koh Kong", isCambodiaWide: true }
+        ],
+        countries: [
+            // Europe
+            { id: "w_01", name: "Eiffel Tower Area", lat: 48.8584, lng: 2.2945, country: "France", continent: "Europe" },
+            { id: "w_02", name: "Colosseum District", lat: 41.8902, lng: 12.4922, country: "Italy", continent: "Europe" },
+            { id: "w_03", name: "Big Ben & Westminster", lat: 51.5007, lng: -0.1246, country: "United Kingdom", continent: "Europe" },
+            { id: "w_04", name: "Sagrada Familia Area", lat: 41.4036, lng: 2.1744, country: "Spain", continent: "Europe" },
+            { id: "w_05", name: "Brandenburg Gate", lat: 52.5163, lng: 13.3777, country: "Germany", continent: "Europe" },
+            { id: "w_06", name: "Amsterdam Canal Ring", lat: 52.3676, lng: 4.9041, country: "Netherlands", continent: "Europe" },
+            { id: "w_07", name: "Charles Bridge Area", lat: 50.0865, lng: 14.4114, country: "Czech Republic", continent: "Europe" },
+            { id: "w_08", name: "Acropolis District", lat: 37.9715, lng: 23.7257, country: "Greece", continent: "Europe" },
+            { id: "w_09", name: "Lisbon Tram 28 Route", lat: 38.7139, lng: -9.1334, country: "Portugal", continent: "Europe" },
+            { id: "w_10", name: "Vienna Ring Road", lat: 48.2082, lng: 16.3738, country: "Austria", continent: "Europe" },
+            { id: "w_11", name: "Red Square Area", lat: 55.7539, lng: 37.6208, country: "Russia", continent: "Europe" },
+            { id: "w_12", name: "Old Town Stockholm", lat: 59.3255, lng: 18.0711, country: "Sweden", continent: "Europe" },
+            { id: "w_13", name: "Nyhavn Copenhagen", lat: 55.6797, lng: 12.5891, country: "Denmark", continent: "Europe" },
+            { id: "w_14", name: "Helsinki Cathedral Square", lat: 60.1699, lng: 24.9384, country: "Finland", continent: "Europe" },
+            { id: "w_15", name: "Wawel Castle Kraków", lat: 50.0540, lng: 19.9354, country: "Poland", continent: "Europe" },
+            { id: "w_16", name: "Buda Castle District", lat: 47.4979, lng: 19.0402, country: "Hungary", continent: "Europe" },
+            { id: "w_17", name: "Dubrovnik Old Town", lat: 42.6507, lng: 18.0944, country: "Croatia", continent: "Europe" },
+            { id: "w_18", name: "Reykjavik Hallgrímskirkja", lat: 64.1418, lng: -21.9268, country: "Iceland", continent: "Europe" },
+            { id: "w_19", name: "Zurich Bahnhofstrasse", lat: 47.3769, lng: 8.5417, country: "Switzerland", continent: "Europe" },
+            { id: "w_20", name: "Brussels Grand Place", lat: 50.8467, lng: 4.3525, country: "Belgium", continent: "Europe" },
+            { id: "w_21", name: "Edinburgh Royal Mile", lat: 55.9502, lng: -3.1875, country: "United Kingdom", continent: "Europe" },
+            { id: "w_22", name: "Dublin Temple Bar", lat: 53.3454, lng: -6.2634, country: "Ireland", continent: "Europe" },
+            { id: "w_23", name: "Bucharest Parliament", lat: 44.4268, lng: 26.1025, country: "Romania", continent: "Europe" },
+            { id: "w_24", name: "Oslo Opera House", lat: 59.9075, lng: 10.7530, country: "Norway", continent: "Europe" },
+            // Americas
+            { id: "w_25", name: "Times Square Area", lat: 40.7580, lng: -73.9855, country: "United States", continent: "North America" },
+            { id: "w_26", name: "Copacabana Beach Road", lat: -22.9711, lng: -43.1822, country: "Brazil", continent: "South America" },
+            { id: "w_27", name: "CN Tower District", lat: 43.6426, lng: -79.3871, country: "Canada", continent: "North America" },
+            { id: "w_28", name: "Zócalo Historic Center", lat: 19.4326, lng: -99.1332, country: "Mexico", continent: "North America" },
+            { id: "w_29", name: "Buenos Aires Obelisk", lat: -34.6037, lng: -58.3816, country: "Argentina", continent: "South America" },
+            { id: "w_30", name: "Santiago Plaza de Armas", lat: -33.4372, lng: -70.6506, country: "Chile", continent: "South America" },
+            { id: "w_31", name: "Bogotá La Candelaria", lat: 4.5981, lng: -74.0758, country: "Colombia", continent: "South America" },
+            { id: "w_32", name: "San José Central Ave", lat: 9.9281, lng: -84.0907, country: "Costa Rica", continent: "North America" },
+            { id: "w_33", name: "Golden Gate Bridge Vista", lat: 37.8199, lng: -122.4783, country: "United States", continent: "North America" },
+            { id: "w_34", name: "Niagara Falls Parkway", lat: 43.0896, lng: -79.0849, country: "Canada", continent: "North America" },
+            { id: "w_35", name: "Cusco Historic Center", lat: -13.5170, lng: -71.9785, country: "Peru", continent: "South America" },
+            // Asia
+            { id: "w_36", name: "Shibuya Crossing Area", lat: 35.6595, lng: 139.7004, country: "Japan", continent: "Asia" },
+            { id: "w_37", name: "Taj Mahal Approach", lat: 27.1751, lng: 78.0421, country: "India", continent: "Asia" },
+            { id: "w_38", name: "Gwanghwamun Square", lat: 37.5759, lng: 126.9769, country: "South Korea", continent: "Asia" },
+            { id: "w_39", name: "Burj Khalifa District", lat: 25.1972, lng: 55.2744, country: "UAE", continent: "Asia" },
+            { id: "w_40", name: "Istanbul Blue Mosque", lat: 41.0054, lng: 28.9768, country: "Turkey", continent: "Asia" },
+            { id: "w_41", name: "Taipei 101 Area", lat: 25.0330, lng: 121.5654, country: "Taiwan", continent: "Asia" },
+            { id: "w_42", name: "Hong Kong Victoria Peak", lat: 22.2759, lng: 114.1455, country: "Hong Kong", continent: "Asia" },
+            { id: "w_43", name: "Kathmandu Durbar Square", lat: 27.7042, lng: 85.3076, country: "Nepal", continent: "Asia" },
+            { id: "w_44", name: "Colombo Fort District", lat: 6.9344, lng: 79.8428, country: "Sri Lanka", continent: "Asia" },
+            { id: "w_45", name: "Petra Visitor Road", lat: 30.3285, lng: 35.4444, country: "Jordan", continent: "Asia" },
+            { id: "w_46", name: "Kyoto Fushimi Inari", lat: 34.9671, lng: 135.7727, country: "Japan", continent: "Asia" },
+            { id: "w_47", name: "Osaka Dotonbori", lat: 34.6687, lng: 135.5013, country: "Japan", continent: "Asia" },
+            // Southeast Asia
+            { id: "w_48", name: "Grand Palace Bangkok", lat: 13.7500, lng: 100.4913, country: "Thailand", continent: "Southeast Asia" },
+            { id: "w_49", name: "Chiang Mai Old City", lat: 18.7883, lng: 98.9853, country: "Thailand", continent: "Southeast Asia" },
+            { id: "w_50", name: "Hoan Kiem Lake Hanoi", lat: 21.0285, lng: 105.8542, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "w_51", name: "Ho Chi Minh City Center", lat: 10.7769, lng: 106.7009, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "w_52", name: "Hoi An Ancient Town", lat: 15.8801, lng: 108.3380, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "w_53", name: "Ubud Monkey Forest", lat: -8.5069, lng: 115.2625, country: "Indonesia", continent: "Southeast Asia" },
+            { id: "w_54", name: "Jakarta Merdeka Square", lat: -6.1753, lng: 106.8272, country: "Indonesia", continent: "Southeast Asia" },
+            { id: "w_55", name: "Petronas Towers KL", lat: 3.1579, lng: 101.7116, country: "Malaysia", continent: "Southeast Asia" },
+            { id: "w_56", name: "Georgetown Penang", lat: 5.4141, lng: 100.3288, country: "Malaysia", continent: "Southeast Asia" },
+            { id: "w_57", name: "Marina Bay Singapore", lat: 1.2838, lng: 103.8591, country: "Singapore", continent: "Southeast Asia" },
+            { id: "w_58", name: "Intramuros Manila", lat: 14.5896, lng: 120.9750, country: "Philippines", continent: "Southeast Asia" },
+            { id: "w_59", name: "Cebu City Center", lat: 10.3157, lng: 123.8854, country: "Philippines", continent: "Southeast Asia" },
+            { id: "w_60", name: "Angkor Wat Entrance", lat: 13.4125, lng: 103.8670, country: "Cambodia", continent: "Southeast Asia" },
+            { id: "w_61", name: "Luang Prabang Main St", lat: 19.8856, lng: 102.1350, country: "Laos", continent: "Southeast Asia" },
+            { id: "w_62", name: "Vientiane That Luang", lat: 17.9757, lng: 102.6331, country: "Laos", continent: "Southeast Asia" },
+            { id: "w_63", name: "Yangon Shwedagon Road", lat: 16.8714, lng: 96.1499, country: "Myanmar", continent: "Southeast Asia" },
+            { id: "w_64", name: "Phuket Old Town", lat: 7.8804, lng: 98.3923, country: "Thailand", continent: "Southeast Asia" },
+            // Africa
+            { id: "w_65", name: "Pyramids of Giza Road", lat: 29.9792, lng: 31.1342, country: "Egypt", continent: "Africa" },
+            { id: "w_66", name: "V&A Waterfront Cape Town", lat: -33.9036, lng: 18.4211, country: "South Africa", continent: "Africa" },
+            { id: "w_67", name: "Marrakech Medina", lat: 31.6295, lng: -7.9811, country: "Morocco", continent: "Africa" },
+            { id: "w_68", name: "Nairobi City Center", lat: -1.2921, lng: 36.8219, country: "Kenya", continent: "Africa" },
+            { id: "w_69", name: "Lagos Victoria Island", lat: 6.4281, lng: 3.4219, country: "Nigeria", continent: "Africa" },
+            { id: "w_70", name: "Accra Independence Sq", lat: 5.5471, lng: -0.1919, country: "Ghana", continent: "Africa" },
+            // Oceania
+            { id: "w_71", name: "Sydney Opera House", lat: -33.8568, lng: 151.2153, country: "Australia", continent: "Oceania" },
+            { id: "w_72", name: "Auckland Sky Tower", lat: -36.8485, lng: 174.7633, country: "New Zealand", continent: "Oceania" },
+            { id: "w_73", name: "Melbourne Federation Sq", lat: -37.8180, lng: 144.9691, country: "Australia", continent: "Oceania" }
+        ],
+        asia: [
+            // Thailand
+            { id: "asia_01", name: "Grand Palace & Wat Phra Kaew", lat: 13.7500, lng: 100.4913, country: "Thailand", continent: "Southeast Asia" },
+            { id: "asia_02", name: "Wat Arun Temple of Dawn", lat: 13.7437, lng: 100.4888, country: "Thailand", continent: "Southeast Asia" },
+            { id: "asia_03", name: "Chiang Mai Tha Phae Gate", lat: 18.7877, lng: 98.9931, country: "Thailand", continent: "Southeast Asia" },
+            { id: "asia_04", name: "Phuket Old Town Heritage", lat: 7.8844, lng: 98.3888, country: "Thailand", continent: "Southeast Asia" },
+            { id: "asia_05", name: "Ayutthaya Historical Park", lat: 14.3432, lng: 100.5419, country: "Thailand", continent: "Southeast Asia" },
+            // Vietnam
+            { id: "asia_06", name: "Hoan Kiem Lake The Huc Bridge", lat: 21.0305, lng: 105.8524, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "asia_07", name: "Notre Dame & Central Post Office", lat: 10.7798, lng: 106.6990, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "asia_08", name: "Hoi An Japanese Covered Bridge", lat: 15.8771, lng: 108.3260, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "asia_09", name: "Da Nang Dragon Bridge", lat: 16.0610, lng: 108.2274, country: "Vietnam", continent: "Southeast Asia" },
+            { id: "asia_10", name: "Hue Imperial Citadel", lat: 16.4695, lng: 107.5794, country: "Vietnam", continent: "Southeast Asia" },
+            // Indonesia
+            { id: "asia_11", name: "Ubud Monkey Forest Sanctuary", lat: -8.5190, lng: 115.2583, country: "Indonesia", continent: "Southeast Asia" },
+            { id: "asia_12", name: "Tanah Lot Sea Temple", lat: -8.6212, lng: 115.0868, country: "Indonesia", continent: "Southeast Asia" },
+            { id: "asia_13", name: "Monas National Monument", lat: -6.1754, lng: 106.8272, country: "Indonesia", continent: "Southeast Asia" },
+            { id: "asia_14", name: "Borobudur Temple Grounds", lat: -7.6079, lng: 110.2038, country: "Indonesia", continent: "Southeast Asia" },
+            { id: "asia_15", name: "Seminyak Beachfront Walk", lat: -8.6913, lng: 115.1582, country: "Indonesia", continent: "Southeast Asia" },
+            // Malaysia
+            { id: "asia_16", name: "Petronas Twin Towers KLCC", lat: 3.1578, lng: 101.7119, country: "Malaysia", continent: "Southeast Asia" },
+            { id: "asia_17", name: "Georgetown Armenian Street Art", lat: 5.4141, lng: 100.3364, country: "Malaysia", continent: "Southeast Asia" },
+            { id: "asia_18", name: "Batu Caves Lord Murugan", lat: 3.2374, lng: 101.6839, country: "Malaysia", continent: "Southeast Asia" },
+            { id: "asia_19", name: "Malacca Dutch Square", lat: 2.1944, lng: 102.2490, country: "Malaysia", continent: "Southeast Asia" },
+            // Singapore
+            { id: "asia_20", name: "Marina Bay Sands & Merlion Park", lat: 1.2868, lng: 103.8545, country: "Singapore", continent: "Southeast Asia" },
+            { id: "asia_21", name: "Gardens by the Bay Supertrees", lat: 1.2816, lng: 103.8636, country: "Singapore", continent: "Southeast Asia" },
+            { id: "asia_22", name: "Chinatown Heritage Street", lat: 1.2814, lng: 103.8443, country: "Singapore", continent: "Southeast Asia" },
+            // Philippines
+            { id: "asia_23", name: "Intramuros Fort Santiago", lat: 14.5940, lng: 120.9705, country: "Philippines", continent: "Southeast Asia" },
+            { id: "asia_24", name: "Rizal Park Luneta", lat: 14.5826, lng: 120.9787, country: "Philippines", continent: "Southeast Asia" },
+            { id: "asia_25", name: "Cebu Magellan's Cross", lat: 10.2936, lng: 123.9019, country: "Philippines", continent: "Southeast Asia" },
+            // Cambodia
+            { id: "asia_26", name: "Angkor Wat Grand Causeway", lat: 13.4125, lng: 103.8670, country: "Cambodia", continent: "Southeast Asia" },
+            { id: "asia_27", name: "Bayon Stone Faces", lat: 13.4413, lng: 103.8587, country: "Cambodia", continent: "Southeast Asia" },
+            { id: "asia_28", name: "Phnom Penh Royal Palace Grounds", lat: 11.5625, lng: 104.9317, country: "Cambodia", continent: "Southeast Asia" },
+            { id: "asia_29", name: "Siem Reap Pub Street", lat: 13.3549, lng: 103.8547, country: "Cambodia", continent: "Southeast Asia" },
+            // Laos
+            { id: "asia_30", name: "Luang Prabang Sisavangvong Rd", lat: 19.8906, lng: 102.1347, country: "Laos", continent: "Southeast Asia" },
+            { id: "asia_31", name: "Pha That Luang Golden Stupa", lat: 17.9766, lng: 102.6366, country: "Laos", continent: "Southeast Asia" },
+            { id: "asia_32", name: "Kuang Si Falls Park", lat: 19.7494, lng: 101.9928, country: "Laos", continent: "Southeast Asia" },
+            // East & South Asia
+            { id: "asia_33", name: "Shibuya Crossing Scramble", lat: 35.6595, lng: 139.7004, country: "Japan", continent: "Asia" },
+            { id: "asia_34", name: "Fushimi Inari Torii Pathway", lat: 34.9671, lng: 135.7727, country: "Japan", continent: "Asia" },
+            { id: "asia_35", name: "Gyeongbokgung Palace", lat: 37.5796, lng: 126.9770, country: "South Korea", continent: "Asia" },
+            { id: "asia_36", name: "Taipei 101 Xinyi District", lat: 25.0339, lng: 121.5645, country: "Taiwan", continent: "Asia" },
+            { id: "asia_37", name: "Victoria Harbour Tsim Sha Tsui", lat: 22.2936, lng: 114.1733, country: "Hong Kong", continent: "Asia" },
+            { id: "asia_38", name: "Taj Mahal Agra Riverfront", lat: 27.1751, lng: 78.0421, country: "India", continent: "Asia" }
         ]
     };
     const ALL_LOCATIONS = [...LOCATIONS_DB.landmarks, ...LOCATIONS_DB.classic];
+    const WORLD_LOCATIONS = LOCATIONS_DB.countries;
+    const CAMBODIA_LOCATIONS = LOCATIONS_DB.cambodia;
+    const ASIA_LOCATIONS = LOCATIONS_DB.asia;
     const PP_CENTER = [11.5564, 104.9282];
+    const WORLD_CENTER = [20, 0];
+    const ASIA_CENTER = [13, 105];
+
+    const ALL_COUNTRIES = [...new Set(WORLD_LOCATIONS.map(l => l.country))];
+
+    const COUNTRY_FLAGS = {
+        "France": "🇫🇷", "Italy": "🇮🇹", "United Kingdom": "🇬🇧", "Spain": "🇪🇸",
+        "Germany": "🇩🇪", "Netherlands": "🇳🇱", "Czech Republic": "🇨🇿", "Greece": "🇬🇷",
+        "Portugal": "🇵🇹", "Austria": "🇦🇹", "Russia": "🇷🇺", "Sweden": "🇸🇪",
+        "Denmark": "🇩🇰", "Finland": "🇫🇮", "Poland": "🇵🇱", "Hungary": "🇭🇺",
+        "Croatia": "🇭🇷", "Iceland": "🇮🇸", "Switzerland": "🇨🇭", "Belgium": "🇧🇪",
+        "Ireland": "🇮🇪", "Romania": "🇷🇴", "Norway": "🇳🇴", "United States": "🇺🇸",
+        "Brazil": "🇧🇷", "Canada": "🇨🇦", "Mexico": "🇲🇽", "Argentina": "🇦🇷",
+        "Chile": "🇨🇱", "Colombia": "🇨🇴", "Costa Rica": "🇨🇷", "Peru": "🇵🇪",
+        "Japan": "🇯🇵", "India": "🇮🇳", "South Korea": "🇰🇷", "UAE": "🇦🇪",
+        "Turkey": "🇹🇷", "Taiwan": "🇹🇼", "Hong Kong": "🇭🇰", "Nepal": "🇳🇵",
+        "Sri Lanka": "🇱🇰", "Jordan": "🇯🇴", "Thailand": "🇹🇭", "Vietnam": "🇻🇳",
+        "Indonesia": "🇮🇩", "Malaysia": "🇲🇾", "Singapore": "🇸🇬", "Philippines": "🇵🇭",
+        "Cambodia": "🇰🇭", "Laos": "🇱🇦", "Myanmar": "🇲🇲", "Egypt": "🇪🇬",
+        "South Africa": "🇿🇦", "Morocco": "🇲🇦", "Kenya": "🇰🇪", "Nigeria": "🇳🇬",
+        "Ghana": "🇬🇭", "Australia": "🇦🇺", "New Zealand": "🇳🇿"
+    };
+
+    const COUNTRY_CENTERS = {
+        "France": { lat: 46.6033, lng: 1.8883 },
+        "Italy": { lat: 41.8719, lng: 12.5674 },
+        "United Kingdom": { lat: 55.3781, lng: -3.4360 },
+        "Spain": { lat: 40.4637, lng: -3.7492 },
+        "Germany": { lat: 51.1657, lng: 10.4515 },
+        "Netherlands": { lat: 52.1326, lng: 5.2913 },
+        "Czech Republic": { lat: 49.8175, lng: 15.4730 },
+        "Greece": { lat: 39.0742, lng: 21.8243 },
+        "Portugal": { lat: 39.3999, lng: -8.2245 },
+        "Austria": { lat: 47.5162, lng: 14.5501 },
+        "Russia": { lat: 55.7558, lng: 37.6173 },
+        "Sweden": { lat: 60.1282, lng: 18.6435 },
+        "Denmark": { lat: 56.2639, lng: 9.5018 },
+        "Finland": { lat: 61.9241, lng: 25.7482 },
+        "Poland": { lat: 51.9194, lng: 19.1451 },
+        "Hungary": { lat: 47.1625, lng: 19.5033 },
+        "Croatia": { lat: 45.1000, lng: 15.2000 },
+        "Iceland": { lat: 64.9631, lng: -19.0208 },
+        "Switzerland": { lat: 46.8182, lng: 8.2275 },
+        "Belgium": { lat: 50.5039, lng: 4.4699 },
+        "Ireland": { lat: 53.4129, lng: -8.2439 },
+        "Romania": { lat: 45.9432, lng: 24.9668 },
+        "Norway": { lat: 60.4720, lng: 8.4689 },
+        "United States": { lat: 37.0902, lng: -95.7129 },
+        "Brazil": { lat: -14.2350, lng: -51.9253 },
+        "Canada": { lat: 56.1304, lng: -106.3468 },
+        "Mexico": { lat: 23.6345, lng: -102.5528 },
+        "Argentina": { lat: -38.4161, lng: -63.6167 },
+        "Chile": { lat: -35.6751, lng: -71.5430 },
+        "Colombia": { lat: 4.5709, lng: -74.2973 },
+        "Costa Rica": { lat: 9.7489, lng: -83.7534 },
+        "Peru": { lat: -9.1900, lng: -75.0152 },
+        "Japan": { lat: 36.2048, lng: 138.2529 },
+        "India": { lat: 20.5937, lng: 78.9629 },
+        "South Korea": { lat: 35.9078, lng: 127.7669 },
+        "UAE": { lat: 23.4241, lng: 53.8478 },
+        "Turkey": { lat: 38.9637, lng: 35.2433 },
+        "Taiwan": { lat: 23.6978, lng: 120.9605 },
+        "Hong Kong": { lat: 22.3193, lng: 114.1694 },
+        "Nepal": { lat: 28.3949, lng: 84.1240 },
+        "Sri Lanka": { lat: 7.8731, lng: 80.7718 },
+        "Jordan": { lat: 30.5852, lng: 36.2384 },
+        "Thailand": { lat: 15.8700, lng: 100.9925 },
+        "Vietnam": { lat: 14.0583, lng: 108.2772 },
+        "Indonesia": { lat: -0.7893, lng: 113.9213 },
+        "Malaysia": { lat: 4.2105, lng: 101.9758 },
+        "Singapore": { lat: 1.3521, lng: 103.8198 },
+        "Philippines": { lat: 12.8797, lng: 121.7740 },
+        "Cambodia": { lat: 12.5657, lng: 104.9910 },
+        "Laos": { lat: 19.8563, lng: 102.4955 },
+        "Myanmar": { lat: 21.9162, lng: 95.9560 },
+        "Egypt": { lat: 26.8206, lng: 30.8025 },
+        "South Africa": { lat: -30.5595, lng: 22.9375 },
+        "Morocco": { lat: 31.7917, lng: -7.0926 },
+        "Kenya": { lat: -0.0236, lng: 37.9062 },
+        "Nigeria": { lat: 9.0820, lng: 8.6753 },
+        "Ghana": { lat: 7.9465, lng: -1.0232 },
+        "Australia": { lat: -25.2744, lng: 133.7751 },
+        "New Zealand": { lat: -40.9006, lng: 174.8860 }
+    };
+
+    const PP_KHANS = [
+        { id: "Daun Penh", name: "Daun Penh (Royal Palace, Riverside)", icon: "🏛️", lat: 11.568, lng: 104.928 },
+        { id: "Chamkarmon", name: "Chamkarmon (Russian Market, Bokor)", icon: "🛍️", lat: 11.540, lng: 104.920 },
+        { id: "Boeung Keng Kang", name: "BKK / Boeung Keng Kang", icon: "☕", lat: 11.552, lng: 104.926 },
+        { id: "Toul Kork", name: "Toul Kork (TK Avenue, Villas)", icon: "🏡", lat: 11.583, lng: 104.898 },
+        { id: "7 Makara", name: "7 Makara (Olympic, Orussey)", icon: "🏟️", lat: 11.562, lng: 104.914 },
+        { id: "Chroy Changvar", name: "Chroy Changvar (Mekong Peninsula)", icon: "🌉", lat: 11.587, lng: 104.930 },
+        { id: "Sen Sok", name: "Sen Sok (Aeon 2, Makro)", icon: "🏢", lat: 11.590, lng: 104.878 },
+        { id: "Mean Chey", name: "Mean Chey (Stung Meanchey, Aeon 3)", icon: "🌆", lat: 11.528, lng: 104.910 },
+        { id: "Russey Keo", name: "Russey Keo (KM 6, Iron Bridge)", icon: "🚢", lat: 11.602, lng: 104.918 },
+        { id: "Chbar Ampov", name: "Chbar Ampov (NR1, Koh Norea)", icon: "🏝️", lat: 11.540, lng: 104.950 },
+        { id: "Por Senchey", name: "Por Senchey (Airport, Chom Chao)", icon: "✈️", lat: 11.546, lng: 104.844 },
+        { id: "Dangkao", name: "Dangkao (Killing Fields, South)", icon: "🌾", lat: 11.485, lng: 104.902 },
+        { id: "Kamboul", name: "Kamboul (PPSEZ Special Zone)", icon: "🏭", lat: 11.517, lng: 104.778 },
+        { id: "Prek Pnov", name: "Prek Pnov (North Gateway)", icon: "🎣", lat: 11.649, lng: 104.887 }
+    ];
 
     // ============================================================
     //  ANTI-REPEAT & RANDOM LOCATION ENGINE
@@ -2120,7 +2421,8 @@
         let rotation;
         try { rotation = JSON.parse(localStorage.getItem(ROTATION_KEY)); } catch {}
         if (!rotation || typeof rotation !== 'object') rotation = { history: getSeenHistory() };
-        const key = MODE_CONFIG[currentMode].pool === 'landmarks' ? 'landmarks' : 'all';
+        const pKey = MODE_CONFIG[currentMode].pool || 'all';
+        const key = (pKey === 'landmarks' || pKey === 'countries' || pKey === 'cambodia' || pKey === 'asia') ? pKey : 'all';
         const picked = WanderRotation.drawLocations(pool, 1, rotation, key, gameState.usedLocIds)[0];
         if (!picked) throw new Error('No unused locations left in this match');
         try { localStorage.setItem(ROTATION_KEY, JSON.stringify(rotation)); } catch {}
@@ -2382,6 +2684,48 @@
             badge: "👁️ MASTER DEDUCTION",
             desc: "Fixed photo viewpoint. Zero pan, zoom, or walking. (110 Spots)",
             time: 45, rounds: 5, pool: 'all', nmpz: true
+        },
+        world: {
+            name: "World Explorer 🌍",
+            badge: "🌍 PIN WORLD MAP",
+            desc: "Dropped anywhere on Earth! Pin your location directly on the world map and score global distance points.",
+            time: 60, rounds: 5, pool: 'countries', nmpz: false, isWorld: true
+        },
+        country: {
+            name: "Country Guesser 🏳️",
+            badge: "🏳️ MULTIPLE CHOICE",
+            desc: "Identify the country from 4 multiple-choice flag cards! Match the country to earn 5,000 pts.",
+            time: 45, rounds: 5, pool: 'countries', nmpz: false, isCountry: true
+        },
+        asia: {
+            name: "Asia Adventure 🌏",
+            badge: "🌏 SE ASIA & ASIA",
+            desc: "Explore Southeast Asia & Asia: Bangkok, Hanoi, Singapore, Bali, Tokyo & beyond!",
+            time: 60, rounds: 5, pool: 'asia', nmpz: false, isAsia: true
+        },
+        district: {
+            name: "Khan Detective 🏙️",
+            badge: "🔍 14 KHANS OF PHNOM PENH",
+            desc: "Test your local instinct: deduce which Phnom Penh district you're in!",
+            time: 45, rounds: 5, pool: 'all', nmpz: false, isDistrict: true
+        },
+        sniper: {
+            name: "Bullseye Sniper 🎯",
+            badge: "🎯 10X PRECISION BONUS",
+            desc: "25-second pinpoint rounds. Sub-50m bullseyes earn up to 10,000 pts!",
+            time: 25, rounds: 5, pool: 'all', nmpz: false, isSniper: true
+        },
+        streak: {
+            name: "Street Streak 🔥",
+            badge: "🔥 10 ROUNDS COMBO",
+            desc: "10 rapid rounds! Stay within 500m to build your streak up to a 5x multiplier!",
+            time: 25, rounds: 10, pool: 'all', nmpz: false, isStreak: true
+        },
+        cambodia: {
+            name: "Angkor & Beyond 🇰🇭",
+            badge: "🏛️ ALL OF CAMBODIA",
+            desc: "Explore beyond Phnom Penh: Angkor Wat, Bayon, Bokor, Kep & Battambang!",
+            time: 60, rounds: 5, pool: 'cambodia', nmpz: false, isCambodia: true
         }
     };
 
@@ -2530,10 +2874,17 @@
             return;
         }
 
+        const cfg = MODE_CONFIG[currentMode] || {};
+        const isWorld = !!cfg.isWorld || !!cfg.isCountry;
+        const isAsia = !!cfg.isAsia;
+        const isCam = !!cfg.isCambodia;
+        const center = isWorld ? WORLD_CENTER : isAsia ? ASIA_CENTER : isCam ? [12.5, 104.9] : PP_CENTER;
+        const zoom = isWorld ? 2 : isAsia ? 4 : isCam ? 7 : 12;
+
         gameState.guessMap = L.map('guess-map', {
-            center: PP_CENTER,
-            zoom: 12,
-            minZoom: 11,
+            center: center,
+            zoom: zoom,
+            minZoom: 1,
             maxZoom: 18,
             zoomControl: false,
             attributionControl: false
@@ -2626,6 +2977,124 @@
         }
     });
 
+    let currentChoices = [];
+
+    function setupChoiceShelf() {
+        const shelf = document.getElementById('mode-choice-shelf');
+        const grid = document.getElementById('mode-choice-grid');
+        const title = document.getElementById('mode-choice-title');
+        const hint = document.getElementById('mode-choice-hint');
+        if (!shelf || !grid) return;
+
+        const cfg = MODE_CONFIG[currentMode] || {};
+        const isWorld = !!cfg.isCountry;
+        const isDist = !!cfg.isDistrict;
+
+        if (!isWorld && !isDist) {
+            shelf.style.display = 'none';
+            return;
+        }
+
+        shelf.style.display = 'block';
+        grid.innerHTML = '';
+        currentChoices = [];
+
+        if (isWorld) {
+            title.textContent = '🌍 Select Country:';
+            hint.textContent = 'or click map';
+            const correctCountry = gameState.currentLocation.country;
+            const otherCountries = ALL_COUNTRIES.filter(c => c !== correctCountry);
+            const distractors = otherCountries.sort(() => 0.5 - Math.random()).slice(0, 3);
+            currentChoices = [correctCountry, ...distractors].sort(() => 0.5 - Math.random());
+
+            grid.innerHTML = currentChoices.map(country => {
+                const flag = COUNTRY_FLAGS[country] || '🌍';
+                return `
+                    <button type="button" class="choice-opt-btn" onclick="selectChoiceOption('country', '${escapeHTML(country)}')">
+                        <span style="font-size: 1.15rem;">${flag}</span>
+                        <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(country)}</span>
+                    </button>
+                `;
+            }).join('');
+        } else if (isDist) {
+            title.textContent = '🏙️ Select Khan (District):';
+            hint.textContent = 'or pin map';
+            const locArea = gameState.currentLocation.area || '';
+            const matchedKhan = PP_KHANS.find(k => locArea.includes(k.id) || k.name.includes(locArea)) || PP_KHANS[0];
+            gameState.currentKhan = matchedKhan.id;
+
+            const otherKhans = PP_KHANS.filter(k => k.id !== matchedKhan.id);
+            const distractors = otherKhans.sort(() => 0.5 - Math.random()).slice(0, 3);
+            currentChoices = [matchedKhan, ...distractors].sort(() => 0.5 - Math.random());
+
+            grid.innerHTML = currentChoices.map(khan => `
+                <button type="button" class="choice-opt-btn" onclick="selectChoiceOption('district', '${escapeHTML(khan.id)}')">
+                    <span style="font-size: 1.05rem;">${khan.icon}</span>
+                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(khan.id)}</span>
+                </button>
+            `).join('');
+        }
+    }
+
+    function selectChoiceOption(type, value) {
+        document.querySelectorAll('.choice-opt-btn').forEach(btn => {
+            btn.classList.toggle('selected', btn.textContent.includes(value));
+        });
+
+        playBeep(640, 'sine', 0.08);
+
+        if (type === 'country') {
+            gameState.chosenCountry = value;
+            const flag = COUNTRY_FLAGS[value] || '🌍';
+            const center = COUNTRY_CENTERS[value] || { lat: 20, lng: 0 };
+            placePin(center);
+            if (gameState.guessMap) gameState.guessMap.flyTo([center.lat, center.lng], 4, { duration: 0.6 });
+
+            const btn = document.getElementById('guess-btn');
+            btn.innerHTML = `<span>🎯 CONFIRM: ${flag} ${escapeHTML(value)}</span>`;
+            btn.classList.add('ready');
+            btn.disabled = false;
+
+            const pinStatus = document.getElementById('map-pin-status');
+            if (pinStatus) {
+                pinStatus.textContent = `✓ ${flag} ${value}`;
+                pinStatus.classList.add('placed');
+            }
+        } else if (type === 'district') {
+            gameState.chosenDistrict = value;
+            const khan = PP_KHANS.find(k => k.id === value);
+            const center = khan ? { lat: khan.lat, lng: khan.lng } : PP_CENTER;
+            placePin(center);
+            if (gameState.guessMap) gameState.guessMap.flyTo([center.lat, center.lng], 13, { duration: 0.5 });
+
+            const btn = document.getElementById('guess-btn');
+            btn.innerHTML = `<span>🎯 CONFIRM: ${khan ? khan.icon : '🏙️'} ${escapeHTML(value)}</span>`;
+            btn.classList.add('ready');
+            btn.disabled = false;
+
+            const pinStatus = document.getElementById('map-pin-status');
+            if (pinStatus) {
+                pinStatus.textContent = `✓ ${khan ? khan.icon : '🏙️'} ${value}`;
+                pinStatus.classList.add('placed');
+            }
+        }
+    }
+
+    function updateStreakHUD() {
+        const streakCard = document.getElementById('hud-streak-card');
+        const cfg = MODE_CONFIG[currentMode];
+        if (!streakCard) return;
+        if (cfg && cfg.isStreak) {
+            streakCard.style.display = 'flex';
+            const streak = gameState.streakCount || 0;
+            const mult = streak === 0 ? '1x' : streak === 1 ? '1x' : streak === 2 ? '1.25x' : streak === 3 ? '1.5x' : streak === 4 ? '2x' : '3x';
+            document.getElementById('hud-streak-num').textContent = streak;
+            document.getElementById('hud-streak-mult').textContent = `(${mult})`;
+        } else {
+            streakCard.style.display = 'none';
+        }
+    }
+
     // ============================================================
     //  TIMER & ACCURACY SCORING SYSTEM
     // ============================================================
@@ -2647,18 +3116,29 @@
         return `${(distMeters / 1000).toFixed(2)} km`;
     }
 
-    function scoreGuess(distMeters, timeRemaining, maxTime) {
-        // Distance score: max 5000 pts
+    function scoreGuess(distMeters, timeRemaining, maxTime, matchedChoice = false) {
+        const cfg = MODE_CONFIG[currentMode] || {};
         let distScore = 0;
-        if (distMeters <= 25) {
-            distScore = 5000;
-        } else {
-            distScore = Math.max(0, Math.round(5000 * Math.exp(-distMeters / 1500)));
+        if (distMeters !== null) {
+            if (matchedChoice) {
+                distScore = 5000;
+            } else if (cfg.isWorld || cfg.isCountry) {
+                distScore = distMeters <= 50000 ? 5000 : Math.round(5000 * Math.exp(-distMeters / 3500000));
+            } else if (cfg.isAsia) {
+                distScore = distMeters <= 25000 ? 5000 : Math.round(5000 * Math.exp(-distMeters / 1200000));
+            } else if (cfg.isCambodia) {
+                distScore = distMeters <= 500 ? 5000 : Math.round(5000 * Math.exp(-distMeters / 30000));
+            } else if (cfg.isSniper) {
+                distScore = distMeters <= 35 ? 10000 : distMeters <= 75 ? 7500 : distMeters <= 150 ? 6000 : Math.max(0, Math.round(5000 * Math.exp(-distMeters / 1500)));
+            } else {
+                distScore = distMeters <= 25 ? 5000 : Math.max(0, Math.round(5000 * Math.exp(-distMeters / 1500)));
+            }
         }
 
-        // Speed bonus: up to 1000 pts
+        // Speed bonus: up to 1000 pts (doubled in sprint mode)
         const speedRatio = Math.max(0, timeRemaining / maxTime);
-        const speedBonus = Math.round(speedRatio * 1000);
+        const speedMultiplier = currentMode === 'sprint' ? 2 : 1;
+        const speedBonus = distMeters !== null ? Math.round(speedRatio * 1000) * speedMultiplier : 0;
 
         return {
             distScore,
@@ -2813,6 +3293,10 @@
         gameState.totalScore = 0;
         gameState.roundsHistory = [];
         gameState.usedLocIds = [];
+        gameState.streakCount = 0;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
+        SIM_BOTS.forEach(b => { b.streakCount = 0; });
 
         initGuessMap();
         loadRound();
@@ -2855,35 +3339,150 @@
     function generateBotGuess(bot, target, maxTime) {
         if (bot.roundCompleted) return;
         const bCfg = bot.botConfig;
-        const dist = bCfg.minDist + Math.random() * (bCfg.maxDist - bCfg.minDist);
-        const angle = Math.random() * 2 * Math.PI;
+        const cfg = MODE_CONFIG[currentMode] || {};
 
-        const dLat = (dist / 111320) * Math.cos(angle);
-        const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
-        const guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+        let guessLatLng;
+        let actualDist;
+        let matchedChoice = false;
+        let botCountryName = null;
+        let botDistrictName = null;
 
-        const actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
-        const elapsed = Math.min(maxTime, Math.max(2.5, (Date.now() - gameState.roundStartTime) / 1000));
+        if (cfg.isWorld) {
+            const worldMin = bot.id === 'bot_sokha' ? 80000 : bot.id === 'bot_dara' ? 300000 : 800000;
+            const worldMax = bot.id === 'bot_sokha' ? 450000 : bot.id === 'bot_dara' ? 1200000 : 3500000;
+            const dist = worldMin + Math.random() * (worldMax - worldMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.max(0.2, Math.cos(target.lat * Math.PI / 180)))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isCountry) {
+            const targetCountry = target.country || 'Cambodia';
+            const hitProb = bot.id === 'bot_sokha' ? 0.85 : bot.id === 'bot_dara' ? 0.65 : 0.40;
+            const isCorrect = Math.random() < hitProb;
+            if (isCorrect) {
+                botCountryName = targetCountry;
+                matchedChoice = true;
+                const cCenter = COUNTRY_CENTERS[targetCountry] || { lat: target.lat, lng: target.lng };
+                const jDist = 10000 + Math.random() * 140000;
+                const jAng = Math.random() * 2 * Math.PI;
+                guessLatLng = {
+                    lat: cCenter.lat + (jDist / 111320) * Math.cos(jAng),
+                    lng: cCenter.lng + (jDist / (111320 * Math.max(0.2, Math.cos(cCenter.lat * Math.PI / 180)))) * Math.sin(jAng)
+                };
+            } else {
+                const otherCountries = ALL_COUNTRIES.filter(c => c !== targetCountry);
+                botCountryName = otherCountries[Math.floor(Math.random() * otherCountries.length)] || 'France';
+                const cCenter = COUNTRY_CENTERS[botCountryName] || { lat: 0, lng: 0 };
+                const jDist = 20000 + Math.random() * 200000;
+                const jAng = Math.random() * 2 * Math.PI;
+                guessLatLng = {
+                    lat: cCenter.lat + (jDist / 111320) * Math.cos(jAng),
+                    lng: cCenter.lng + (jDist / (111320 * Math.max(0.2, Math.cos(cCenter.lat * Math.PI / 180)))) * Math.sin(jAng)
+                };
+            }
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isAsia) {
+            const asiaMin = bot.id === 'bot_sokha' ? 35000 : bot.id === 'bot_dara' ? 120000 : 400000;
+            const asiaMax = bot.id === 'bot_sokha' ? 200000 : bot.id === 'bot_dara' ? 500000 : 1500000;
+            const dist = asiaMin + Math.random() * (asiaMax - asiaMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.max(0.2, Math.cos(target.lat * Math.PI / 180)))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isDistrict) {
+            const targetKhan = PP_KHANS.find(k => (target.area || '').includes(k.id) || k.name.includes(target.area || '')) || PP_KHANS[0];
+            const hitProb = bot.id === 'bot_sokha' ? 0.80 : bot.id === 'bot_dara' ? 0.60 : 0.40;
+            const isCorrect = Math.random() < hitProb;
+            let chosenKhan = targetKhan;
+            if (!isCorrect) {
+                const others = PP_KHANS.filter(k => k.id !== targetKhan.id);
+                chosenKhan = others[Math.floor(Math.random() * others.length)] || targetKhan;
+            } else {
+                matchedChoice = true;
+            }
+            botDistrictName = chosenKhan.id;
+            const jDist = 200 + Math.random() * 900;
+            const jAng = Math.random() * 2 * Math.PI;
+            guessLatLng = {
+                lat: chosenKhan.lat + (jDist / 111320) * Math.cos(jAng),
+                lng: chosenKhan.lng + (jDist / (111320 * Math.cos(chosenKhan.lat * Math.PI / 180))) * Math.sin(jAng)
+            };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isSniper) {
+            const sniperMin = bot.id === 'bot_sokha' ? 12 : bot.id === 'bot_dara' ? 35 : 80;
+            const sniperMax = bot.id === 'bot_sokha' ? 55 : bot.id === 'bot_dara' ? 110 : 250;
+            const dist = sniperMin + Math.random() * (sniperMax - sniperMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else if (cfg.isCambodia) {
+            const camMin = bot.id === 'bot_sokha' ? 250 : bot.id === 'bot_dara' ? 800 : 2500;
+            const camMax = bot.id === 'bot_sokha' ? 1200 : bot.id === 'bot_dara' ? 4000 : 15000;
+            const dist = camMin + Math.random() * (camMax - camMin);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        } else {
+            const dist = bCfg.minDist + Math.random() * (bCfg.maxDist - bCfg.minDist);
+            const angle = Math.random() * 2 * Math.PI;
+            const dLat = (dist / 111320) * Math.cos(angle);
+            const dLng = (dist / (111320 * Math.cos(target.lat * Math.PI / 180))) * Math.sin(angle);
+            guessLatLng = { lat: target.lat + dLat, lng: target.lng + dLng };
+            actualDist = calculateDistance(target.lat, target.lng, guessLatLng.lat, guessLatLng.lng);
+        }
+
+        const elapsed = Math.min(maxTime, Math.max(2.0, (Date.now() - gameState.roundStartTime) / 1000));
         const timeRemaining = Math.max(0, maxTime - elapsed);
-        const scoreObj = scoreGuess(actualDist, timeRemaining, maxTime);
+        const scoreObj = scoreGuess(actualDist, timeRemaining, maxTime, matchedChoice);
+
+        let streakMultiplier = 1;
+        if (cfg.isStreak) {
+            if (actualDist <= 500) {
+                bot.streakCount = (bot.streakCount || 0) + 1;
+                streakMultiplier = bot.streakCount >= 5 ? 5 : bot.streakCount === 4 ? 3 : bot.streakCount === 3 ? 2 : bot.streakCount === 2 ? 1.5 : 1;
+            } else {
+                bot.streakCount = 0;
+            }
+        }
+
+        const finalDistScore = Math.round(scoreObj.distScore * streakMultiplier);
+        const finalRoundScore = finalDistScore + scoreObj.speedBonus;
 
         bot.currentGuess = {
             guessLatLng,
             dist: actualDist,
-            score: scoreObj.total,
-            distScore: scoreObj.distScore,
+            score: finalRoundScore,
+            distScore: finalDistScore,
             speedBonus: scoreObj.speedBonus,
-            elapsed
+            elapsed,
+            matchedChoice,
+            botCountryName,
+            botDistrictName
         };
-        bot.totalScore += scoreObj.total;
+        bot.totalScore += finalRoundScore;
         bot.roundCompleted = true;
 
         const chip = document.getElementById(`sim-chip-${bot.id}`);
         if (chip) {
             chip.classList.add('guessed');
+            let chipExtra = '';
+            if (botCountryName) {
+                const flag = COUNTRY_FLAGS[botCountryName] || '🌍';
+                chipExtra = `${flag} ${botCountryName}`;
+            } else if (botDistrictName) {
+                chipExtra = `🏙️ ${botDistrictName}`;
+            } else {
+                chipExtra = `✓ (${elapsed.toFixed(1)}s)`;
+            }
             chip.innerHTML = `
                 <div class="hud-player-chip-avatar">${renderAvatarHTML(bot, '100%', '100%')}</div>
-                <span>${escapeHTML(bot.name)}: ✓ (${elapsed.toFixed(1)}s)</span>
+                <span>${escapeHTML(bot.name)}: ${escapeHTML(chipExtra)}</span>
             `;
         }
     }
@@ -2894,6 +3493,9 @@
     function getModeLocationPool() {
         const cfg = MODE_CONFIG[currentMode];
         if (cfg.pool === 'landmarks') return LOCATIONS_DB.landmarks;
+        if (cfg.pool === 'countries') return LOCATIONS_DB.countries;
+        if (cfg.pool === 'cambodia') return LOCATIONS_DB.cambodia;
+        if (cfg.pool === 'asia') return LOCATIONS_DB.asia;
         return ALL_LOCATIONS;
     }
 
@@ -2911,6 +3513,9 @@
         gameState.totalScore = 0;
         gameState.roundsHistory = [];
         gameState.usedLocIds = [];
+        gameState.streakCount = 0;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
 
         initGuessMap();
         loadRound();
@@ -2922,6 +3527,8 @@
         readyPending = false;
         readyPlayers.clear();
         gameState.guessLatLng = null;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
         gameState.roundIndex++;
         const cfg = MODE_CONFIG[currentMode];
 
@@ -2929,7 +3536,8 @@
         document.getElementById('hud-score-indicator').textContent = gameState.totalScore.toLocaleString();
 
         const planned = gameState.matchPlan && gameState.matchPlan[gameState.roundIndex - 1];
-        const plannedLoc = planned && ALL_LOCATIONS.find(l => l.id === planned.id);
+        const allPoolLocations = [...ALL_LOCATIONS, ...LOCATIONS_DB.countries, ...LOCATIONS_DB.cambodia, ...(LOCATIONS_DB.asia || [])];
+        const plannedLoc = planned && allPoolLocations.find(l => l.id === planned.id);
         if (plannedLoc) {
             gameState.currentLocation = plannedLoc;
             gameState.currentHeading = planned.heading;
@@ -2954,7 +3562,22 @@
             pinStatus.textContent = '📍 Click map to pin';
             pinStatus.classList.remove('placed');
         }
-        gameState.guessMap.setView(PP_CENTER, 12);
+
+        const isWorld = !!cfg.isWorld || !!cfg.isCountry;
+        const isAsia = !!cfg.isAsia;
+        const isCam = !!cfg.isCambodia;
+        const center = isWorld ? WORLD_CENTER : isAsia ? ASIA_CENTER : isCam ? [12.5, 104.9] : PP_CENTER;
+        const zoom = isWorld ? 2 : isAsia ? 4 : isCam ? 7 : 12;
+        if (gameState.guessMap) {
+            gameState.guessMap.setView(center, zoom);
+        }
+
+        const modePill = document.getElementById('hud-mode-pill');
+        if (modePill) {
+            modePill.innerHTML = `<span>${cfg.badge}</span> ${cfg.name}`;
+        }
+        updateStreakHUD();
+        setupChoiceShelf();
 
         loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading);
         startRoundTimer(cfg.time);
@@ -2973,7 +3596,7 @@
         clearInterval(gameState.timerInterval);
 
         const elapsedSeconds = (Date.now() - gameState.roundStartTime) / 1000;
-        const cfg = MODE_CONFIG[currentMode];
+        const cfg = MODE_CONFIG[currentMode] || {};
         const timeRemaining = Math.max(0, cfg.time - elapsedSeconds);
 
         const dist = calculateDistance(
@@ -2981,19 +3604,46 @@
             gameState.guessLatLng.lat, gameState.guessLatLng.lng
         );
 
-        const scoreObj = scoreGuess(dist, timeRemaining, cfg.time);
-        gameState.totalScore += scoreObj.total;
-        gameState.roundScore = scoreObj.distScore;
+        let matchedChoice = false;
+        if (cfg.isCountry && gameState.chosenCountry && gameState.currentLocation.country) {
+            matchedChoice = (gameState.chosenCountry.toLowerCase() === gameState.currentLocation.country.toLowerCase());
+        } else if (cfg.isDistrict && gameState.chosenDistrict && gameState.currentLocation.area) {
+            const locArea = gameState.currentLocation.area.toLowerCase();
+            const chosen = gameState.chosenDistrict.toLowerCase();
+            matchedChoice = locArea.includes(chosen) || chosen.includes(locArea);
+        }
+
+        const scoreObj = scoreGuess(dist, timeRemaining, cfg.time, matchedChoice);
+
+        let streakMultiplier = 1;
+        if (cfg.isStreak) {
+            if (dist <= 500) {
+                gameState.streakCount = (gameState.streakCount || 0) + 1;
+                streakMultiplier = gameState.streakCount >= 5 ? 5 : gameState.streakCount === 4 ? 3 : gameState.streakCount === 3 ? 2 : gameState.streakCount === 2 ? 1.5 : 1;
+            } else {
+                gameState.streakCount = 0;
+            }
+            updateStreakHUD();
+        }
+
+        const finalDistScore = Math.round(scoreObj.distScore * streakMultiplier);
+        const finalRoundScore = finalDistScore + scoreObj.speedBonus;
+
+        gameState.totalScore += finalRoundScore;
+        gameState.roundScore = finalDistScore;
         gameState.roundSpeedBonus = scoreObj.speedBonus;
         gameState.roundDistance = dist;
+        gameState.roundMatchedChoice = matchedChoice;
 
         gameState.roundsHistory.push({
             round: gameState.roundIndex,
             area: gameState.currentLocation.name,
             dist,
-            distScore: scoreObj.distScore,
+            distScore: finalDistScore,
             speedBonus: scoreObj.speedBonus,
-            total: scoreObj.total
+            total: finalRoundScore,
+            matchedChoice,
+            streak: gameState.streakCount || 0
         });
 
         playSuccessChime();
@@ -3009,10 +3659,11 @@
                 me.currentGuess = {
                     guessLatLng: gameState.guessLatLng,
                     dist,
-                    score: scoreObj.total,
-                    distScore: scoreObj.distScore,
+                    score: finalRoundScore,
+                    distScore: finalDistScore,
                     speedBonus: scoreObj.speedBonus,
-                    elapsed: elapsedSeconds
+                    elapsed: elapsedSeconds,
+                    matchedChoice
                 };
                 me.totalScore = gameState.totalScore;
                 me.roundCompleted = true;
@@ -3028,7 +3679,7 @@
             }
         }
 
-        sendMpGuess(dist, scoreObj.total, gameState.guessLatLng, elapsedSeconds);
+        sendMpGuess(dist, finalRoundScore, gameState.guessLatLng, elapsedSeconds);
 
         showRoundResult();
     }
@@ -3037,10 +3688,16 @@
         if (isRealMultiplayer()) { submitRoomGuess(null); return; }
         if (gameState.roundSubmitted) return;
         gameState.roundSubmitted = true;
+        const cfg = MODE_CONFIG[currentMode] || {};
+        if (cfg.isStreak) {
+            gameState.streakCount = 0;
+            updateStreakHUD();
+        }
         // Reset last round's numbers so the result card doesn't show stale points
         gameState.roundScore = 0;
         gameState.roundSpeedBonus = 0;
         gameState.roundDistance = 10000;
+        gameState.roundMatchedChoice = false;
         sendMpGuess(null, 0, null, null);
         gameState.roundsHistory.push({
             round: gameState.roundIndex,
@@ -3071,6 +3728,98 @@
             nextBtn.textContent = 'View Final Results 🏆';
         } else {
             nextBtn.textContent = `Next Round (${gameState.roundIndex + 1}/${cfg.rounds}) →`;
+        }
+
+        const banner = document.getElementById('res-mode-banner');
+        if (banner) {
+            if (cfg.isWorld) {
+                const targetCountry = gameState.currentLocation.country || 'World';
+                const flag = COUNTRY_FLAGS[targetCountry] || '🌍';
+                banner.style.display = 'block';
+                banner.className = 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>${flag}</span>
+                        <span>Target: <strong>${escapeHTML(gameState.currentLocation.name)}</strong>, <em>${escapeHTML(targetCountry)}</em></span>
+                    </div>
+                `;
+            } else if (cfg.isCountry) {
+                const targetCountry = gameState.currentLocation.country || 'Unknown';
+                const flag = COUNTRY_FLAGS[targetCountry] || '🌍';
+                const isCorrect = (gameState.chosenCountry && gameState.chosenCountry.toLowerCase() === targetCountry.toLowerCase()) || gameState.roundDistance < 50000;
+                banner.style.display = 'block';
+                banner.className = isCorrect ? 'res-mode-banner success' : 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1.05rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>${flag}</span>
+                        <span>Target Country: <strong>${escapeHTML(targetCountry)}</strong></span>
+                        <span style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; background: ${isCorrect ? 'rgba(16, 185, 129, 0.25); color: #6ee7b7;' : 'rgba(239, 68, 68, 0.25); color: #fca5a5;'} font-weight: 800;">
+                            ${isCorrect ? '✓ MATCH (+5,000 pts)' : 'MISSED'}
+                        </span>
+                    </div>
+                `;
+            } else if (cfg.isAsia) {
+                const targetCountry = gameState.currentLocation.country || 'Asia';
+                const flag = COUNTRY_FLAGS[targetCountry] || '🌏';
+                banner.style.display = 'block';
+                banner.className = 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>${flag}</span>
+                        <span>Destination: <strong>${escapeHTML(gameState.currentLocation.name)}</strong>, <em>${escapeHTML(targetCountry)}</em></span>
+                    </div>
+                `;
+            } else if (cfg.isDistrict) {
+                const targetArea = gameState.currentLocation.area || 'Phnom Penh';
+                const isCorrect = !!gameState.roundMatchedChoice;
+                banner.style.display = 'block';
+                banner.className = isCorrect ? 'res-mode-banner success' : 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>🏙️ District: <strong>${escapeHTML(targetArea)}</strong></span>
+                        <span style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; background: ${isCorrect ? 'rgba(16, 185, 129, 0.25); color: #6ee7b7;' : 'rgba(239, 68, 68, 0.25); color: #fca5a5;'} font-weight: 800;">
+                            ${isCorrect ? '✓ KHAN IDENTIFIED (+5,000 pts)' : 'WRONG KHAN'}
+                        </span>
+                    </div>
+                `;
+            } else if (cfg.isSniper) {
+                const dist = gameState.roundDistance;
+                const isBullseye = dist <= 35;
+                const isGreat = dist <= 75;
+                banner.style.display = 'block';
+                banner.className = isBullseye ? 'res-mode-banner success' : isGreat ? 'res-mode-banner warning' : 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>🎯 Bullseye Rating:</span>
+                        <span style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; background: ${isBullseye ? 'rgba(16, 185, 129, 0.25); color: #6ee7b7;' : 'rgba(245, 158, 11, 0.25); color: #fde047;'} font-weight: 800;">
+                            ${isBullseye ? '🎯 PERFECT BULLSEYE! (10,000 PTS)' : isGreat ? '🥈 CLOSE SHOT (7,500 PTS)' : dist <= 150 ? '🥉 NEARBY (6,000 PTS)' : 'OUTSIDE TARGET'}
+                        </span>
+                    </div>
+                `;
+            } else if (cfg.isStreak) {
+                const streak = gameState.streakCount || 0;
+                const mult = streak >= 5 ? '5x' : streak === 4 ? '3x' : streak === 3 ? '2x' : streak === 2 ? '1.5x' : '1x';
+                banner.style.display = 'block';
+                banner.className = streak > 0 ? 'res-mode-banner success' : 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>🔥 Streak Combo: <strong>${streak} In A Row</strong></span>
+                        <span style="padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; background: ${streak > 0 ? 'rgba(236, 72, 153, 0.25); color: #f472b6;' : 'rgba(100, 116, 139, 0.25); color: #cbd5e1;'} font-weight: 800;">
+                            Active Multiplier: ${mult}
+                        </span>
+                    </div>
+                `;
+            } else if (cfg.isCambodia) {
+                banner.style.display = 'block';
+                banner.className = 'res-mode-banner neutral';
+                banner.innerHTML = `
+                    <div style="font-weight: 800; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span>🇰🇭 Province: <strong>${escapeHTML(gameState.currentLocation.area || 'Cambodia')}</strong></span>
+                    </div>
+                `;
+            } else {
+                banner.style.display = 'none';
+            }
         }
 
         const mpLeaderboard = document.getElementById('mp-round-leaderboard');
@@ -3124,7 +3873,8 @@
 
             const actualLoc = [gameState.currentLocation.lat, gameState.currentLocation.lng];
             const actualIcon = L.divIcon({ className: 'marker-pin-actual', iconSize: [18, 18] });
-            L.marker(actualLoc, { icon: actualIcon }).addTo(gameState.resultMap).bindPopup(`<b>📍 ${gameState.currentLocation.name}</b><br><span style="color:#64748b; font-size:11px;">Phnom Penh Target</span>`).openPopup();
+            const countryOrArea = gameState.currentLocation.country ? `🌍 ${gameState.currentLocation.country}` : `📍 ${gameState.currentLocation.area || 'Phnom Penh Target'}`;
+            L.marker(actualLoc, { icon: actualIcon }).addTo(gameState.resultMap).bindPopup(`<b>📍 ${gameState.currentLocation.name}</b><br><span style="color:#64748b; font-size:11px;">${countryOrArea}</span>`).openPopup();
 
             const boundsPoints = [actualLoc];
 
@@ -3297,6 +4047,10 @@
         document.getElementById('final-screen').classList.remove('active');
         gameState.isMultiplayer = false;
         gameState.matchPlan = null;
+        gameState.streakCount = 0;
+        gameState.chosenCountry = null;
+        gameState.chosenDistrict = null;
+        updateStreakHUD();
         document.getElementById('start-screen').classList.add('active');
         renderModeCards();
     }
@@ -3448,7 +4202,7 @@
             select.value = currentMode;
             select.disabled = id === 'lobby-mode-select' && (!gameState.isHost || !roomReady || !!serverMatch);
             const cfg = MODE_CONFIG[currentMode];
-            const count = cfg.pool === 'landmarks' ? LOCATIONS_DB.landmarks.length : ALL_LOCATIONS.length;
+            const count = cfg.pool === 'landmarks' ? LOCATIONS_DB.landmarks.length : cfg.pool === 'countries' ? LOCATIONS_DB.countries.length : cfg.pool === 'cambodia' ? LOCATIONS_DB.cambodia.length : cfg.pool === 'asia' ? LOCATIONS_DB.asia.length : ALL_LOCATIONS.length;
             document.getElementById(descriptionId).textContent = cfg.time + ' seconds · ' + cfg.rounds + ' rounds · ' + count + ' locations. ' + cfg.desc;
         }
     }

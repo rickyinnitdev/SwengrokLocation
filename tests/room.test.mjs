@@ -148,3 +148,43 @@ test('Landmark deck exhausts its smaller pool and survives adding locations', ()
   drawLocations([...pool, added], 1, rotation, 'landmarks');
   assert.ok(rotation.catalogs.landmarks.includes(added.id));
 });
+
+test('New modes (world, country, asia, cambodia, sniper, district, streak) configure pools and scoring', () => {
+  // World Explorer Mode (pin on world map)
+  const { e: ew, a: aw } = room('world');
+  const mw = start(ew, aw);
+  assert.equal(mw.plan.length, 5);
+  assert.ok(mw.plan.every(r => locations.countries.some(l => l.id === r.id)));
+  const targetWorld = locations.countries.find(l => l.id === mw.plan[0].id);
+  ew.handle(aw.id, msg(mw, 'PLAYER_GUESS', { guessLatLng: { lat: targetWorld.lat + 0.1, lng: targetWorld.lng + 0.1 } }), mw.startedAt + 1000);
+  assert.ok(mw.guesses[1][aw.id].distScore >= 4500);
+
+  // Country Guesser Mode (multiple choice)
+  const { e: ec, a: ac } = room('country');
+  const mc = start(ec, ac);
+  assert.equal(mc.plan.length, 5);
+  assert.ok(mc.plan.every(r => locations.countries.some(l => l.id === r.id)));
+
+  // Asia Adventure Mode (SE Asian & Asian locations)
+  const { e: ea, a: aa } = room('asia');
+  const ma = start(ea, aa);
+  assert.equal(ma.plan.length, 5);
+  assert.ok(ma.plan.every(r => locations.asia.some(l => l.id === r.id)));
+  const targetAsia = locations.asia.find(l => l.id === ma.plan[0].id);
+  ea.handle(aa.id, msg(ma, 'PLAYER_GUESS', { guessLatLng: { lat: targetAsia.lat + 0.05, lng: targetAsia.lng + 0.05 } }), ma.startedAt + 1000);
+  assert.ok(ma.guesses[1][aa.id].distScore >= 4500);
+
+  // Cambodia Mode
+  const { e: ek, a: ak } = room('cambodia');
+  const mk = start(ek, ak);
+  assert.equal(mk.plan.length, 5);
+  assert.ok(mk.plan.every(r => locations.cambodia.some(l => l.id === r.id)));
+
+  // Sniper Mode
+  const { e: es, a: as } = room('sniper');
+  const ms = start(es, as);
+  const targetSniper = Object.values(locations).flat().find(l => l.id === ms.plan[0].id);
+  // Exact bullseye (0m)
+  es.handle(as.id, msg(ms, 'PLAYER_GUESS', { guessLatLng: targetSniper }), ms.startedAt + 1000);
+  assert.equal(ms.guesses[1][as.id].distScore, 10000);
+});
