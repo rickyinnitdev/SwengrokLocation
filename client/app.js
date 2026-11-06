@@ -2668,3 +2668,135 @@
     }
 
     // ============================================================
+    //  INITIALIZATION
+    // ============================================================
+    function boot() {
+        // Theme first so there is no flash of the wrong palette.
+        let savedTheme = null;
+        try { savedTheme = localStorage.getItem(THEME_KEY); } catch (e) {}
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        applyTheme(savedTheme || (prefersDark ? 'dark' : 'light'));
+
+        let savedLang = null;
+        try { savedLang = localStorage.getItem('wanderpenh_lang'); } catch (e) {}
+        const savedRegion = readSavedRegion();
+        const urlParams = new URLSearchParams(window.location.search);
+        const room = urlParams.get('room');
+
+        setLang(savedLang === 'km' ? 'km' : savedLang === 'en' ? 'en' : (savedRegion === 'world' ? 'en' : 'km'));
+        applyI18n();
+        document.getElementById('lang-toggle').textContent = getLang() === 'km' ? 'EN' : 'ខ្មែរ';
+
+        loadProfile();
+
+        if (savedRegion) {
+            setRegion(savedRegion, { persist: false });
+            document.getElementById('doors-screen').classList.remove('active');
+            document.getElementById('start-screen').classList.add('active');
+        } else if (room) {
+            setRegion('kh');
+            document.getElementById('start-screen').classList.add('active');
+        } else {
+            setRegion('kh', { persist: false });
+            document.getElementById('doors-screen').classList.add('active');
+        }
+
+        renderModeCards();
+        updateHomeChrome();
+
+        // Door choice.
+        document.querySelectorAll('[data-pick-region]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const region = btn.dataset.pickRegion;
+                if (!savedLang) setLanguage(region === 'kh' ? 'km' : 'en');
+                setRegion(region, { reveal: true });
+                maybeShowCoach();
+            });
+        });
+
+        // Header controls.
+        document.querySelectorAll('#region-switch [data-region]').forEach(btn => {
+            btn.addEventListener('click', () => setRegion(btn.dataset.region));
+        });
+        document.querySelectorAll('#party-region-switch [data-region]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                setRegion(btn.dataset.region);
+                renderPartyModes();
+            });
+        });
+        document.getElementById('lang-toggle').addEventListener('click', () => {
+            setLanguage(getLang() === 'km' ? 'en' : 'km');
+        });
+        document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
+        // Ticket and mode list.
+        document.getElementById('play-now-btn').addEventListener('click', () => startQuickPlay());
+        document.getElementById('more-toggle').addEventListener('click', () => {
+            const wrap = document.getElementById('more-modes');
+            const open = wrap.hidden;
+            wrap.hidden = !open;
+            document.getElementById('more-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+
+        // Coach marks and map sheet.
+        document.getElementById('coach-next').addEventListener('click', nextCoachStep);
+        setupSheetGesture();
+        setupResizer();
+
+        // Joining from the home card or the party modal.
+        document.getElementById('home-join-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinFromHome(); });
+        document.getElementById('join-code-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinMultiplayerLobby(); });
+
+        if (room) {
+            document.getElementById('join-code-input').value = room;
+            joinMultiplayerLobby();
+        } else {
+            maybeShowCoach();
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeCoach();
+        });
+    }
+
+    // Inline handlers live in the markup and the e2e suite drives the game through
+    // the console, so the module exposes its public API. `currentMode` is an
+    // accessor so test assignments reach the module's own binding.
+    Object.assign(globalThis, {
+        gameState,
+        ALL_LOCATIONS, WORLD_LOCATIONS, CAMBODIA_LOCATIONS, ASIA_LOCATIONS, LOCATIONS_DB, MODE_CONFIG,
+        getNextUniqueLocation, getSeenHistory, recordSeenLocation, getLobbyPlayers, isRealMultiplayer,
+        openTutorialModal, toggleMute, openProfileModal, closeModal, randomizeCharacter,
+        switchStudioTab, setStudioOption, saveProfile,
+        renderModeCards, handleModeCardClick, startModeGame, startQuickPlay, startSinglePlayerGame,
+        start4PlayerSimulation, openMultiplayerModal, createMultiplayerLobby, joinMultiplayerLobby,
+        selectPartyMode, leaveLobby, copyInviteLink, shareTelegram, sendLobbyEmote, startMultiplayerGame,
+        skipBrokenLocation, returnToStartPano, toggleMapExpand, submitPlayerGuess, advanceNextRound,
+        resetToHome, backToHome, joinFromHome, nextCoachStep, closeCoach, setRegion, setLanguage, showFinalPodium,
+        shareInviteLink, openRanked, copyInviteLink,
+        setSheet, cycleSheet
+    });
+
+    Object.defineProperties(globalThis, {
+        currentMode: {
+            configurable: true,
+            get: () => currentMode,
+            set: value => { currentMode = value; }
+        },
+        currentRegion: {
+            configurable: true,
+            get: () => currentRegion,
+            set: value => { currentRegion = value; }
+        },
+        roomReady: { configurable: true, get: () => roomReady },
+        myPlayerId: { configurable: true, get: () => myPlayerId },
+        serverClockOffset: { configurable: true, get: () => serverClockOffset },
+        serverMatch: { configurable: true, get: () => serverMatch },
+        roomSocket: { configurable: true, get: () => roomSocket }
+    });
+
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', boot);
+    } else {
+        boot();
+    }
