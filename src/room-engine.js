@@ -280,14 +280,26 @@ export class RoomEngine {
   tick(now = Date.now()) {
     const s = this.state;
     s.players = s.players.filter(p => p.connected || p.leftAt + GRACE_MS > now);
+    this.pruneTeams();
     if (!s.players.some(p => p.id === s.hostId)) s.hostId = s.players.find(p => p.connected)?.id || s.players[0]?.id || null;
     if (!s.players.length || (s.updatedAt && now - s.updatedAt > ROOM_TTL)) {
       this.state = initialState();
       return;
     }
+    if (!s.match) this.syncTeams();
     const m = s.match;
+    if (m?.phase === 'playing' && this.isTeamsMode()) m.roles = this.roundRoles();
     if (m?.phase === 'playing' && now >= m.deadline) {
-      for (const p of s.players) this.guess(p.id, null, now);
+      if (this.isTeamsMode()) {
+        for (const team of s.teams) {
+          if (this.teamHasGuess(team.id, m.round)) continue;
+          const candidate = team.playerIds.find(id => m.roles?.[id] === 'pinner' || m.roles?.[id] === 'both')
+            || team.playerIds.find(id => s.players.some(p => p.id === id && p.connected));
+          if (candidate) this.guess(candidate, null, now);
+        }
+      } else {
+        for (const p of s.players) this.guess(p.id, null, now);
+      }
     }
     this.advance(now);
   }
