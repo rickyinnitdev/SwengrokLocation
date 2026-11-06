@@ -2095,6 +2095,36 @@
     let readyPlayers = new Set();
     let matchId = null;
     let lobbyPlayers = [];          // player list as last synced from the host (clients only)
+    let serverTeams = [];           // Tag-Team pairs as confirmed by the server
+    let teamSwapPick = null;        // host's first selection when swapping two players
+    const TEAM_COLORS = ['#e4578a', '#1f7fb8', '#e0a526', '#4caf6a'];
+
+    function isTeamMode(mode = currentMode) {
+        return !!MODE_CONFIG[mode]?.teams;
+    }
+    function myTeam() {
+        return serverTeams.find(team => team.playerIds.includes(myPlayerId)) || null;
+    }
+    function myRoleNow() {
+        return isTeamMode() && serverMatch ? serverMatch.role || null : null;
+    }
+    function findLocationById(id) {
+        if (!id) return null;
+        const pool = [...ALL_LOCATIONS, ...LOCATIONS_DB.countries, ...LOCATIONS_DB.cambodia, ...(LOCATIONS_DB.asia || [])];
+        return pool.find(l => l.id === id) || null;
+    }
+    function playerById(id) {
+        return getLobbyPlayers().find(p => p.id === id) || null;
+    }
+    function teamIndex(teamId) {
+        return Math.max(0, serverTeams.findIndex(team => team.id === teamId));
+    }
+    function teamNames(team, skipMe = false) {
+        return team.playerIds
+            .filter(id => !(skipMe && id === myPlayerId))
+            .map(id => playerById(id)?.name || '?')
+            .join(' + ');
+    }
 
     const MAX_ROOM_PLAYERS = 8;
     const ROOM_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
