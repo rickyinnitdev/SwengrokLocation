@@ -679,3 +679,87 @@
     }
 
     // ============================================================
+    //  COACH MARKS
+    // ============================================================
+    const COACH_STEPS = [
+        { title: 'tutorial.step1.title', body: 'tutorial.step1.body' },
+        { title: 'tutorial.step2.title', body: 'tutorial.step2.body' },
+        { title: 'tutorial.step3.title', body: 'tutorial.step3.body' }
+    ];
+    let coachStep = 0;
+
+    function coachSeen() {
+        try { return localStorage.getItem(COACH_KEY) === '1'; } catch (e) { return false; }
+    }
+
+    function maybeShowCoach() {
+        if (coachSeen()) return;
+        if (!document.getElementById('start-screen').classList.contains('active')) return;
+        showCoach(0);
+    }
+
+    function showCoach(step = 0) {
+        coachStep = Math.max(0, Math.min(COACH_STEPS.length - 1, step));
+        renderCoach();
+        document.getElementById('coach').classList.add('active');
+    }
+
+    function renderCoach() {
+        const card = document.getElementById('coach');
+        if (!card) return;
+        const step = COACH_STEPS[coachStep];
+        document.getElementById('coach-step').textContent = `${coachStep + 1} / ${COACH_STEPS.length}`;
+        document.getElementById('coach-title').textContent = t(step.title);
+        document.getElementById('coach-body').textContent = t(step.body);
+        document.getElementById('coach-next').textContent = coachStep === COACH_STEPS.length - 1 ? t('tutorial.gotIt') : t('tutorial.next');
+        document.querySelectorAll('#coach-dots span').forEach((dot, i) => dot.classList.toggle('on', i === coachStep));
+    }
+
+    function nextCoachStep() {
+        if (coachStep >= COACH_STEPS.length - 1) { closeCoach(); return; }
+        coachStep++;
+        renderCoach();
+    }
+
+    function closeCoach() {
+        document.getElementById('coach').classList.remove('active');
+        try { localStorage.setItem(COACH_KEY, '1'); } catch (e) {}
+    }
+
+    function openTutorialModal() {
+        showCoach(0);
+    }
+
+    // ============================================================
+    //  STREET VIEW EMBED ENGINE
+    // ============================================================
+    function loadPano(lat, lng, heading = 0) {
+        const iframe = document.getElementById('streetview-iframe');
+        const fixedView = !!MODE_CONFIG[currentMode].nmpz;
+        iframe.style.pointerEvents = fixedView ? 'none' : 'auto';
+        iframe.tabIndex = fixedView ? -1 : 0;
+        iframe.title = fixedView ? 'Fixed Street View panorama — no moving, panning or zooming' : 'Explore the Street View panorama';
+        // Clean free iframe embed URL with 360 degree randomized heading
+        iframe.src = `https://maps.google.com/maps?layer=c&cbll=${lat},${lng}&cbp=12,${heading},,0,0&output=svembed`;
+    }
+
+    function returnToStartPano() {
+        if (!gameState.currentLocation) return;
+        playBeep(480, 'sine', 0.08);
+        loadPano(gameState.currentLocation.lat, gameState.currentLocation.lng, gameState.currentHeading || 0);
+    }
+
+    function skipBrokenLocation() {
+        if (gameState.matchPlan) {
+            if (gameState.isHost) { sendRoomMessage({ type: 'SKIP_LOCATION' }); showToast(t('toast.skipHost')); }
+            else showToast(t('toast.skipGuest'));
+            return;
+        }
+        playBeep(320, 'triangle', 0.12);
+        // Swap the location without using up a round
+        gameState.roundIndex--;
+        loadRound();
+        showToast(t('toast.skipped'));
+    }
+
+    // ============================================================
