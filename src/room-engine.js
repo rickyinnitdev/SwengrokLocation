@@ -37,12 +37,87 @@ export function distance(a, b) {
   return 6371000 * 2 * Math.atan2(Math.sqrt(t), Math.sqrt(Math.max(0, 1 - t)));
 }
 export function initialState() {
-  return { players: [], hostId: null, mode: 'classic', match: null, recent: [], rotation: { history: [] }, updatedAt: 0 };
+  return { players: [], hostId: null, mode: 'classic', match: null, teams: [], recent: [], rotation: { history: [] }, updatedAt: 0 };
 }
 export class RoomEngine {
   constructor(state = initialState()) {
     this.state = state;
     this.state.rotation ||= { history: [...(state.recent || [])] };
+    this.state.teams ||= [];
+  }
+  isTeamsMode() {
+    return !!modes[this.state.mode]?.teams;
+  }
+  connectedIds() {
+    return this.state.players.filter(p => p.connected).map(p => p.id);
+  }
+  teamFor(id) {
+    return this.state.teams.find(t => t.playerIds.includes(id));
+  }
+  autoTeams() {
+    // Keep pairs together and give the odd player out a three-person team.
+    const ids = this.connectedIds();
+    const teams = [];
+    let i = 0;
+    while (ids.length - i > 3) {
+      teams.push({ id: `team_${teams.length + 1}`, playerIds: ids.slice(i, i + 2) });
+      i += 2;
+    }
+    if (i < ids.length) teams.push({ id: `team_${teams.length + 1}`, playerIds: ids.slice(i) });
+    this.state.teams = teams;
+  }
+  validTeams(teams) {
+    const connected = this.connectedIds();
+    if (!Array.isArray(teams) || !teams.length || connected.length < 2) return false;
+    const seen = new Set();
+    let triples = 0;
+    for (const team of teams) {
+      if (!team || !Array.isArray(team.playerIds)) return false;
+      if (team.playerIds.length < 2 || team.playerIds.length > 3) return false;
+      if (team.playerIds.length === 3) triples++;
+      for (const id of team.playerIds) {
+        if (!connected.includes(id) || seen.has(id)) return false;
+        seen.add(id);
+      }
+    }
+    return triples <= 1 && seen.size === connected.length && connected.every(id => seen.has(id));
+  }
+  applyTeams(teams) {
+    this.state.teams = teams.map((team, index) => ({
+      id: `team_${index + 1}`,
+      playerIds: [...new Set(team.playerIds)]
+    }));
+  }
+  syncTeams(force = false) {
+    if (!this.isTeamsMode()) { this.state.teams = []; return; }
+    if (force || !this.validTeams(this.state.teams)) {
+      if (this.connectedIds().length) this.autoTeams();
+      else this.state.teams = [];
+    }
+  }
+  pruneTeams() {
+    const ids = new Set(this.state.players.map(p => p.id));
+    this.state.teams = this.state.teams
+      .map(team => ({ ...team, playerIds: team.playerIds.filter(id => ids.has(id)) }))
+      .filter(team => team.playerIds.length);
+  }
+  roundRoles() {
+    const s = this.state, m = s.match, roles = {};
+    for (const team of s.teams) {
+      const active = team.playerIds.filter(id => s.players.some(p => p.id === id && p.connected));
+      if (!active.length) continue;
+      if (active.length === 1) {
+        roles[active[0]] = 'both';
+      } else {
+        const pinner = active[(m.round - 1) % active.length];
+        for (const id of active) roles[id] = id === pinner ? 'pinner' : 'viewer';
+      }
+    }
+    return roles;
+  }
+  teamHasGuess(teamId, round = this.state.match?.round) {
+    const team = this.state.teams.find(t => t.id === teamId);
+    return !!team?.playerIds.some(id => this.state.match?.guesses?.[round]?.[id]);
   }
   join({ create, token, profile: p, mode, seen }, now = Date.now()) {
     const s = this.state;
@@ -69,6 +144,7 @@ export class RoomEngine {
     player.connected = true;
     player.leftAt = null;
     if (!s.match) player.profile = profile(p);
+    if (!s.match) this.syncTeams();
     s.updatedAt = now;
     return player;
   }
