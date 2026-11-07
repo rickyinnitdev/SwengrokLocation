@@ -1133,7 +1133,7 @@
             grid.innerHTML = currentChoices.map(country => {
                 const flag = COUNTRY_FLAGS[country] || '🌍';
                 return `
-                    <button type="button" class="choice-opt-btn" onclick="selectChoiceOption('country', '${escapeHTML(country)}')">
+                    <button type="button" class="choice-opt-btn" data-choice-type="country" data-choice-value="${escapeHTML(country)}" onclick="selectChoiceOption('country', '${escapeHTML(country)}')">
                         <span style="font-size: 1.15rem;">${flag}</span>
                         <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(country)}</span>
                     </button>
@@ -1151,7 +1151,7 @@
             currentChoices = [matchedKhan, ...distractors].sort(() => 0.5 - Math.random());
 
             grid.innerHTML = currentChoices.map(khan => `
-                <button type="button" class="choice-opt-btn" onclick="selectChoiceOption('district', '${escapeHTML(khan.id)}')">
+                <button type="button" class="choice-opt-btn" data-choice-type="district" data-choice-value="${escapeHTML(khan.id)}" onclick="selectChoiceOption('district', '${escapeHTML(khan.id)}')">
                     <span style="font-size: 1.05rem;">${khan.icon}</span>
                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHTML(khan.id)}</span>
                 </button>
@@ -1161,7 +1161,8 @@
 
     function selectChoiceOption(type, value) {
         document.querySelectorAll('.choice-opt-btn').forEach(btn => {
-            btn.classList.toggle('selected', btn.textContent.includes(value));
+            const match = btn.dataset.choiceValue ? btn.dataset.choiceValue === value : btn.textContent.includes(value);
+            btn.classList.toggle('selected', match);
         });
 
         playBeep(640, 'sine', 0.08);
@@ -3778,7 +3779,7 @@
         renderModeCards, handleModeCardClick, startModeGame, startQuickPlay, startSinglePlayerGame,
         start4PlayerSimulation, openMultiplayerModal, createMultiplayerLobby, joinMultiplayerLobby,
         selectPartyMode, leaveLobby, copyInviteLink, shareTelegram, sendLobbyEmote, startMultiplayerGame,
-        skipBrokenLocation, returnToStartPano, toggleMapExpand, submitPlayerGuess, advanceNextRound,
+        skipBrokenLocation, returnToStartPano, toggleMapExpand, selectChoiceOption, submitPlayerGuess, advanceNextRound,
         resetToHome, backToHome, joinFromHome, nextCoachStep, closeCoach, setRegion, setLanguage, showFinalPodium,
         shareInviteLink, openRanked, closeRanked, setRankedRegion, setBoardTab, setBoardMode, startRankedRun, copyBackupCode, restoreBackupCode, copyInviteLink,
         setSheet, cycleSheet, pickTeamMember, myRoleNow,

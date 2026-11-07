@@ -969,8 +969,19 @@ select {
    GAME
    ========================================================================== */
 #game-screen { background: #0d1414; }
-#streetview-container { position: absolute; inset: 0; background: #0d1414; }
-#streetview-iframe { width: 100%; height: 100%; border: 0; display: block; }
+#streetview-container { position: absolute; inset: 0; background: #0d1414; overflow: hidden; }
+/* Google's svembed place card lives inside a cross-origin iframe and cannot be
+   styled, so oversize the iframe and shift it up-left: the card falls outside
+   the visible container and real panorama shows in that corner instead. */
+#streetview-iframe {
+  position: absolute;
+  top: -110px;
+  left: -210px;
+  width: calc(100% + 210px);
+  height: calc(100% + 110px);
+  border: 0;
+  display: block;
+}
 
 #hud-top {
   position: absolute;
@@ -1141,6 +1152,16 @@ select {
   font-size: 0.75rem;
   font-weight: 800;
   box-shadow: var(--hard-sm);
+}
+#expand-toggle {
+  min-height: 54px;
+  padding: 10px 18px;
+  font-size: 0.95rem;
+  gap: 8px;
+}
+#expand-toggle .icon {
+  width: 22px;
+  height: 22px;
 }
 #map-pin-status {
   pointer-events: auto;
@@ -1900,7 +1921,10 @@ body[data-role='pinner'] .sheet-handle { display: none; }
     background: var(--glass); backdrop-filter: blur(12px); border: 2px solid var(--glass-line); border-radius: 18px;
     box-shadow: var(--hard-sm); overflow: hidden;
   }
-  #map-panel:hover, #map-panel:focus-within, #map-panel.pinned, #map-panel.touch-open { --map-w: 560px; --map-h: 420px; }
+  #map-panel:hover, #map-panel:focus-within, #map-panel.pinned, #map-panel.touch-open {
+    --map-w: min(760px, calc(100vw - 28px));
+    --map-h: min(580px, calc(100dvh - 200px));
+  }
   #map-wrapper { flex: none; height: var(--map-h); transition: height 0.22s ease; }
   @media (prefers-reduced-motion: reduce) { #map-panel, #map-wrapper { transition: none; } }
   .sheet-handle, #expand-toggle { display: none; }
