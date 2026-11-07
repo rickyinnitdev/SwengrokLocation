@@ -35,6 +35,8 @@ fs.rmSync('dist/client/_markup_extract.html', { force: true });
 // Server-side door-agnostic extras are appended to the client module too.
 fs.appendFileSync('dist/client/data/locations.js', `\nLOCATIONS_DB.classic.push(...${JSON.stringify(extra.locations)});\n`);
 fs.copyFileSync('index.html', 'dist/index.html');
+fs.mkdirSync('dist/data', { recursive: true });
+fs.copyFileSync('data/pp-khans.geojson', 'dist/data/pp-khans.geojson');
 
 const rotationSource = fs.readFileSync('src/location-rotation.js', 'utf8').replace(/^export /gm, '');
 fs.writeFileSync('dist/location-rotation.js', `(function(){${rotationSource}\nglobalThis.WanderRotation = {drawLocations, rotationRandom, protocol: GAME_PROTOCOL};})();`);

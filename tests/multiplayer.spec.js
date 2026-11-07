@@ -10,7 +10,9 @@ async function enterHome(page) {
   if (await page.locator('#coach').isVisible()) await page.evaluate(() => closeCoach());
 }
 
-test('doors take two taps, the language toggle switches copy and the map sheet cycles', async ({ page }) => {
+test('doors take two taps, the language toggle switches copy and the phone map sheet cycles', async ({ page }) => {
+  // Part C: the sheet is the phone layout (< 900px). Desktop is covered by hud.spec.js.
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/maps?**', r => r.fulfill({ contentType: 'text/html', body: '<p>Panorama stub</p>' }));
   await page.goto('/');
   await expect(page.locator('#doors-screen')).toHaveClass(/active/);

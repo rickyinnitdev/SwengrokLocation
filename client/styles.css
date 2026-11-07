@@ -25,7 +25,6 @@
   --safe-top: max(14px, env(safe-area-inset-top));
   --safe-bottom: max(14px, env(safe-area-inset-bottom));
   --sheet-peek: 100px;
-  --map-width: 34%;
   color-scheme: light;
 }
 
@@ -831,7 +830,24 @@ select {
   font-weight: 800;
 }
 .studio-tab-btn.active { background: var(--ink); color: var(--paper); }
-.studio-picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.studio-picker-grid { display: block; max-height: 42dvh; overflow-y: auto; padding-right: 2px; }
+.studio-section-title { font-size: 0.7rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 10px 0 6px; }
+.studio-thumb-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+.studio-swatch-row { display: flex; flex-wrap: wrap; gap: 10px; }
+.studio-thumb { position: relative; padding: 3px; border: 2px solid var(--line); border-radius: 14px; background: var(--paper); aspect-ratio: 1; min-width: 44px; min-height: 44px; }
+.studio-thumb-art { display: block; width: 100%; height: 100%; }
+.studio-thumb.selected { background: var(--gold); box-shadow: inset 0 0 0 2px var(--line); }
+.studio-thumb.locked .studio-thumb-art { filter: grayscale(1); opacity: 0.45; }
+.studio-lock { position: absolute; right: 3px; bottom: 1px; font-size: 0.9rem; }
+.studio-history-btns { display: flex; gap: 6px; margin-top: 10px; }
+.studio-preview-box { padding-top: 52px; }
+@media (min-width: 760px) {
+  #profile-modal .modal-card { max-width: 760px; display: grid; grid-template-columns: 240px 1fr; gap: 12px 16px; align-items: start; }
+  #profile-modal .modal-header, #profile-modal > .modal-card > button.btn-primary { grid-column: 1 / -1; }
+  #profile-modal .studio-preview-box { grid-column: 1; grid-row: 2 / span 3; position: sticky; top: 0; min-height: 260px; }
+  #profile-modal .studio-avatar-circle { width: 200px; height: 200px; }
+  #profile-modal .studio-tabs, #profile-modal #studio-picker-container, #profile-modal .modal-card > div:nth-of-type(3) { grid-column: 2; }
+}
 .studio-opt-btn {
   border: 2px solid var(--line);
   border-radius: 12px;
@@ -996,21 +1012,6 @@ select {
 .timer-ring-svg { width: 28px; height: 28px; transform: rotate(-90deg); }
 .timer-ring-circle { transition: stroke-dashoffset 1s linear; }
 .timer-val { font-size: 1.25rem; font-weight: 800; font-variant-numeric: tabular-nums; }
-.hud-tool-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  border: 2px solid var(--line);
-  border-radius: 12px;
-  background: var(--card);
-  color: var(--ink);
-  padding: 7px 11px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  box-shadow: var(--hard-sm);
-}
-.hud-tool-btn.btn-alert { background: var(--lotus); color: #fff; }
 
 /* Leaflet's default 30px zoom buttons are too small for thumbs. */
 .leaflet-bar a.leaflet-control-zoom-in,
@@ -1225,46 +1226,6 @@ select {
   padding: 1px 5px;
 }
 
-/* desktop split */
-@media (min-width: 900px) {
-  #game-screen.active { display: grid; grid-template-columns: 1fr 10px var(--map-width); }
-  #streetview-container { position: relative; inset: auto; grid-column: 1; height: 100dvh; }
-  #hud-top { right: calc(var(--map-width) + 22px); }
-  #map-panel {
-    position: relative;
-    inset: auto;
-    grid-column: 3;
-    height: 100dvh;
-    border: 0;
-    border-left: 2.5px solid var(--line);
-    border-radius: 0;
-    transform: none !important;
-    box-shadow: none;
-    touch-action: auto;
-    transition: none;
-  }
-  .sheet-handle { display: none; }
-  #map-resizer {
-    display: block;
-    grid-column: 2;
-    background: var(--ink);
-    cursor: col-resize;
-    position: relative;
-  }
-  #map-resizer::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 2px;
-    transform: translateY(-50%);
-    width: 6px;
-    height: 38px;
-    border-radius: 4px;
-    background: var(--paper);
-    opacity: 0.5;
-  }
-}
-#map-resizer { display: none; }
 
 /* ==========================================================================
    RESULT
@@ -1505,8 +1466,6 @@ select {
   .hud-card { padding: 4px 8px; min-height: 34px; border-radius: 10px; }
   .result-stats-grid { gap: 6px; }
   .result-stat-box { padding: 8px; }
-  .hud-tool-btn span { display: none; }
-  .hud-tool-btn { width: 44px; justify-content: center; padding: 0; }
   .hud-label { display: none; }
   #fin-rounds-table .mp-leaderboard-row { font-size: 0.76rem; gap: 6px; padding: 7px 8px; }
   .final-points { white-space: nowrap; }
@@ -1631,17 +1590,13 @@ select {
 .team-role-copy span { font-size: 0.74rem; font-weight: 700; opacity: 0.92; }
 
 /* Viewer: street only. */
-body[data-role='viewer'] #map-panel,
-body[data-role='viewer'] #map-resizer { display: none; }
-body[data-role='viewer'] #streetview-container { grid-column: 1 / -1; }
+body[data-role='viewer'] #map-panel { display: none; }
 /* Pinner: map only. The panorama is not even loaded. */
 body[data-role='pinner'] #streetview-container { display: none; }
-body[data-role='pinner'] #map-resizer { display: none; }
-body[data-role='pinner'] #hud-top .hud-tool-btn { display: none; }
+body[data-role='pinner'] #control-dock .dock-items > :not(.dock-emote):not(.dock-zoom) { display: none; }
 body[data-role='pinner'] .sheet-handle { display: none; }
 @media (min-width: 900px) {
-  body[data-role='pinner'] #map-panel { grid-column: 1 / -1; border-left: 0; }
-  body[data-role='pinner'] #hud-top { right: 12px; }
+  body[data-role='pinner'] #map-panel { inset: 0; width: auto; height: auto; --map-h: calc(100dvh - 86px); border-radius: 0; }
 }
 
 /* Team rows on results and the final board */
@@ -1781,3 +1736,294 @@ body[data-role='pinner'] .sheet-handle { display: none; }
 .ranked-delta.up { color: var(--rice); }
 .ranked-delta.down { color: var(--lotus); }
 .ranked-result .btn { flex: none; }
+
+/* ==========================================================================
+   Guess-map helpers (client/map/tools.js)
+   ========================================================================== */
+.map-tools {
+  position: absolute; z-index: 520; left: 9px; right: 9px; top: 62px;
+  display: flex; flex-wrap: wrap; gap: 6px; pointer-events: none;
+}
+.map-chips {
+  display: flex; gap: 6px; overflow-x: auto; max-width: 100%; padding: 2px 2px 6px;
+  scrollbar-width: none; pointer-events: auto; flex: 1 1 100%;
+}
+.map-chips::-webkit-scrollbar { display: none; }
+.map-chip {
+  flex: none; pointer-events: auto; border: 2px solid var(--line); border-radius: var(--radius-pill);
+  background: var(--card); color: var(--ink); min-height: 34px; padding: 3px 11px;
+  font-size: 0.72rem; font-weight: 800; box-shadow: var(--hard-sm); white-space: nowrap;
+}
+.map-chip.reset { background: var(--gold); color: var(--on-gold); }
+.map-chip.layers { margin-left: auto; }
+.map-layer-panel {
+  display: none; flex-direction: column; gap: 4px; pointer-events: auto; flex: 1 1 100%;
+  background: var(--card); border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px;
+  box-shadow: var(--hard-sm); font-size: 0.78rem; font-weight: 700; max-width: 240px; margin-left: auto;
+}
+.map-layer-panel.open { display: flex; }
+.map-layer-panel label { display: flex; gap: 8px; align-items: center; min-height: 30px; }
+#map-pin-where {
+  pointer-events: none; background: var(--card); border: 2px solid var(--line); border-radius: var(--radius-pill);
+  padding: 4px 11px; font-size: 0.72rem; font-weight: 800; box-shadow: var(--hard-sm);
+}
+.map-crosshair {
+  position: absolute; z-index: 510; left: 50%; top: 50%; width: 40px; height: 40px;
+  margin: -20px 0 0 -20px; pointer-events: none; color: var(--line);
+  filter: drop-shadow(0 0 2px var(--card));
+}
+.map-loupe {
+  position: absolute; z-index: 600; width: 100px; height: 100px; margin: 0 0 0 -50px;
+  border: 3px solid var(--line); border-radius: 50%; overflow: hidden; background: var(--paper-2);
+  box-shadow: var(--hard-sm); pointer-events: none;
+}
+.map-loupe .loupe-map { position: absolute; inset: 0; }
+.map-loupe i { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px; border-radius: 50%; border: 2px solid var(--gold); background: rgba(224, 165, 38, 0.3); z-index: 1000; }
+.khan-label {
+  background: transparent; border: 0; box-shadow: none; color: #7a5a06; font-weight: 800; font-size: 0.66rem;
+  text-shadow: 0 0 3px var(--card), 0 0 3px var(--card);
+}
+.khan-label::before { display: none; }
+.river-label span { display: block; width: 90px; text-align: center; font-style: italic; font-weight: 800; font-size: 0.74rem; color: #1f6f9a; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+.lm-label { white-space: nowrap; font-size: 0.64rem; font-weight: 800; color: #3b2a07; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+.lm-label i { font-style: normal; color: var(--gold); margin-right: 3px; }
+
+/* ==========================================================================
+   IN-GAME HUD (Part C). Phones: top bar + bottom sheet + one ⋯ button.
+   >= 900px: full-screen panorama with frosted glass panels floating on it.
+   ========================================================================== */
+:root { --glass: rgba(255, 250, 240, 0.82); --glass-line: rgba(34, 51, 49, 0.85); }
+[data-theme='dark'] { --glass: rgba(14, 44, 46, 0.82); --glass-line: rgba(234, 220, 200, 0.7); }
+
+#compass-strip { display: none; }
+#hud-top { align-items: flex-start; }
+.ticket-panel { max-width: 62vw; justify-content: flex-end; }
+.ticket-collapse { display: none; }
+.who-chip { position: relative; width: 28px; height: 28px; flex: none; }
+.who-chip-avatar {
+  width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: var(--paper-2);
+  border: 2px solid var(--line); filter: grayscale(1); opacity: 0.55; transition: filter 0.25s, opacity 0.25s;
+}
+.who-chip.guessed .who-chip-avatar { filter: none; opacity: 1; border-color: var(--rice); }
+.who-chip-tick {
+  position: absolute; right: -4px; bottom: -4px; min-width: 14px; height: 14px; border-radius: 50%;
+  background: var(--rice); color: #08240f; font-size: 0.6rem; line-height: 14px; text-align: center; display: none;
+}
+.who-chip.guessed .who-chip-tick { display: block; }
+
+/* tuk-tuk meter: the tuk-tuk drives along the track as time runs out */
+.timer-track { display: none; }
+.timer-card.danger { animation: meter-pulse 0.9s ease-in-out infinite; }
+.timer-card.danger .timer-val { color: var(--lotus); }
+@keyframes meter-pulse { 50% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .timer-card.danger { animation: none; } }
+
+.control-dock { position: absolute; z-index: 35; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; top: calc(var(--safe-top) + 64px); right: 12px; }
+.dock-items { display: none; flex-direction: column; gap: 8px; }
+.control-dock.open .dock-items { display: flex; }
+.dock-btn {
+  width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); color: var(--ink);
+  font-size: 1.05rem; font-weight: 800; display: grid; place-items: center; box-shadow: var(--hard-sm);
+}
+.dock-btn[hidden] { display: none; }
+.dock-btn.btn-alert { background: var(--lotus); color: #fff; }
+.dock-zoom { display: none; }
+#map-pin-toggle { display: none; }
+.emote-radial { position: absolute; right: 22px; top: 22px; width: 0; height: 0; }
+.emote-radial[hidden] { display: none; }
+.emote-radial-item {
+  position: absolute; transform: translate(calc(var(--x) - 100%), var(--y)); white-space: nowrap;
+  border: 2px solid var(--line); border-radius: var(--radius-pill); background: var(--card); padding: 5px 10px; font-size: 0.78rem; font-weight: 800; box-shadow: var(--hard-sm);
+}
+#emote-float { position: absolute; z-index: 36; right: 12px; bottom: calc(var(--sheet-peek) + 14px); display: grid; gap: 6px; justify-items: end; pointer-events: none; }
+.emote-float-item {
+  display: inline-flex; align-items: center; gap: 6px; background: var(--glass); color: var(--ink); border: 2px solid var(--line);
+  border-radius: var(--radius-pill); padding: 3px 12px 3px 3px; font-size: 0.8rem; font-weight: 800; animation: emote-in 0.25s ease-out;
+}
+.emote-float-avatar { width: 26px; height: 26px; border-radius: 50%; overflow: hidden; background: var(--gold); }
+@keyframes emote-in { from { opacity: 0; transform: translateX(16px); } }
+
+@media (min-width: 900px) {
+  #streetview-container { position: absolute; inset: 0; }
+  #hud-top { display: contents; }
+
+  /* compass strip + tuk-tuk meter, top centre */
+  #compass-strip {
+    display: block; position: absolute; z-index: 30; top: calc(var(--safe-top) + 10px); left: 50%; transform: translateX(-50%);
+    width: 280px; height: 30px; border-radius: 15px; background: var(--glass); backdrop-filter: blur(10px);
+    border: 2px solid var(--glass-line); overflow: hidden; pointer-events: none;
+  }
+  #compass-strip[hidden] { display: none; }
+  .compass-ticks { display: flex; justify-content: space-between; padding: 2px 10px 0; font-size: 0.66rem; font-weight: 800; color: var(--ink-2); }
+  #compass-needle { position: absolute; bottom: 0; width: 3px; height: 12px; background: var(--lotus); border-radius: 2px; transform: translateX(-50%); }
+  #compass-label { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font-size: 0.6rem; font-weight: 800; color: var(--ink); }
+  .timer-card {
+    position: absolute; z-index: 31; top: calc(var(--safe-top) + 46px); left: 50%; transform: translateX(-50%);
+    min-width: 240px; border-radius: 999px; justify-content: center; backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--gold) 88%, transparent);
+  }
+  .timer-card.danger { animation-name: meter-pulse-c; }
+  @keyframes meter-pulse-c { 50% { transform: translateX(-50%) scale(1.06); } }
+  .timer-ring-box { display: none; }
+  .timer-track { display: block; position: relative; flex: 1; height: 8px; margin: 0 6px; border-radius: 4px; background: rgba(42, 29, 0, 0.18); }
+  .timer-tuk { position: absolute; top: -9px; left: calc((1 - var(--p)) * (100% - 20px)); font-style: normal; font-size: 1.1rem; line-height: 1; transition: left 1s linear; }
+
+  /* ticket panel, top right, with a perforated left edge */
+  .ticket-panel {
+    position: absolute; z-index: 30; top: calc(var(--safe-top) + 10px); right: 14px; max-width: 320px; width: max-content;
+    flex-direction: column; align-items: stretch; gap: 6px; padding: 10px 12px 10px 18px;
+    background: var(--glass); backdrop-filter: blur(12px); border: 2px solid var(--glass-line); border-radius: 18px 10px 10px 18px;
+    box-shadow: var(--hard-sm);
+    -webkit-mask: radial-gradient(circle at 0 10px, transparent 5px, #000 5.5px) 0 0 / 100% 20px repeat-y; mask: radial-gradient(circle at 0 10px, transparent 5px, #000 5.5px) 0 0 / 100% 20px repeat-y;
+  }
+  .ticket-panel .hud-card { background: transparent; border: 0; box-shadow: none; padding: 0 2px; min-height: 28px; }
+  .ticket-panel.collapsed .hud-card:not(:nth-of-type(2)):not(:nth-of-type(3)) { display: none !important; }
+  .ticket-collapse { display: block; position: absolute; top: 4px; right: 6px; width: 24px; height: 24px; border: 0; background: transparent; color: var(--ink); font-weight: 800; }
+  .ticket-panel.collapsed .ticket-collapse { transform: rotate(180deg); }
+
+  /* control dock, bottom left */
+  .control-dock { top: auto; right: auto; left: 14px; bottom: 16px; align-items: flex-start; }
+  .dock-more { display: none; }
+  .dock-items, .control-dock.open .dock-items { display: flex; }
+  .dock-btn { background: var(--glass); backdrop-filter: blur(10px); border-color: var(--glass-line); }
+  .dock-btn.btn-alert { background: color-mix(in srgb, var(--lotus) 90%, transparent); }
+  .dock-zoom { display: grid; }
+  .emote-radial { left: 22px; right: auto; top: auto; bottom: 22px; }
+  .emote-radial-item { transform: translate(var(--x), var(--y)); }
+  #emote-float { right: 14px; bottom: calc(var(--map-h) + 150px); }
+
+  /* guess map, bottom right: small, grows on hover / tap / pin */
+  #map-panel {
+    --map-w: 300px; --map-h: 200px;
+    position: absolute; inset: auto 14px 14px auto; z-index: 40; height: auto; width: var(--map-w);
+    transform: none !important; transition: width 0.22s ease; touch-action: auto;
+    background: var(--glass); backdrop-filter: blur(12px); border: 2px solid var(--glass-line); border-radius: 18px;
+    box-shadow: var(--hard-sm); overflow: hidden;
+  }
+  #map-panel:hover, #map-panel:focus-within, #map-panel.pinned, #map-panel.touch-open { --map-w: 560px; --map-h: 420px; }
+  #map-wrapper { flex: none; height: var(--map-h); transition: height 0.22s ease; }
+  @media (prefers-reduced-motion: reduce) { #map-panel, #map-wrapper { transition: none; } }
+  .sheet-handle, #expand-toggle { display: none; }
+  #map-pin-toggle { display: inline-flex; min-width: 44px; justify-content: center; }
+  #map-pin-toggle[aria-pressed='true'] { background: var(--gold); }
+  #guess-action-bar { background: transparent; border-top: 0; padding: 8px 10px 10px; }
+  #guess-btn.ready { box-shadow: 0 5px 0 rgba(34, 51, 49, 0.9); }
+  #guess-btn.ready:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(34, 51, 49, 0.9); }
+  .map-tools { top: 56px; }
+  body[data-role='viewer'] .control-dock .dock-zoom { display: none; }
+}
+
+/* ==========================================================================
+   Standings (client/ui/standings.js): podium, rows, tabs, final bars
+   ========================================================================== */
+.st-tabs { display: flex; gap: 6px; margin: 6px 0 10px; }
+.st-tabs button { flex: 1; min-height: 40px; border: 2px solid var(--line); border-radius: var(--radius-pill); background: var(--card); color: var(--ink); font-weight: 800; font-size: 0.8rem; }
+.st-tabs button.active { background: var(--gold); color: var(--on-gold); box-shadow: var(--hard-sm); }
+.st-list { display: grid; gap: 6px; }
+.st-row { display: grid; grid-template-columns: 32px 38px 1fr auto; align-items: center; gap: 9px; padding: 7px 10px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); }
+.st-row.is-me { outline: 2px solid var(--mekong); outline-offset: 1px; }
+.st-row.winner { background: color-mix(in srgb, var(--gold) 26%, var(--card)); }
+.st-row.no-guess { opacity: 0.7; }
+.st-rank { font-weight: 900; text-align: center; }
+.st-face { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 2.5px solid var(--aura, var(--line)); background: var(--gold); display: inline-block; flex: none; }
+.st-face.big { width: 52px; height: 52px; }
+.st-name { font-weight: 800; font-size: 0.92rem; display: flex; align-items: center; gap: 6px; min-width: 0; }
+.st-you { font-size: 0.66rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--rice); color: #08240f; }
+.st-sub { font-size: 0.72rem; color: var(--ink-2); }
+.st-main { font-weight: 900; font-size: 1.02rem; color: var(--rice); text-align: right; display: flex; align-items: center; gap: 6px; justify-content: flex-end; font-variant-numeric: tabular-nums; }
+.st-move { font-size: 0.68rem; font-weight: 800; }
+.st-move.up { color: var(--rice); } .st-move.down { color: var(--lotus); } .st-move.same { color: var(--ink-2); }
+.st-hit.broke { color: var(--lotus); font-size: 0.9rem; }
+.st-podium { display: flex; align-items: flex-end; justify-content: center; gap: 8px; margin: 4px 0 12px; }
+.st-step { flex: 1; max-width: 120px; text-align: center; display: grid; justify-items: center; gap: 3px; }
+.st-step-name { font-weight: 800; font-size: 0.78rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.st-step-pts { font-weight: 900; color: var(--rice); font-size: 0.9rem; }
+.st-step-block { width: 100%; border: 2px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; display: grid; place-items: center; font-size: 1.4rem; background: var(--paper-2); }
+.st-step.place-1 .st-step-block { height: 64px; background: color-mix(in srgb, var(--gold) 70%, var(--card)); }
+.st-step.place-2 .st-step-block { height: 48px; }
+.st-step.place-3 .st-step-block { height: 36px; background: color-mix(in srgb, #c47a3d 40%, var(--card)); }
+.st-step.is-me .st-step-name { color: var(--mekong); }
+.st-bars { display: flex; align-items: flex-end; gap: 3px; height: 18px; margin-top: 3px; }
+.st-bars i { width: 8px; background: var(--gold); border-radius: 2px 2px 0 0; display: block; }
+.st-in { animation: st-slide 0.35s ease-out backwards; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes st-slide { from { opacity: 0; transform: translateY(14px); } }
+@media (prefers-reduced-motion: reduce) { .st-in { animation: none; } }
+
+/* ==========================================================================
+   Spectators (Part F)
+   ========================================================================== */
+.lobby-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-weight: 700; font-size: 0.86rem; }
+.lobby-toggle input { width: 20px; height: 20px; }
+#spectator-banner, #spect-results { position: absolute; z-index: 32; }
+#spectator-banner { top: calc(var(--safe-top) + 8px); left: 12px; display: grid; gap: 6px; max-width: min(92vw, 360px); background: var(--glass); backdrop-filter: blur(10px); border: 2px solid var(--glass-line); border-radius: 16px; padding: 8px 10px; box-shadow: var(--hard-sm); }
+#spectator-banner[hidden], #spect-results[hidden] { display: none; }
+.spect-title { display: flex; flex-direction: column; font-size: 0.86rem; }
+.spect-title span { font-size: 0.68rem; color: var(--ink-2); font-weight: 700; }
+.spect-follow { display: flex; gap: 6px; flex-wrap: wrap; }
+.spect-chip { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); padding: 0; overflow: hidden; display: grid; place-items: center; font-weight: 800; }
+.spect-chip .who-chip-avatar { filter: grayscale(0.8); opacity: 0.7; border: 0; }
+.spect-chip.guessed .who-chip-avatar, .spect-chip.on .who-chip-avatar { filter: none; opacity: 1; }
+.spect-chip.on { outline: 3px solid var(--gold); outline-offset: 1px; }
+.spect-card { display: flex; align-items: center; gap: 10px; font-size: 0.86rem; }
+.spect-avatar { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; border: 3px solid var(--aura, var(--line)); background: var(--gold); flex: none; }
+.spect-state { font-size: 0.72rem; color: var(--ink-2); font-weight: 700; }
+.spect-score { margin-left: auto; text-align: right; display: grid; }
+.spect-score span { color: var(--rice); font-size: 0.74rem; font-weight: 800; }
+#spect-results { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(94vw, 440px); max-height: 70dvh; overflow: auto; background: var(--glass); backdrop-filter: blur(12px); border: 2px solid var(--glass-line); border-radius: 18px; padding: 12px; }
+.watching-faces { display: inline-flex; margin-left: 6px; }
+.watching-face { width: 22px; height: 22px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--line); margin-left: -6px; background: var(--gold); }
+#hud-watching[hidden] { display: none; }
+/* Spectators watch the Part C layout without the Guess button and with a read-only map. */
+body[data-spectator='1'] #guess-action-bar,
+body[data-spectator='1'] #mode-choice-shelf,
+body[data-spectator='1'] .map-crosshair,
+body[data-spectator='1'] #map-pin-status,
+body[data-spectator='1'] .map-chips { display: none !important; }
+@media (min-width: 900px) { body[data-spectator='1'] #hud-top .ticket-panel { top: calc(var(--safe-top) + 10px); } body[data-spectator='1'] #spectator-banner { top: calc(var(--safe-top) + 10px); } }
+body[data-spectator='1'] .control-dock .btn-alert { display: none; }
+
+/* ==========================================================================
+   Battle Royale (Part B)
+   ========================================================================== */
+.royale-settings { display: grid; gap: 8px; padding: 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--card); }
+.royale-settings[hidden] { display: none; }
+.royale-settings label { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-weight: 700; font-size: 0.86rem; }
+.royale-settings select { width: 90px; min-height: 40px; }
+#royale-alive { font-weight: 900; font-size: 0.72rem; letter-spacing: 0.06em; color: var(--lotus); white-space: nowrap; }
+.who-hearts { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); font-size: 0.55rem; white-space: nowrap; line-height: 1; margin-top: 1px; }
+.who-chip.royale-ghost .who-chip-avatar { filter: grayscale(1); opacity: 0.4; }
+.who-chip { margin-bottom: 10px; }
+.royale-zone-ring { filter: drop-shadow(0 0 6px #e4578a) drop-shadow(0 0 14px rgba(228, 87, 138, 0.8)); animation: zone-glow 1.6s ease-in-out infinite alternate; }
+@keyframes zone-glow { to { stroke-opacity: 0.55; } }
+.ghost-pin span { font-size: 1.5rem; opacity: 0.6; filter: drop-shadow(0 0 4px #fff); display: block; text-align: center; }
+body[data-ghost='1'] #game-screen { filter: grayscale(0.75); }
+body[data-ghost='1'] #hud-top .timer-card, body[data-ghost='1'] #spectator-banner, body[data-ghost='1'] #guess-action-bar { filter: none; }
+body[data-ghost='1'] #mode-choice-shelf { display: none !important; }
+/* The final duel is pure skill: no quick-jump chips. */
+body[data-duel='1'] .map-chips { display: none !important; }
+
+#royale-hit { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; background: rgba(8, 20, 20, 0.55); pointer-events: none; }
+#royale-hit[hidden], #duel-splash[hidden] { display: none; }
+.hit-row { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; max-width: 92vw; }
+.hit-chip { position: relative; display: grid; justify-items: center; gap: 2px; width: 92px; color: #fff; font-weight: 800; font-size: 0.78rem; text-align: center; }
+.hit-avatar { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; border: 3px solid #fff; background: var(--gold); }
+.hit-badge { position: absolute; top: -6px; right: 6px; font-size: 1.5rem; }
+.hit-lives { font-size: 0.8rem; min-height: 1em; }
+.hit-note { font-size: 0.68rem; color: #fecdd3; }
+.hit-chip.hurt, .hit-chip.out { animation: hit-shake 0.5s ease-in-out 2; }
+.hit-chip.hurt .hit-badge { animation: heart-break 1s ease-out both; }
+.hit-chip.out .hit-avatar { animation: crash-out 1.2s ease-in 0.5s both; }
+.hit-chip.shield .hit-avatar { box-shadow: 0 0 0 4px #38bdf8, 0 0 18px #38bdf8; }
+@keyframes hit-shake { 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+@keyframes heart-break { from { transform: scale(0.4); } 50% { transform: scale(1.5); } to { transform: scale(1); } }
+@keyframes crash-out { to { transform: translate(40px, 80px) rotate(50deg); filter: grayscale(1); opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .hit-chip.hurt, .hit-chip.out, .hit-chip.hurt .hit-badge, .royale-zone-ring { animation: none; } .hit-chip.out .hit-avatar { animation: none; filter: grayscale(1); opacity: 0.45; } }
+
+#duel-splash { position: absolute; inset: 0; z-index: 70; display: grid; place-content: center; justify-items: center; gap: 18px; background: radial-gradient(circle, rgba(228, 87, 138, 0.9), rgba(10, 24, 26, 0.96)); color: #fff; animation: duel-in 0.35s ease-out; }
+.duel-title { font-size: clamp(2rem, 9vw, 4.5rem); font-weight: 900; letter-spacing: 0.04em; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.35); }
+.duel-faces { display: flex; align-items: center; gap: clamp(14px, 5vw, 40px); }
+.duel-face { display: grid; justify-items: center; gap: 6px; font-weight: 800; }
+.duel-face span { width: clamp(84px, 22vw, 140px); aspect-ratio: 1; border-radius: 50%; overflow: hidden; border: 4px solid #fff; background: var(--gold); }
+.duel-faces i { font-style: normal; font-weight: 900; font-size: clamp(1.4rem, 5vw, 2.4rem); color: #fde68a; }
+@keyframes duel-in { from { opacity: 0; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { #duel-splash { animation: none; } }

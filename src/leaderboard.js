@@ -1,3 +1,4 @@
+import { unlocksFrom } from '../client/data/avatar-unlocks.js';
 import { ensureSchema } from './schema.js';
 import { START_RATING, tierFor, nextTier, updateRating, weekKey } from './rating.js';
 
@@ -126,4 +127,11 @@ export async function myStanding(db, playerId, { type, mode, period, region }, n
   if (!mine || mine.best === null) return null;
   const ahead = await db.prepare(`SELECT COUNT(*) AS c FROM (SELECT player_id FROM runs WHERE ${where} GROUP BY player_id HAVING MAX(score) > ?${binds.length + 1})`).bind(...binds, mine.best).first();
   return { rank: ahead.c + 1, value: mine.best };
+}
+
+// Avatar unlocks the player has earned: rank tiers from ratings, and a Battle Royale win from run history.
+export async function getUnlocks(db, playerId) {
+  const ratings = await getRatings(db, playerId);
+  const win = await db.prepare("SELECT 1 AS ok FROM runs WHERE player_id = ?1 AND mode IN ('party:royale', 'party:royale_world') AND score >= 100 LIMIT 1").bind(playerId).first();
+  return unlocksFrom(ratings, win ? 1 : 0);
 }

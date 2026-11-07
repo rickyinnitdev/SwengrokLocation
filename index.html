@@ -242,6 +242,10 @@
           <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="16 3 21 3 21 8"></polyline><path d="M4 20 21 3"></path><polyline points="21 16 21 21 16 21"></polyline><path d="M15 15l6 6M4 4l5 5"></path></svg>
           <span data-i18n="profile.randomize">Randomize</span>
         </button>
+        <div class="studio-history-btns">
+          <button class="btn btn-sm btn-ghost" type="button" onclick="undoStudio()" data-i18n="studio.undo">↩ Undo</button>
+          <button class="btn btn-sm btn-ghost" type="button" onclick="resetStudio()" data-i18n="studio.reset">Reset</button>
+        </div>
       </div>
 
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -264,12 +268,11 @@
       </div>
 
       <div class="studio-tabs" role="tablist">
-        <button class="studio-tab-btn active" type="button" onclick="switchStudioTab('hair')">💇 Hairstyle</button>
-        <button class="studio-tab-btn" type="button" onclick="switchStudioTab('hairColor')">🎨 Hair colour</button>
-        <button class="studio-tab-btn" type="button" onclick="switchStudioTab('jacket')">👕 Outfit</button>
-        <button class="studio-tab-btn" type="button" onclick="switchStudioTab('jacketColor')">🧥 Outfit colour</button>
-        <button class="studio-tab-btn" type="button" onclick="switchStudioTab('squiggles')">⚡ Aura</button>
-        <button class="studio-tab-btn" type="button" onclick="switchStudioTab('eye')">🎭 Expression</button>
+        <button class="studio-tab-btn active" type="button" role="tab" data-cat="face" onclick="switchStudioTab('face')" data-i18n="studio.cat.face">🙂 Face</button>
+        <button class="studio-tab-btn" type="button" role="tab" data-cat="hair" onclick="switchStudioTab('hair')" data-i18n="studio.cat.hair">💇 Hair</button>
+        <button class="studio-tab-btn" type="button" role="tab" data-cat="clothes" onclick="switchStudioTab('clothes')" data-i18n="studio.cat.clothes">👕 Clothes</button>
+        <button class="studio-tab-btn" type="button" role="tab" data-cat="extras" onclick="switchStudioTab('extras')" data-i18n="studio.cat.extras">✨ Extras</button>
+        <button class="studio-tab-btn" type="button" role="tab" data-cat="background" onclick="switchStudioTab('background')" data-i18n="studio.cat.background">🖼️ Background</button>
       </div>
 
       <div id="studio-picker-container" class="studio-picker-grid"></div>
@@ -350,9 +353,23 @@
         <p id="rotation-status" class="party-settings-note" role="status"></p>
       </div>
 
+      <div id="royale-settings" class="royale-settings" hidden>
+        <div class="field-label" data-i18n="royale.settings">Royale settings</div>
+        <label><span data-i18n="royale.lives">Lives</span>
+          <select id="royale-lives" onchange="setRoyaleSettings()"><option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option></select></label>
+        <label><span data-i18n="royale.startTime">Starting round time</span>
+          <select id="royale-time" onchange="setRoyaleSettings()"><option>30</option><option>40</option><option>50</option><option selected>60</option><option>70</option><option>80</option><option>90</option></select></label>
+        <label class="lobby-toggle"><input type="checkbox" id="royale-ghost" checked onchange="setRoyaleSettings()"><span data-i18n="royale.ghostHeckling">Ghost heckling</span></label>
+      </div>
+
       <div>
         <div class="field-label"><span data-i18n="party.players">Connected explorers</span> (<span id="player-count">1</span>)</div>
         <div class="player-chips-list" id="lobby-players-container"></div>
+      </div>
+
+      <div id="lobby-watching" hidden>
+        <div class="field-label"><span data-i18n="spectate.watching">Watching</span> (<span id="watching-count">0</span>)</div>
+        <div class="player-chips-list" id="lobby-watching-list"></div>
       </div>
 
       <div id="lobby-teams-panel" class="lobby-teams" hidden>
@@ -380,6 +397,10 @@
       </div>
 
       <div id="host-controls" style="display:flex; flex-direction:column; gap:8px;">
+        <label class="lobby-toggle">
+          <input type="checkbox" id="spectator-answer-toggle" onchange="setSpectatorAnswer(this.checked)">
+          <span data-i18n="spectate.seeAnswer">Spectators see the answer early</span>
+        </label>
         <button class="btn btn-primary btn-block" id="start-party-btn" type="button" disabled onclick="startMultiplayerGame()" style="min-height:54px; font-size:1.05rem;">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
           <span data-i18n="party.start">Start match</span>
@@ -409,8 +430,41 @@
       </div>
     </div>
 
+    <div id="royale-hit" hidden aria-live="polite"></div>
+    <div id="duel-splash" hidden aria-hidden="true"></div>
+    <div id="spectator-banner" hidden>
+      <div class="spect-title" id="spect-title"></div>
+      <div class="spect-follow" id="spect-follow" role="tablist" aria-label="Follow a player"></div>
+      <div class="spect-card" id="spect-card"></div>
+    </div>
+    <div id="spect-results" hidden>
+      <div class="st-tabs" id="spect-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="round" class="active" onclick="setSpectTab('round')" data-i18n="standings.thisRound">This round</button>
+        <button type="button" role="tab" data-tab="overall" onclick="setSpectTab('overall')" data-i18n="standings.overall">Overall</button>
+      </div>
+      <div id="spect-results-list"></div>
+    </div>
+
     <div id="hud-top">
-      <div class="hud-group">
+      <div id="compass-strip" aria-label="Start heading">
+        <div class="compass-ticks" aria-hidden="true"><span>N</span><span>E</span><span>S</span><span>W</span><span>N</span></div>
+        <i id="compass-needle" aria-hidden="true"></i>
+        <span id="compass-label"></span>
+      </div>
+
+      <div class="hud-card timer-card" id="hud-timer-card" style="--p:1">
+        <span class="timer-ring-box">
+          <svg class="timer-ring-svg" aria-hidden="true">
+            <circle cx="14" cy="14" r="12" fill="none" stroke="rgba(42,29,0,.18)" stroke-width="2.5"></circle>
+            <circle id="timer-svg-circle" class="timer-ring-circle" cx="14" cy="14" r="12" fill="none" stroke="#2a1d00" stroke-width="2.5"></circle>
+          </svg>
+        </span>
+        <span class="timer-track" aria-hidden="true"><i class="timer-tuk">🛺</i></span>
+        <span class="timer-val" id="hud-timer-num">60</span><span class="timer-unit">s</span>
+      </div>
+
+      <div class="hud-group ticket-panel" id="ticket-panel">
+        <button class="ticket-collapse" id="ticket-collapse" type="button" aria-expanded="true" aria-label="Collapse" onclick="toggleTicketPanel()">▾</button>
         <div class="hud-card">
           <span id="hud-player-avatar" class="lobby-player-thumb" style="width:28px;height:28px;"></span>
           <span id="hud-player-name" style="font-weight:800; font-size:0.82rem;">Explorer</span>
@@ -430,33 +484,28 @@
           <span id="hud-streak-mult" style="font-size:0.72rem; font-weight:800;">(1x)</span>
         </div>
         <div class="hud-card" id="hud-mode-pill" style="display:none;"></div>
-        <div class="hud-card" id="hud-mp-status-card" style="display:none;">
+        <div class="hud-card" id="hud-watching" hidden></div>
+        <div class="hud-card who-guessed" id="hud-mp-status-card" style="display:none;">
           <div id="hud-mp-chips" style="display:flex; gap:5px; align-items:center; flex-wrap:wrap;"></div>
         </div>
       </div>
-
-      <div class="hud-group">
-        <div class="hud-card timer-card" id="hud-timer-card">
-          <span class="timer-ring-box">
-            <svg class="timer-ring-svg" aria-hidden="true">
-              <circle cx="14" cy="14" r="12" fill="none" stroke="rgba(42,29,0,.18)" stroke-width="2.5"></circle>
-              <circle id="timer-svg-circle" class="timer-ring-circle" cx="14" cy="14" r="12" fill="none" stroke="#2a1d00" stroke-width="2.5"></circle>
-            </svg>
-          </span>
-          <span class="timer-val" id="hud-timer-num">60</span><span style="font-size:0.72rem; font-weight:800;">s</span>
-        </div>
-        <button class="hud-tool-btn btn-alert" type="button" onclick="skipBrokenLocation()" title="Replace a broken panorama">
-          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-          <span data-i18n="game.skip">Skip view</span>
-        </button>
-        <button class="hud-tool-btn" type="button" onclick="returnToStartPano()" title="Reset the camera">
-          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-          <span data-i18n="game.reset">Reset angle</span>
-        </button>
-      </div>
     </div>
 
-    <div id="map-resizer" aria-hidden="true"></div>
+    <div id="control-dock" class="control-dock">
+      <button class="dock-btn dock-more" id="dock-more" type="button" aria-label="More" aria-expanded="false" onclick="toggleDock()">⋯</button>
+      <div class="dock-items" id="dock-items">
+        <button class="dock-btn dock-zoom" type="button" aria-label="Zoom in" data-i18n-aria="game.zoomIn" onclick="dockZoom(1)">＋</button>
+        <button class="dock-btn dock-zoom" type="button" aria-label="Zoom out" data-i18n-aria="game.zoomOut" onclick="dockZoom(-1)">－</button>
+        <button class="dock-btn" type="button" aria-label="Return to start" data-i18n-aria="game.reset" data-i18n-title="game.reset" onclick="returnToStartPano()">
+          <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+        </button>
+        <button class="dock-btn btn-alert" type="button" aria-label="Report a broken panorama" data-i18n-aria="game.skip" data-i18n-title="game.skip" onclick="skipBrokenLocation()">⚑</button>
+        <button class="dock-btn" type="button" aria-label="Sound" onclick="toggleMute()" id="dock-sound">🔊</button>
+        <button class="dock-btn dock-emote" id="dock-emote" type="button" aria-label="Emotes" onclick="toggleEmoteMenu()" hidden>😀</button>
+      </div>
+      <div class="emote-radial" id="emote-radial" hidden></div>
+    </div>
+    <div id="emote-float" aria-live="polite"></div>
 
     <div id="map-panel" data-state="peek">
       <button class="sheet-handle" id="sheet-handle" type="button" aria-label="Open the map" data-i18n="game.sheetPeek">Map</button>
@@ -475,6 +524,7 @@
             <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
             <span id="expand-btn-text" data-i18n="game.sheetHalf">Half map</span>
           </button>
+          <button class="map-tool-pill" id="map-pin-toggle" type="button" aria-pressed="false" aria-label="Keep the map open" onclick="toggleMapPinned()">📌</button>
           <div id="map-pin-status" data-i18n="game.pinHint">Tap the map to drop a pin</div>
         </div>
         <div id="guess-map"></div>
@@ -526,6 +576,10 @@
 
       <div id="mp-round-leaderboard" style="display:none;">
         <div class="field-label" data-i18n="result.standings">Round standings</div>
+        <div class="st-tabs" id="standings-tabs" role="tablist">
+          <button type="button" role="tab" data-tab="round" class="active" aria-selected="true" onclick="setStandingsTab('round')" data-i18n="standings.thisRound">This round</button>
+          <button type="button" role="tab" data-tab="overall" aria-selected="false" onclick="setStandingsTab('overall')" data-i18n="standings.overall">Overall</button>
+        </div>
         <div id="mp-round-players-list"></div>
       </div>
 

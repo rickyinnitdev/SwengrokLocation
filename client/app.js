@@ -1,6 +1,9 @@
     import { MODE_CONFIG, REGION_CONFIG } from './data/modes.js';
     import { LOCATIONS_DB } from './data/locations.js';
     import { t, getLang, setLang, applyI18n, onLangChange } from './i18n.js';
+    import { mapOptions, applyMapProfile } from './map/profile.js';
+    import { AVATAR_LOCKS, UNLOCK_LABELS, isLocked as isAvatarLocked } from './data/avatar-unlocks.js';
+    import { renderStandings, renderFinal, previousOrderFrom, sortByRoundPoints } from './ui/standings.js';
 
     // ============================================================
     //  AUDIO SYNTHESIZER (Web Audio API)
@@ -37,6 +40,8 @@
 
     function toggleMute() {
         isSoundMuted = !isSoundMuted;
+        const dockSound = document.getElementById('dock-sound');
+        if (dockSound) dockSound.textContent = isSoundMuted ? '🔇' : '🔊';
         const btn = document.getElementById('sound-toggle-btn');
         if (btn) {
             btn.innerHTML = isSoundMuted
@@ -88,8 +93,6 @@
     const CAMBODIA_LOCATIONS = LOCATIONS_DB.cambodia;
     const ASIA_LOCATIONS = LOCATIONS_DB.asia;
     const PP_CENTER = [11.5564, 104.9282];
-    const WORLD_CENTER = [20, 0];
-    const ASIA_CENTER = [13, 105];
 
     const ALL_COUNTRIES = [...new Set(WORLD_LOCATIONS.map(l => l.country))];
 
@@ -173,6 +176,8 @@
         "New Zealand": { lat: -40.9006, lng: 174.8860 }
     };
 
+    // OSM khan names -> PP_KHANS ids (only the ones that differ are listed).
+    const KHAN_BY_OSM_ID = new Proxy({ 'Prampir Makara': '7 Makara', 'Chamkar Mon': 'Chamkarmon', 'Pou Senchey': 'Por Senchey', 'Boeng Keng Kang': 'Boeung Keng Kang' }, { get: (m, k) => m[k] || k });
     const PP_KHANS = [
         { id: "Daun Penh", name: "Daun Penh (Royal Palace, Riverside)", icon: "🏛️", lat: 11.568, lng: 104.928 },
         { id: "Chamkarmon", name: "Chamkarmon (Russian Market, Bokor)", icon: "🛍️", lat: 11.540, lng: 104.920 },
@@ -311,53 +316,36 @@
         if (hudName) hudName.textContent = userProfile.name;
     }
 
-    // Character Studio Config Options
-    const STUDIO_OPTIONS = {
-        hair: [
-            { id: 'fluffy', label: 'Fluffy Curls' },
-            { id: 'spiky', label: 'Spiky Anime' },
-            { id: 'beanie', label: 'Cozy Beanie' },
-            { id: 'cap', label: 'Street Cap' }
-        ],
-        hairColor: [
-            { id: '#261b2b', label: 'Obsidian', color: '#261b2b' },
-            { id: '#4a2810', label: 'Chestnut', color: '#4a2810' },
-            { id: '#d97706', label: 'Caramel', color: '#d97706' },
-            { id: '#0284c7', label: 'Electric Blue', color: '#0284c7' },
-            { id: '#db2777', label: 'Sakura Pink', color: '#db2777' },
-            { id: '#f1f5f9', label: 'Frost White', color: '#f1f5f9' }
-        ],
-        jacket: [
-            { id: 'cardigan', label: 'Cardigan' },
-            { id: 'hoodie', label: 'Hoodie' },
-            { id: 'bomber', label: 'Bomber' }
-        ],
-        jacketColor: [
-            { id: '#38bdf8', label: 'Sky Marine', color: '#38bdf8' },
-            { id: '#f59e0b', label: 'Gold Amber', color: '#f59e0b' },
-            { id: '#10b981', label: 'Emerald', color: '#10b981' },
-            { id: '#f43f5e', label: 'Rose Pop', color: '#f43f5e' },
-            { id: '#8b5cf6', label: 'Royal Violet', color: '#8b5cf6' },
-            { id: '#1e293b', label: 'Charcoal', color: '#1e293b' }
-        ],
-        squiggles: [
-            { id: 'electric', label: '⚡ Sparks' },
-            { id: 'question', label: '❓ Lost' },
-            { id: 'sparkles', label: '✨ Stars' },
-            { id: 'sweat', label: '💧 Sweat' },
-            { id: 'none', label: 'Clean' }
-        ],
-        eye: [
-            { id: 'chill', label: 'Unbothered' },
-            { id: 'happy', label: 'Joyful' },
-            { id: 'curious', label: 'Curious' },
-            { id: 'smug', label: 'Smug Wink' },
-            { id: 'shades', label: 'Sunglasses' }
-        ]
+    // Character Studio (Part D). Categories hold sections; each section edits one config key.
+    // Option ids come from AVATAR_ALLOWED (avatar_generator.js), so the editor can never offer an unknown value.
+    const COLOR_SWATCHES = {
+        skinColor: ['#fee0d2', '#f9d2b4', '#f1c27d', '#e0ac69', '#c68642', '#a9683a', '#8d5524', '#5c3a21', '#3b2417', '#ffe4ec'],
+        hairColor: ['#261b2b', '#4a2810', '#8a5a2b', '#d97706', '#0284c7', '#db2777', '#f1f5f9', '#7c3aed', '#16a34a', '#9ca3af'],
+        jacketColor: ['#38bdf8', '#f59e0b', '#10b981', '#f43f5e', '#8b5cf6', '#1e293b', '#ffffff', '#c62828'],
+        bg: ['#fed049', '#fda4af', '#7dd3fc', '#86efac', '#c4b5fd', '#fdba74', '#e2e8f0', '#134e4a']
     };
+    const STUDIO_CATEGORIES = {
+        face: { icon: '🙂', sections: [['eyeStyle'], ['eyebrows'], ['mouthStyle'], ['facialHair'], ['skinColor', 'color'], ['earrings']] },
+        hair: { icon: '💇', sections: [['hairStyle'], ['hairColor', 'color'], ['headwear']] },
+        clothes: { icon: '👕', sections: [['jacketStyle'], ['jacketColor', 'color'], ['accessory']] },
+        extras: { icon: '✨', sections: [['squiggles'], ['frame']] },
+        background: { icon: '🖼️', sections: [['bgStyle'], ['bg', 'color']] }
+    };
+    // Old tab names still work (tests and saved links call setStudioOption('hair', 'beanie')).
+    const STUDIO_ALIAS = { hair: 'hairStyle', jacket: 'jacketStyle', eye: 'eyeStyle', mouth: 'mouthStyle', skin: 'skinColor' };
+    const STUDIO_CAT_OF = { hair: 'hair', hairColor: 'hair', jacket: 'clothes', jacketColor: 'clothes', squiggles: 'extras', eye: 'face' };
+    const UNLOCKS_KEY = 'wanderpenh_unlocks';
+    let userUnlocks = [];
+    try { userUnlocks = JSON.parse(localStorage.getItem(UNLOCKS_KEY) || '[]'); } catch (e) {}
+    function setUnlocks(list) {
+        if (!Array.isArray(list)) return;
+        userUnlocks = list.filter(x => typeof x === 'string');
+        try { localStorage.setItem(UNLOCKS_KEY, JSON.stringify(userUnlocks)); } catch (e) {}
+    }
 
-    let activeStudioTab = 'hair';
+    let activeStudioTab = 'face';
     let editingAvatar = null;
+    let studioHistory = [];
 
     function openProfileModal() {
         if (isRealMultiplayer() && serverMatch) { showToast(t('toast.customizeBetween')); return; }
@@ -366,73 +354,96 @@
 
         editingAvatar = {
             avatarType: userProfile.avatarType || 'custom',
-            avatarConfig: { ...(userProfile.avatarConfig || AVATAR_DEFAULTS) }
+            avatarConfig: sanitizeAvatarConfig(userProfile.avatarConfig)
         };
+        studioHistory = [];
 
-        switchStudioTab('hair');
+        switchStudioTab('face');
         updateStudioPreview();
         document.getElementById('profile-modal').classList.add('active');
     }
 
+    function studioKey(tab) { return STUDIO_ALIAS[tab] || tab; }
+    function studioLabel(key) { return t('studio.slot.' + key); }
+    function studioOptionName(key, id) { return id.replace(/([A-Z])/g, ' $1').replace(/^./, ch => ch.toUpperCase()); }
+    function lockText(slot, id) {
+        const need = AVATAR_LOCKS[slot]?.[id];
+        return need ? UNLOCK_LABELS[need][getLang() === 'km' ? 'km' : 'en'] : '';
+    }
+
     function switchStudioTab(tab) {
-        activeStudioTab = tab;
+        const cat = STUDIO_CATEGORIES[tab] ? tab : (STUDIO_CAT_OF[tab] || 'face');
+        activeStudioTab = cat;
         document.querySelectorAll('.studio-tab-btn').forEach(b => {
-            b.classList.toggle('active', b.getAttribute('onclick').includes(`'${tab}'`));
+            b.classList.toggle('active', b.dataset.cat === cat);
+            b.setAttribute('aria-selected', String(b.dataset.cat === cat));
         });
-
         const container = document.getElementById('studio-picker-container');
-        if (!container) return;
+        if (!container || !editingAvatar) return;
+        const cfg = editingAvatar.avatarConfig;
+        container.style.display = 'block';
+        container.innerHTML = STUDIO_CATEGORIES[cat].sections.map(([key, kind]) => {
+            const head = `<div class="studio-section-title">${escapeHTML(studioLabel(key))}</div>`;
+            if (kind === 'color') {
+                return head + `<div class="studio-swatch-row">${COLOR_SWATCHES[key].map(color => `
+                    <button type="button" class="color-swatch-opt ${cfg[key] === color ? 'selected' : ''}" style="background:${color};" aria-label="${color}" onclick="setStudioOption('${key}', '${color}')"></button>`).join('')}</div>`;
+            }
+            return head + `<div class="studio-thumb-grid">${AVATAR_ALLOWED[key].map(id => {
+                const locked = isAvatarLocked(key, id, userUnlocks);
+                // Each thumbnail shows the real option on the avatar being edited.
+                const thumb = generateAvatarSVG({ ...cfg, [key]: id });
+                return `<button type="button" class="studio-thumb ${cfg[key] === id ? 'selected' : ''} ${locked ? 'locked' : ''}" data-slot="${key}" data-id="${id}" aria-label="${escapeHTML(studioOptionName(key, id))}${locked ? ' 🔒' : ''}" title="${escapeHTML(locked ? lockText(key, id) : studioOptionName(key, id))}" onclick="setStudioOption('${key}', '${id}')">
+                    <span class="studio-thumb-art">${thumb}</span>${locked ? '<span class="studio-lock">🔒</span>' : ''}</button>`;
+            }).join('')}</div>`;
+        }).join('');
+    }
 
-        const options = STUDIO_OPTIONS[tab] || [];
-        if (tab === 'hairColor' || tab === 'jacketColor') {
-            container.style.display = 'flex';
-            container.style.flexWrap = 'wrap';
-            container.style.gap = '12px';
-            const curVal = tab === 'hairColor' ? editingAvatar.avatarConfig.hairColor : editingAvatar.avatarConfig.jacketColor;
-            container.innerHTML = options.map(opt => `
-                <div class="color-swatch-opt ${curVal === opt.id ? 'selected' : ''}" style="background: ${opt.color};" onclick="setStudioOption('${tab}', '${opt.id}')" title="${opt.label}"></div>
-            `).join('');
-        } else {
-            container.style.display = 'grid';
-            let curVal = '';
-            if (tab === 'hair') curVal = editingAvatar.avatarConfig.hairStyle;
-            else if (tab === 'jacket') curVal = editingAvatar.avatarConfig.jacketStyle;
-            else if (tab === 'squiggles') curVal = editingAvatar.avatarConfig.squiggles;
-            else if (tab === 'eye') curVal = editingAvatar.avatarConfig.eyeStyle;
-
-            container.innerHTML = options.map(opt => `
-                <div class="studio-opt-btn ${curVal === opt.id ? 'selected' : ''}" onclick="setStudioOption('${tab}', '${opt.id}')">
-                    <span>${opt.label}</span>
-                </div>
-            `).join('');
-        }
+    function pushStudioHistory() {
+        studioHistory.push({ ...editingAvatar.avatarConfig });
+        if (studioHistory.length > 40) studioHistory.shift();
     }
 
     function setStudioOption(tab, val) {
         if (!editingAvatar) return;
-        if (tab === 'hair') editingAvatar.avatarConfig.hairStyle = val;
-        else if (tab === 'hairColor') editingAvatar.avatarConfig.hairColor = val;
-        else if (tab === 'jacket') editingAvatar.avatarConfig.jacketStyle = val;
-        else if (tab === 'jacketColor') editingAvatar.avatarConfig.jacketColor = val;
-        else if (tab === 'squiggles') editingAvatar.avatarConfig.squiggles = val;
-        else if (tab === 'eye') editingAvatar.avatarConfig.eyeStyle = val;
-
+        const key = studioKey(tab);
+        if (isAvatarLocked(key, val, userUnlocks)) { showToast(`🔒 ${lockText(key, val)}`); return; }
+        const next = sanitizeAvatarConfig({ ...editingAvatar.avatarConfig, [key]: val });
+        if (next[key] !== val) return; // not an allowed value
+        pushStudioHistory();
+        editingAvatar.avatarConfig = next;
         playBeep(580, 'sine', 0.05);
         updateStudioPreview();
-        switchStudioTab(tab);
+        switchStudioTab(STUDIO_CATEGORIES[tab] ? tab : (STUDIO_CAT_OF[tab] || activeStudioTab));
     }
 
     function randomizeCharacter() {
         if (!editingAvatar) return;
-        const rand = (arr) => arr[Math.floor(Math.random() * arr.length)].id;
-        editingAvatar.avatarConfig.hairStyle = rand(STUDIO_OPTIONS.hair);
-        editingAvatar.avatarConfig.hairColor = rand(STUDIO_OPTIONS.hairColor);
-        editingAvatar.avatarConfig.jacketStyle = rand(STUDIO_OPTIONS.jacket);
-        editingAvatar.avatarConfig.jacketColor = rand(STUDIO_OPTIONS.jacketColor);
-        editingAvatar.avatarConfig.squiggles = rand(STUDIO_OPTIONS.squiggles);
-        editingAvatar.avatarConfig.eyeStyle = rand(STUDIO_OPTIONS.eye);
-
+        pushStudioHistory();
+        const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+        const next = { ...editingAvatar.avatarConfig };
+        for (const [key, values] of Object.entries(AVATAR_ALLOWED)) {
+            if (key === 'mode') continue;
+            const open = values.filter(v => !isAvatarLocked(key, v, userUnlocks));
+            next[key] = pick(open);
+        }
+        for (const key of Object.keys(COLOR_SWATCHES)) next[key] = pick(COLOR_SWATCHES[key]);
+        editingAvatar.avatarConfig = sanitizeAvatarConfig(next);
         playBeep(720, 'triangle', 0.08);
+        updateStudioPreview();
+        switchStudioTab(activeStudioTab);
+    }
+
+    function undoStudio() {
+        if (!editingAvatar || !studioHistory.length) return;
+        editingAvatar.avatarConfig = studioHistory.pop();
+        updateStudioPreview();
+        switchStudioTab(activeStudioTab);
+    }
+
+    function resetStudio() {
+        if (!editingAvatar) return;
+        pushStudioHistory();
+        editingAvatar.avatarConfig = sanitizeAvatarConfig({});
         updateStudioPreview();
         switchStudioTab(activeStudioTab);
     }
@@ -534,6 +545,7 @@
         const btn = document.getElementById('lang-toggle');
         if (btn) btn.textContent = lang === 'km' ? 'EN' : 'ខ្មែរ';
         applyI18n();
+        gameState.mapTools?.relabel();
         updateProfileUI();
         renderModeCards();
         updateHomeChrome();
@@ -630,8 +642,8 @@
         const featuredBox = document.getElementById('featured-modes-container');
         const moreBox = document.getElementById('modes-selection-container');
         if (!featuredBox || !moreBox) return;
-        // Team modes need a partner, so they only appear in the party picker.
-        const all = regionModes().filter(([, m]) => !m.teams);
+        // Team and Royale modes need other players, so they only appear in the party picker.
+        const all = regionModes().filter(([, m]) => !m.teams && !m.royale);
         const featured = all.filter(([, m]) => m.featured);
         const rest = all.filter(([, m]) => !m.featured);
         featuredBox.innerHTML = featured.map(([key, m]) => modeCardHTML(key, m)).join('');
@@ -821,27 +833,25 @@
             try { await ensureLeaflet(); }
             catch (e) { showToast(t('toast.mapLoad')); return; }
         }
-        if (gameState.guessMap) {
+        if (gameState.guessMap && gameState.guessMapMode === currentMode) {
             gameState.guessMap.invalidateSize();
             return;
         }
+        if (gameState.guessMap) {
+            // The host switched modes: rebuild the map with the new mode's profile.
+            gameState.mapTools?.destroy();
+            gameState.mapTools = null;
+            gameState.guessMap.remove();
+            gameState.guessMap = null;
+            gameState.guessMarker = null;
+        }
 
         const cfg = MODE_CONFIG[currentMode] || {};
-        const isWorld = !!cfg.isWorld || !!cfg.isCountry;
-        const isAsia = !!cfg.isAsia;
-        const isCam = !!cfg.isCambodia;
-        const center = isWorld ? WORLD_CENTER : isAsia ? ASIA_CENTER : isCam ? [12.5, 104.9] : PP_CENTER;
-        const zoom = isWorld ? 2 : isAsia ? 4 : isCam ? 7 : 12;
+        gameState.guessMapMode = currentMode;
+        gameState.guessMap = L.map('guess-map', mapOptions(cfg.map));
+        applyMapProfile(gameState.guessMap, cfg.map);
 
-        gameState.guessMap = L.map('guess-map', {
-            center: center,
-            zoom: zoom,
-            minZoom: 1,
-            maxZoom: 18,
-            zoomControl: false,
-            attributionControl: false
-        });
-
+        // TODO(tiles): OSM's tile policy forbids heavy use. Before launch, pick a free-tier provider or self-host PMTiles (ask the owner first).
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19
         }).addTo(gameState.guessMap);
@@ -850,13 +860,35 @@
             placePin(e.latlng);
         });
 
+        // Chips, layers, crosshair and the loupe load lazily; the map works without them.
+        const mapForTools = gameState.guessMap;
+        import('./map/tools.js').then(({ mountMapTools }) => {
+            if (gameState.guessMap !== mapForTools) return;
+            gameState.mapTools = mountMapTools({
+                map: mapForTools, cfg, L, onPin: placePin, lang: getLang, t,
+                landmarks: LOCATIONS_DB.landmarks,
+                onKhanPick: id => { const k = KHAN_BY_OSM_ID[id]; if (k) selectChoiceOption('district', k); },
+                // In Royale the zone, not the mode profile, is "home": resetting must not escape it.
+                resetView: () => { if (serverMatch?.royale?.zone) { gameState.zoneKey = null; applyRoyaleZone(serverMatch); return true; } return false; }
+            });
+            if (gameState.guessMarker) gameState.mapTools.attachMarker(gameState.guessMarker);
+        }).catch(() => {});
+
         const wrapper = document.getElementById('map-wrapper');
+        let fitted = false;
         new ResizeObserver(() => {
-            if (gameState.guessMap) gameState.guessMap.invalidateSize();
+            if (!gameState.guessMap) return;
+            gameState.guessMap.invalidateSize();
+            // fitBounds on a zero-size container picks a wrong zoom, so fit again once the map has a size.
+            if (!fitted && wrapper.clientWidth > 0 && wrapper.clientHeight > 0) {
+                fitted = true;
+                if (!gameState.guessLatLng) applyMapProfile(gameState.guessMap, cfg.map);
+            }
         }).observe(wrapper);
     }
 
     function placePin(latlng) {
+        if (gameState.spectating) return; // spectators never pin
         if (gameState.guessMarker) {
             gameState.guessMarker.setLatLng(latlng);
         } else {
@@ -864,15 +896,19 @@
             gameState.guessMarker = L.marker(latlng, { icon, draggable: true }).addTo(gameState.guessMap);
             gameState.guessMarker.on('dragend', (e) => {
                 gameState.guessLatLng = e.target.getLatLng();
+                gameState.mapTools?.pinMoved(gameState.guessLatLng);
             });
+            gameState.mapTools?.attachMarker(gameState.guessMarker);
         }
         gameState.guessLatLng = latlng;
+        gameState.mapTools?.pinMoved(latlng);
         playBeep(640, 'sine', 0.08);
 
         const btn = document.getElementById('guess-btn');
         btn.innerHTML = `<span>🎯 ${t('game.confirm')}</span>`;
         btn.classList.add('ready');
         btn.disabled = false;
+        if (gameState.ghost) { btn.innerHTML = `<span>${t('royale.dropPin')}</span>`; btn.disabled = !!gameState.royale?.mineDropped; }
 
         const pinStatus = document.getElementById('map-pin-status');
         if (pinStatus) {
@@ -947,27 +983,96 @@
         });
     }
 
-    function setupResizer() {
-        const bar = document.getElementById('map-resizer');
-        if (!bar) return;
-        bar.addEventListener('pointerdown', e => {
-            e.preventDefault();
-            try { bar.setPointerCapture(e.pointerId); } catch (err) {}
-            const move = ev => {
-                const pct = Math.min(58, Math.max(22, ((window.innerWidth - ev.clientX) / window.innerWidth) * 100));
-                document.documentElement.style.setProperty('--map-width', pct.toFixed(2) + '%');
-                if (gameState.guessMap) gameState.guessMap.invalidateSize();
-                if (gameState.resultMap) gameState.resultMap.invalidateSize();
-            };
-            const up = () => {
-                bar.removeEventListener('pointermove', move);
-                bar.removeEventListener('pointerup', up);
-                bar.removeEventListener('pointercancel', up);
-            };
-            bar.addEventListener('pointermove', move);
-            bar.addEventListener('pointerup', up);
-            bar.addEventListener('pointercancel', up);
+
+    // ============================================================
+    //  IN-GAME HUD (>= 900px: floating panels over the panorama)
+    // ============================================================
+    const DESKTOP_HUD = window.matchMedia('(min-width: 900px)');
+    const MAP_PIN_KEY = 'wanderpenh_map_pinned';
+
+    function setMapPinned(on, { persist = true } = {}) {
+        const panel = document.getElementById('map-panel');
+        const btn = document.getElementById('map-pin-toggle');
+        panel.classList.toggle('pinned', on);
+        if (btn) btn.setAttribute('aria-pressed', String(on));
+        if (persist) { try { localStorage.setItem(MAP_PIN_KEY, on ? '1' : '0'); } catch (e) {} }
+        resizeGuessMapSoon();
+    }
+    function toggleMapPinned() { setMapPinned(!document.getElementById('map-panel').classList.contains('pinned')); }
+
+    function resizeGuessMapSoon() {
+        for (const ms of [0, 200, 400]) setTimeout(() => { gameState.guessMap?.invalidateSize(); }, ms);
+    }
+
+    function setupDesktopMap() {
+        const panel = document.getElementById('map-panel');
+        try { if (localStorage.getItem(MAP_PIN_KEY) === '1') setMapPinned(true, { persist: false }); } catch (e) {}
+        // Hover expands on desktop; a tap expands on tablets (no hover). The pin keeps it open.
+        panel.addEventListener('pointerenter', e => { if (DESKTOP_HUD.matches && e.pointerType === 'mouse') resizeGuessMapSoon(); });
+        panel.addEventListener('pointerdown', e => {
+            if (!DESKTOP_HUD.matches || e.pointerType === 'mouse') return;
+            if (!panel.classList.contains('touch-open')) { panel.classList.add('touch-open'); resizeGuessMapSoon(); }
         });
+        document.addEventListener('pointerdown', e => {
+            if (!panel.contains(e.target) && panel.classList.contains('touch-open')) { panel.classList.remove('touch-open'); resizeGuessMapSoon(); }
+        });
+        panel.addEventListener('transitionend', () => gameState.guessMap?.invalidateSize());
+    }
+
+    function toggleTicketPanel() {
+        const panel = document.getElementById('ticket-panel');
+        const collapsed = panel.classList.toggle('collapsed');
+        document.getElementById('ticket-collapse').setAttribute('aria-expanded', String(!collapsed));
+    }
+    function toggleDock() {
+        const dock = document.getElementById('control-dock');
+        const open = dock.classList.toggle('open');
+        document.getElementById('dock-more').setAttribute('aria-expanded', String(open));
+    }
+    function dockZoom(dir) {
+        if (!gameState.guessMap) return;
+        dir > 0 ? gameState.guessMap.zoomIn() : gameState.guessMap.zoomOut();
+    }
+
+    // Emote radial menu (party games only) and floating emotes.
+    function toggleEmoteMenu() {
+        const menu = document.getElementById('emote-radial');
+        if (!menu.hidden) { menu.hidden = true; return; }
+        menu.replaceChildren(...LOBBY_EMOTES.map((text, i) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'emote-radial-item'; b.textContent = text;
+            const angle = (-90 - 20 + i * 40) * Math.PI / 180;
+            b.style.setProperty('--x', Math.round(Math.cos(angle) * 96) + 'px');
+            b.style.setProperty('--y', Math.round(Math.sin(angle) * 96) + 'px');
+            b.addEventListener('click', () => { sendLobbyEmote(text); menu.hidden = true; });
+            return b;
+        }));
+        menu.hidden = false;
+    }
+    function showFloatingEmote(sender, emote, spectator = false) {
+        const host = document.getElementById('emote-float');
+        if (!host) return;
+        const player = [...getLobbyPlayers(), ...lobbySpectators].find(p => p.name === sender);
+        const row = document.createElement('div');
+        row.className = 'emote-float-item';
+        row.innerHTML = `<span class="emote-float-avatar">${player ? renderAvatarHTML(player, '100%', '100%') : ''}</span><span>${spectator ? '👀 ' : ''}${escapeHTML(sender)}: ${escapeHTML(emote)}</span>`;
+        host.appendChild(row);
+        while (host.children.length > 4) host.firstChild.remove();
+        setTimeout(() => row.remove(), 4000);
+    }
+
+    // Compass strip: the embedded Street View cannot report its live heading, so this
+    // shows the round's STARTING heading only and says so. It is never animated.
+    function updateCompass() {
+        const h = gameState.currentHeading;
+        const strip = document.getElementById('compass-strip');
+        if (!strip) return;
+        if (typeof h !== 'number' || Number.isNaN(h)) { strip.hidden = true; return; }
+        strip.hidden = false;
+        const deg = ((h % 360) + 360) % 360;
+        document.getElementById('compass-needle').style.left = (deg / 360 * 100) + '%';
+        const names = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+        document.getElementById('compass-label').textContent = `${t('game.startHeading')} ${Math.round(deg)}° ${names[Math.round(deg / 45) % 8]}`;
     }
 
     // Keyboard controls
@@ -979,6 +1084,8 @@
                 e.preventDefault();
                 submitPlayerGuess();
             }
+        } else if (gameState.spectating && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
+            followStep(e.code === 'ArrowRight' ? 1 : -1);
         } else if (e.code === 'Space') {
             e.preventDefault();
             const gameScreen = document.getElementById('game-screen');
@@ -1175,6 +1282,7 @@
         const totalOffset = 75.4; // 2 * PI * 12
 
         timerCard.classList.remove('danger');
+        timerCard.style.setProperty('--p', 1);
         timerVal.textContent = remaining;
         circle.style.strokeDashoffset = 0;
         circle.style.stroke = 'var(--rice)';
@@ -1184,6 +1292,7 @@
             timerVal.textContent = remaining;
 
             const progress = remaining / seconds;
+            timerCard.style.setProperty('--p', progress.toFixed(3));
             circle.style.strokeDashoffset = totalOffset * (1 - progress);
 
             if (progress < 0.25) {
@@ -1483,6 +1592,7 @@
             botCountryName,
             botDistrictName
         };
+        (bot.roundScores ||= []).push(finalRoundScore);
         bot.totalScore += finalRoundScore;
         bot.roundCompleted = true;
 
@@ -1551,7 +1661,7 @@
         gameState.roundIndex++;
         const cfg = MODE_CONFIG[currentMode];
 
-        document.getElementById('hud-round-indicator').textContent = `${gameState.roundIndex} / ${cfg.rounds}`;
+        document.getElementById('hud-round-indicator').textContent = cfg.royale ? String(gameState.roundIndex) : `${gameState.roundIndex} / ${cfg.rounds}`;
         document.getElementById('hud-score-indicator').textContent = gameState.totalScore.toLocaleString();
 
         const planned = gameState.matchPlan && gameState.matchPlan[gameState.roundIndex - 1];
@@ -1586,13 +1696,9 @@
             pinStatus.classList.remove('placed');
         }
 
-        const isWorld = !!cfg.isWorld || !!cfg.isCountry;
-        const isAsia = !!cfg.isAsia;
-        const isCam = !!cfg.isCambodia;
-        const center = isWorld ? WORLD_CENTER : isAsia ? ASIA_CENTER : isCam ? [12.5, 104.9] : PP_CENTER;
-        const zoom = isWorld ? 2 : isAsia ? 4 : isCam ? 7 : 12;
-        if (gameState.guessMap) {
-            gameState.guessMap.setView(center, zoom);
+        if (gameState.guessMap && gameState.guessMapMode === currentMode) {
+            if (gameState.mapTools) gameState.mapTools.resetRound();
+            else applyMapProfile(gameState.guessMap, cfg.map);
         }
 
         const modePill = document.getElementById('hud-mode-pill');
@@ -1607,8 +1713,11 @@
         } else if (!gameState.currentLocation) {
             document.getElementById('streetview-iframe').removeAttribute('src');
         }
-        startRoundTimer(cfg.time);
+        startRoundTimer(serverMatch?.roundTime || cfg.time);
         applyRoleUI();
+        updateCompass();
+        document.getElementById('dock-emote').hidden = !isRealMultiplayer();
+        document.getElementById('hud-watching')?.toggleAttribute('hidden', !lobbySpectators.length);
 
         if (gameState.simulated4P) {
             initSimRound();
@@ -1618,6 +1727,7 @@
     }
 
     function submitPlayerGuess() {
+        if (gameState.ghost) { dropGhostPin(); return; }
         if (gameState.ranked) { if (gameState.guessLatLng) submitRankedGuess(gameState.guessLatLng); return; }
         if (isRealMultiplayer()) { if (gameState.guessLatLng) submitRoomGuess(gameState.guessLatLng); return; }
         if (!gameState.guessLatLng || gameState.roundSubmitted) return;
@@ -1695,6 +1805,7 @@
                     matchedChoice
                 };
                 me.totalScore = gameState.totalScore;
+                (me.roundScores ||= []).push(finalRoundScore);
                 me.roundCompleted = true;
             }
 
@@ -1847,38 +1958,11 @@
         if (gameState.simulated4P && mpLeaderboard && mpList) {
             mpLeaderboard.style.display = 'block';
 
-            const sortedPlayers = [...gameState.simPlayers].sort((a, b) => {
-                const distA = a.currentGuess ? a.currentGuess.dist : 99999;
-                const distB = b.currentGuess ? b.currentGuess.dist : 99999;
-                return distA - distB;
-            });
-
-            const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd', '4th'];
-            mpList.innerHTML = sortedPlayers.map((p, idx) => {
-                const g = p.currentGuess || { dist: 99999, score: 0 };
-                return `
-                    <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.isMe ? 'is-me' : ''}">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span style="font-weight: 900; font-size: 0.92rem; min-width: 48px; color: ${idx === 0 ? 'var(--gold-deep)' : 'var(--ink-2)'};">${medals[idx]}</span>
-                            <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid var(--line); background: var(--gold); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                                ${renderAvatarHTML(p, '100%', '100%')}
-                            </div>
-                            <div>
-                                <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                                    ${escapeHTML(p.name)} ${p.isMe ? `<span style="font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--rice); color: var(--paper);">${t('party.you')}</span>` : ''}
-                                </div>
-                                <div style="font-size: 0.75rem; color: var(--ink-2);">${formatDistanceStr(g.dist)} ${t('result.away')} (${g.elapsed ? g.elapsed.toFixed(1) + 's' : ''})</div>
-                            </div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">+${g.score.toLocaleString()} ${t('final.points')}</div>
-                            <div style="font-size: 0.72rem; color: var(--gold-deep); font-weight: 700;">${t('final.total')}: ${p.totalScore.toLocaleString()}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            beginStandings();
+            paintStandings(simStandingRows());
         } else if (isRealMultiplayer() && mpLeaderboard && mpList) {
             mpLeaderboard.style.display = 'block';
+            beginStandings();
             renderMpRoundLeaderboard();
         } else if (mpLeaderboard) {
             mpLeaderboard.style.display = 'none';
@@ -2022,23 +2106,8 @@
 
         const table = document.getElementById('fin-rounds-table');
         if (gameState.simulated4P) {
-            const finalRanked = [...gameState.simPlayers].sort((a, b) => b.totalScore - a.totalScore);
-            const medals = ['🥇', '🥈', '🥉', ''];
-            table.innerHTML = `
-                <div class="field-label">${t('final.tournament')}</div>
-                ${finalRanked.map((p, idx) => `
-                    <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.isMe ? 'is-me' : ''}">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span class="final-rank final-place">${medals[idx]} ${t('final.place' + (idx + 1))}</span>
-                            <div class="final-avatar" style="border-color: ${p.aura || 'var(--line)'};">
-                                ${renderAvatarHTML(p, '100%', '100%')}
-                            </div>
-                            <span class="final-player">${escapeHTML(p.name)} ${p.isMe ? `(${t('final.you')})` : ''}</span>
-                        </div>
-                        <span class="final-points">${p.totalScore.toLocaleString()} ${t('final.points')}</span>
-                    </div>
-                `).join('')}
-            `;
+            const rows = gameState.simPlayers.map(p => ({ id: p.id, name: p.name, isMe: !!p.isMe, aura: p.aura, avatarSource: p, total: p.totalScore, roundScores: p.roundScores || [] }));
+            table.innerHTML = `<div class="field-label">${t('final.tournament')}</div>` + renderFinal({ rows, deps: standingsDeps() });
         } else {
             const roundsHTML = gameState.roundsHistory.map(r => `
                 <div class="mp-leaderboard-row">
@@ -2060,26 +2129,30 @@
                     ${rankedTeams.map((r, idx) => renderTeamRow(r, idx, me, false)).join('')}
                     <div class="final-hint">${t('result.waiting', { n: readyPlayers.size, total: getLobbyPlayers().length })}</div>
                 `;
+            } else if (isRealMultiplayer() && serverMatch?.royale?.placements) {
+                const me = myPlayerId || 'me', R = serverMatch.royale;
+                const byId = Object.fromEntries(R.placements.map(x => [x.id, x]));
+                const rows = R.placements.map(x => {
+                    const st = R.players[x.id] || {}, p = playerById(x.id) || { name: st.name || '?' }; // quitters keep their name
+                    const rounds = Object.keys(gameState.mpGuesses || {}).length;
+                    return { id: x.id, name: p.name, isMe: x.id === me, aura: getPlayerAura(x.id), avatarSource: p, points: x.points,
+                        hearts: st.lives, alive: st.alive, roundScores: [],
+                        note: t('royale.stats', { rounds: st.survived || rounds, best: st.bestDist === null || st.bestDist === undefined ? '—' : formatDistanceStr(st.bestDist), shields: st.shieldsUsed || 0 }) };
+                });
+                const winner = rows[0];
+                document.getElementById('fin-badge').textContent = '👑';
+                document.getElementById('fin-rating').textContent = winner ? t('royale.winner', { name: winner.name }) : '';
+                document.getElementById('fin-total-score').textContent = '+' + (byId[me]?.points ?? 0);
+                partyHTML = `<div class="field-label">${t('final.partyBoard')}</div>${renderFinal({ rows, royale: true, ordered: true, deps: standingsDeps() })}`;
             } else if (isRealMultiplayer()) {
                 const me = myPlayerId || 'me';
-                const ranked = getLobbyPlayers()
-                    .map(p => ({ ...p, total: mpTotalFor(p.id) }))
-                    .sort((a, b) => b.total - a.total);
-                const medals = ['🥇', '🥈', '🥉'];
+                const rows = getLobbyPlayers().map(p => ({
+                    id: p.id, name: p.name, isMe: p.id === me, aura: getPlayerAura(p.id), avatarSource: p, total: mpTotalFor(p.id),
+                    roundScores: Object.keys(gameState.mpGuesses || {}).sort((x, y) => x - y).map(rd => gameState.mpGuesses[rd][p.id]?.score || 0)
+                }));
                 partyHTML = `
                     <div class="field-label">${t('final.partyBoard')}</div>
-                    ${ranked.map((p, idx) => `
-                        <div class="mp-leaderboard-row ${idx === 0 ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="final-rank final-place">${medals[idx] || ''} ${t('final.place' + (idx + 1))}</span>
-                                <div class="final-avatar" style="border-color: ${getPlayerAura(p.id)};">
-                                    ${renderAvatarHTML(p, '100%', '100%')}
-                                </div>
-                                <span class="final-player">${escapeHTML(p.name)} ${p.id === me ? `(${t('final.you')})` : ''}</span>
-                            </div>
-                            <span class="final-points">${p.total.toLocaleString()} ${t('final.points')}</span>
-                        </div>
-                    `).join('')}
+                    ${renderFinal({ rows, deps: standingsDeps() })}
                     <div class="final-hint">${t('result.waiting', { n: readyPlayers.size, total: getLobbyPlayers().length })}</div>
                 `;
             }
@@ -2129,6 +2202,10 @@
     let roomReady = false;
     let readyPlayers = new Set();
     let matchId = null;
+    let lobbySpectators = [];
+    let viewerRole = 'player';
+    let followId = null;
+    let spectTab = 'round', spectTimer = null;
     let lobbyPlayers = [];          // player list as last synced from the host (clients only)
     let serverTeams = [];           // Tag-Team pairs as confirmed by the server
     let teamSwapPick = null;        // host's first selection when swapping two players
@@ -2281,6 +2358,18 @@
         `).join('');
     }
 
+    function renderLobbyWatching() {
+        const box = document.getElementById('lobby-watching');
+        if (!box) return;
+        box.hidden = !lobbySpectators.length;
+        document.getElementById('watching-count').textContent = lobbySpectators.length;
+        document.getElementById('lobby-watching-list').innerHTML = lobbySpectators.map(p => `
+            <div class="lobby-player-card">
+                <div class="lobby-player-thumb">${renderAvatarHTML(p, '100%', '100%')}</div>
+                <div style="flex:1; overflow:hidden; font-weight:800; font-size:0.88rem;">${escapeHTML(p.name)} <span>👀</span>${p.id === myPlayerId ? ` <span style="color:var(--rice); font-size:0.72rem;">(${t('party.you')})</span>` : ''}</div>
+            </div>`).join('');
+    }
+
     function renderLobbyTeams() {
         const panel = document.getElementById('lobby-teams-panel');
         const list = document.getElementById('lobby-teams-list');
@@ -2378,8 +2467,9 @@
             select.disabled = id === 'lobby-mode-select' && (!gameState.isHost || !roomReady || !!serverMatch);
             const cfg = MODE_CONFIG[select.value] || MODE_CONFIG[currentMode];
             if (cfg) {
-                document.getElementById(descriptionId).textContent =
-                    `${t('mode.perRound', { n: cfg.time })} · ${t('mode.rounds', { n: cfg.rounds })} · ${poolCountFor(select.value)} ${t('home.size')}. ${modeDesc(cfg)}`;
+                document.getElementById(descriptionId).textContent = cfg.royale
+                    ? `${t('mode.perRound', { n: cfg.time })} · ${poolCountFor(select.value)} ${t('home.size')}. ${modeDesc(cfg)}`
+                    : `${t('mode.perRound', { n: cfg.time })} · ${t('mode.rounds', { n: cfg.rounds })} · ${poolCountFor(select.value)} ${t('home.size')}. ${modeDesc(cfg)}`;
             }
         }
         document.querySelectorAll('#party-region-switch [data-region]').forEach(btn => {
@@ -2498,7 +2588,8 @@
                 leaveLobby();
                 showToast(msg.message || 'Unable to join this party.');
             } else if (msg.type === 'LOBBY_EMOTE') {
-                showToast(cleanText(msg.sender, 'Explorer', 24) + ': ' + msg.emote);
+                if (document.getElementById('game-screen').classList.contains('active')) showFloatingEmote(cleanText(msg.sender, 'Explorer', 24), msg.emote, !!msg.spectator);
+                else showToast(cleanText(msg.sender, 'Explorer', 24) + ': ' + msg.emote);
             }
         };
         socket.onclose = () => {
@@ -2523,6 +2614,15 @@
     function applyRoomState(state) {
         serverClockOffset = state.serverNow - Date.now();
         lobbyPlayers = state.players.map(p => ({ ...sanitizeProfile(p), id: p.id, isHost: p.isHost, connected: p.connected }));
+        lobbySpectators = (state.spectators || []).map(p => ({ ...sanitizeProfile(p), id: p.id, connected: p.connected }));
+        const prevRole = viewerRole;
+        viewerRole = state.viewerRole === 'spectator' ? 'spectator' : 'player';
+        gameState.spectating = viewerRole === 'spectator';
+        document.body.dataset.spectator = gameState.spectating ? '1' : '';
+        if (gameState.spectating && prevRole !== 'spectator') showToast(t(state.match ? 'spectate.joined' : 'spectate.lobbyFull'));
+        else if (!gameState.spectating && prevRole === 'spectator') showToast(t('spectate.promoted'));
+        const answerToggle = document.getElementById('spectator-answer-toggle');
+        if (answerToggle) answerToggle.checked = !!state.spectatorsSeeAnswer;
         gameState.isHost = state.hostId === myPlayerId;
         currentMode = state.mode;
         serverMatch = state.match;
@@ -2532,8 +2632,10 @@
         const connected = lobbyPlayers.filter(p => p.connected).length;
         setLobbyStatus(connected < lobbyPlayers.length ? t('lobby.reconnecting') : connected < 2 ? t('lobby.open') : gameState.isHost ? t('lobby.host', { n: connected }) : t('lobby.client', { n: connected }));
         renderLobbyPlayers();
+        renderLobbyWatching();
         renderLobbyTeams();
         renderPartyModes();
+        renderRoyaleLobby(state.royaleSettings);
         const customizeAvatar = document.getElementById('lobby-customize-avatar');
         document.getElementById('rotation-status').textContent = state.selection ? t('lobby.rotation', { n: state.selection.remaining }) : '';
         if (customizeAvatar) customizeAvatar.innerHTML = renderAvatarHTML(userProfile, '100%', '100%');
@@ -2541,6 +2643,7 @@
         if (customizeButton) customizeButton.disabled = !roomReady;
         if (state.match) closeModal('profile-modal');
         if (!state.match) {
+            clearRoyaleUI();
             if (matchId) {
                 matchId = null;
                 clearInterval(gameState.timerInterval);
@@ -2573,6 +2676,17 @@
         if (isTeamMode()) { gameState.matchPlan = m.plan; syncTeamLocation(m); }
         readyPlayers = new Set(m.ready);
         readyPending = false;
+        if (gameState.spectating) {
+            gameState.spectMatch = m;
+            renderSpectator(m);
+            if (m.phase === 'final') { document.getElementById('spectator-banner').hidden = true; document.getElementById('spect-results').hidden = true; showFinalPodium(); }
+            return;
+        }
+        renderWatchingChip();
+        if (m.royale) {
+            applyRoyale(m);
+            if (gameState.ghost && m.phase !== 'final') { renderGhost(m); renderMpHudChips(); return; }
+        } else clearRoyaleUI();
         // Rebuild local totals from accepted server guesses, including after a refresh.
         gameState.roundsHistory = Object.entries(m.guesses).flatMap(([round, guesses]) => {
             const g = guesses[myPlayerId];
@@ -2652,6 +2766,15 @@
             .reduce((sum, round) => sum + (round[playerId] ? round[playerId].score : 0), 0);
     }
 
+    function royaleChipClass(id) {
+        const st = serverMatch?.royale?.players?.[id];
+        return st ? (st.alive ? 'royale-alive' : 'royale-ghost') : '';
+    }
+    function royaleChipHearts(id) {
+        const st = serverMatch?.royale?.players?.[id];
+        if (!st) return '';
+        return `<span class="who-hearts">${st.alive ? '❤️'.repeat(st.lives) + (st.shield ? '🛡️' : '') : '👻'}</span>`;
+    }
     function renderMpHudChips() {
         if (!isRealMultiplayer()) return;
         const hudCard = document.getElementById('hud-mp-status-card');
@@ -2663,14 +2786,363 @@
         hudCard.style.display = 'flex';
         chips.innerHTML = getLobbyPlayers().map(p => {
             const g = guesses[p.id];
-            const status = g ? (g.elapsed !== null ? `✓ (${g.elapsed.toFixed(1)}s)` : '⌛') : '🤔';
+            const tip = `${p.name}${p.id === me ? ` (${t('party.you')})` : ''}${g && g.elapsed !== null ? ` · ${g.elapsed.toFixed(1)}s` : ''}`;
             return `
-                <div class="hud-player-chip ${g ? 'guessed' : ''}">
-                    <div class="hud-player-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
-                    <span>${escapeHTML(p.name)}${p.id === me ? ` (${t('party.you')})` : ''}: ${status}</span>
+                <div class="who-chip ${g ? 'guessed' : ''} ${royaleChipClass(p.id)}" title="${escapeHTML(tip)}" aria-label="${escapeHTML(tip)}" data-player="${escapeHTML(p.id)}">
+                    <div class="who-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</div>
+                    <b class="who-chip-tick" aria-hidden="true">${g ? '✓' : ''}</b>${royaleChipHearts(p.id)}
                 </div>
             `;
         }).join('');
+    }
+
+    // ============================================================
+    //  SPECTATORS (Part F)
+    // ============================================================
+    function setSpectatorAnswer(value) { if (gameState.isHost) sendRoomMessage({ type: 'SET_SPECTATOR_ANSWER', value: !!value }); }
+
+    function renderWatchingChip() {
+        const chip = document.getElementById('hud-watching');
+        if (!chip) return;
+        chip.hidden = !lobbySpectators.length;
+        if (!lobbySpectators.length) return;
+        chip.innerHTML = `<span>${t('spectate.watchingChip', { n: lobbySpectators.length })}</span>
+            <span class="watching-faces">${lobbySpectators.map(p => `<span class="watching-face" title="${escapeHTML(p.name)}">${renderAvatarHTML(p, '100%', '100%')}</span>`).join('')}</span>`;
+    }
+
+    function followed() {
+        const players = getLobbyPlayers();
+        return players.find(p => p.id === followId) || players[0];
+    }
+    function followStep(dir) {
+        const players = getLobbyPlayers();
+        if (!players.length) return;
+        const i = Math.max(0, players.findIndex(p => p.id === followed()?.id));
+        followId = players[(i + dir + players.length) % players.length].id;
+        if (gameState.spectMatch) renderSpectator(gameState.spectMatch);
+    }
+    function setFollow(id) { followId = id; if (gameState.spectMatch) renderSpectator(gameState.spectMatch); }
+
+    function setSpectTab(tab) {
+        spectTab = tab; clearTimeout(spectTimer);
+        if (gameState.spectMatch) renderSpectResults(gameState.spectMatch, { keepTab: true });
+    }
+
+    // Everything the spectator sees comes from the server's redacted view. The map only ever
+    // plots what that view contains: the answer exists in it only after the reveal (or if the host allowed it).
+    function renderSpectator(m) {
+        const banner = document.getElementById('spectator-banner');
+        banner.hidden = false;
+        const cfg = MODE_CONFIG[currentMode];
+        document.getElementById('spect-title').innerHTML = `<b>${t('spectate.banner', { n: m.round, total: cfg.rounds })}</b><span>${t('spectate.roundView')}</span>`;
+        const players = getLobbyPlayers();
+        const cur = followed();
+        const guesses = m.guesses[m.round] || {};
+        document.getElementById('spect-follow').innerHTML = players.map(p => `
+            <button type="button" role="tab" class="spect-chip ${p.id === cur?.id ? 'on' : ''} ${guesses[p.id] ? 'guessed' : ''}" aria-selected="${p.id === cur?.id}" onclick="setFollow('${escapeHTML(p.id)}')" title="${escapeHTML(p.name)}">
+                <span class="who-chip-avatar">${renderAvatarHTML(p, '100%', '100%')}</span></button>`).join('')
+            + `<button type="button" class="spect-chip arrow" aria-label="${t('spectate.followNext')}" onclick="followStep(1)">→</button>`;
+        if (cur) {
+            const g = guesses[cur.id];
+            const total = mpTotalFor(cur.id);
+            const state = g ? t('spectate.guessed') : t('spectate.looking');
+            const roundPts = g && g.score !== undefined ? `+${g.score.toLocaleString()}` : '';
+            document.getElementById('spect-card').innerHTML = `
+                <span class="spect-avatar" style="--aura:${getPlayerAura(cur.id)}">${renderAvatarHTML(cur, '100%', '100%')}</span>
+                <div><b>${escapeHTML(cur.name)}</b><div class="spect-state">${g ? state : t('spectate.thinking')}</div></div>
+                <div class="spect-score"><b>${total.toLocaleString()}</b><span>${roundPts}</span></div>`;
+        }
+        mpGuessesRef(m);
+        drawSpectatorMap(m, cur);
+        renderSpectResults(m);
+        renderMpHudChips();
+    }
+    function mpGuessesRef(m) { gameState.mpGuesses = m.guesses; }
+
+    function drawSpectatorMap(m, cur) {
+        const map = gameState.guessMap;
+        if (!map || !window.L) return;
+        gameState.spectLayer?.remove();
+        gameState.spectLayer = L.layerGroup().addTo(map);
+        const guesses = m.guesses[m.round] || {};
+        const pin = (p, g) => {
+            if (!g?.guessLatLng) return;
+            const aura = getPlayerAura(p.id);
+            L.marker([g.guessLatLng.lat, g.guessLatLng.lng], { icon: L.divIcon({ className: 'custom-leaflet-player-marker', iconSize: [40, 52], iconAnchor: [20, 50],
+                html: `<div class="marker-player-pin"><div class="marker-pin-bubble" style="border-color:${aura}">${renderAvatarHTML(p, '100%', '100%')}</div><div class="marker-pin-point" style="border-top-color:${aura}"></div></div>` }) }).addTo(gameState.spectLayer);
+        };
+        const revealed = !!m.answer && getLobbyPlayers().every(p => guesses[p.id]?.score !== undefined);
+        // Before the reveal only the followed player's locked pin is shown, and only once it is locked.
+        if (revealed) getLobbyPlayers().forEach(p => pin(p, guesses[p.id]));
+        else if (cur) pin(cur, guesses[cur.id]);
+        if (m.answer) L.marker([m.answer.lat, m.answer.lng], { icon: L.divIcon({ className: 'marker-pin-actual', iconSize: [18, 18] }) }).addTo(gameState.spectLayer);
+    }
+
+    function renderSpectResults(m, { keepTab = false } = {}) {
+        const box = document.getElementById('spect-results');
+        const guesses = m.guesses[m.round] || {};
+        const players = getLobbyPlayers();
+        const allIn = m.phase === 'playing' && players.length && players.every(p => guesses[p.id]?.score !== undefined);
+        const wasHidden = box.hidden;
+        box.hidden = !allIn;
+        if (!allIn) { clearTimeout(spectTimer); spectTab = 'round'; return; }
+        if (wasHidden && !keepTab) {
+            spectTab = 'round'; clearTimeout(spectTimer);
+            spectTimer = setTimeout(() => { if (spectTab === 'round') setSpectTab('overall'); }, 4000);
+        }
+        const rows = players.map(p => ({ id: p.id, name: p.name, isMe: false, aura: getPlayerAura(p.id), avatarSource: p, guess: guesses[p.id] || null, total: mpTotalFor(p.id) }));
+        document.getElementById('spect-results-list').innerHTML = renderStandings({
+            rows, tab: spectTab, deps: standingsDeps(), previousOrder: m.round <= 1 ? null : previousOrderFrom(rows)
+        });
+        document.querySelectorAll('#spect-tabs [data-tab]').forEach(b => b.classList.toggle('active', b.dataset.tab === spectTab));
+    }
+
+    // ============================================================
+    //  BATTLE ROYALE (Part B). Everything shown here is decided by the server.
+    // ============================================================
+    let royaleHitKey = null, duelShownFor = null, royaleSettingsSync = null;
+
+    function myRoyale() { return serverMatch?.royale?.players?.[myPlayerId] || null; }
+
+    function renderRoyaleLobby(settings) {
+        const card = document.getElementById('royale-settings');
+        if (!card) return;
+        card.hidden = !MODE_CONFIG[currentMode]?.royale;
+        if (!settings) return;
+        royaleSettingsSync = settings;
+        const lives = document.getElementById('royale-lives'), time = document.getElementById('royale-time'), ghost = document.getElementById('royale-ghost');
+        if (document.activeElement !== lives) lives.value = String(settings.lives);
+        if (document.activeElement !== time) time.value = String(settings.time);
+        ghost.checked = !!settings.ghostPins;
+        for (const el of [lives, time, ghost]) el.disabled = !gameState.isHost || !!serverMatch;
+    }
+    function setRoyaleSettings() {
+        if (!gameState.isHost) return;
+        sendRoomMessage({ type: 'SET_ROYALE', settings: {
+            lives: Number(document.getElementById('royale-lives').value),
+            time: Number(document.getElementById('royale-time').value),
+            ghostPins: document.getElementById('royale-ghost').checked
+        } });
+    }
+
+    // Points on a circle (great-circle destination), for the dimmed area outside the zone.
+    function circlePoints(center, radius, n = 72) {
+        const rad = Math.PI / 180, ang = radius / 6371000, lat1 = center.lat * rad, lng1 = center.lng * rad;
+        return [...Array(n)].map((_, i) => {
+            const b = (i / n) * 2 * Math.PI;
+            const lat = Math.asin(Math.sin(lat1) * Math.cos(ang) + Math.cos(lat1) * Math.sin(ang) * Math.cos(b));
+            const lng = lng1 + Math.atan2(Math.sin(b) * Math.sin(ang) * Math.cos(lat1), Math.cos(ang) - Math.sin(lat1) * Math.sin(lat));
+            return [lat / rad, ((lng / rad + 540) % 360) - 180];
+        });
+    }
+    // The zone ring and dimming sit on the guess map. Everyone, ghosts included, gets the same server zone.
+    function applyRoyaleZone(m, tries = 0) {
+        const zone = m.royale?.zone || null;
+        const map = gameState.guessMap;
+        if (!map || !window.L) { if (tries < 30) setTimeout(() => applyRoyaleZone(m, tries + 1), 150); return; }
+        const key = zone ? `${m.id}:${m.round}:${zone.center.lat}:${zone.radius}` : `${m.id}:${m.round}:none`;
+        if (gameState.zoneKey === key) return;
+        gameState.zoneKey = key;
+        gameState.zoneLayer?.remove();
+        gameState.zoneLayer = null;
+        if (!zone) return;
+        const ring = L.circle([zone.center.lat, zone.center.lng], { radius: zone.radius, color: '#e4578a', weight: 4, fill: false, className: 'royale-zone-ring', interactive: false });
+        const dim = L.polygon([[[-85, -180], [-85, 180], [85, 180], [85, -180]], circlePoints(zone.center, zone.radius)], { stroke: false, fillColor: '#0b1b1c', fillOpacity: 0.5, interactive: false });
+        gameState.zoneLayer = L.layerGroup([dim, ring]).addTo(map);
+        // Players cannot wander off: pan limits shrink to the zone.
+        const bounds = ring.getBounds().pad(0.2);
+        map.setMinZoom(1);
+        map.setMaxBounds(bounds);
+        map.fitBounds(ring.getBounds(), { animate: false, padding: [10, 10] });
+        map.setMinZoom(Math.max(1, map.getZoom() - 1));
+    }
+
+    function drawGhostPins(m) {
+        const map = gameState.guessMap;
+        if (!map || !window.L) return;
+        gameState.ghostPinLayer?.remove();
+        gameState.ghostPinLayer = L.layerGroup().addTo(map);
+        for (const p of m.royale?.ghostPinList || []) {
+            L.marker([p.lat, p.lng], { interactive: false, icon: L.divIcon({ className: 'ghost-pin', html: '<span>👻</span>', iconSize: [30, 30], iconAnchor: [15, 15] }) }).addTo(gameState.ghostPinLayer);
+        }
+    }
+
+    function royaleHud(m) {
+        const R = m.royale;
+        const players = getLobbyPlayers();
+        const alive = players.filter(p => R.players[p.id]?.alive).length;
+        const card = document.getElementById('hud-mp-status-card');
+        if (card) {
+            card.style.display = 'flex';
+            let counter = document.getElementById('royale-alive');
+            if (!counter) { counter = document.createElement('div'); counter.id = 'royale-alive'; card.prepend(counter); }
+            counter.textContent = t('royale.alive', { n: alive, total: players.length });
+        }
+        const pill = document.getElementById('hud-mode-pill');
+        if (pill && R.ghostPinCount) pill.dataset.ghosts = R.ghostPinCount;
+        drawGhostPins(m);
+    }
+
+    // ~3 s hit sequence: losers shake, a heart breaks, the eliminated crash out of a tuk-tuk and become ghosts.
+    function maybeShowHits(m) {
+        const R = m.royale, res = R.results?.[m.round];
+        if (!res) return;
+        const key = `${m.id}:${m.round}`;
+        if (royaleHitKey === key) return;
+        royaleHitKey = key;
+        const box = document.getElementById('royale-hit');
+        box.innerHTML = `<div class="hit-row">${res.map(o => {
+            const p = playerById(o.id) || { name: R.players[o.id]?.name || '?' };
+            const state = o.eliminated ? 'out' : o.lostLife ? 'hurt' : o.shieldBlocked ? 'shield' : 'safe';
+            const badge = o.eliminated ? '🛺💥' : o.lostLife ? '💔' : o.shieldBlocked ? '🛡️' : '';
+            return `<div class="hit-chip ${state}"><span class="hit-avatar">${renderAvatarHTML(p, '100%', '100%')}</span>
+                <b class="hit-badge">${badge}</b><span class="hit-name">${escapeHTML(p.name)}</span>
+                <span class="hit-lives">${'❤️'.repeat(Math.max(0, o.lives))}</span>
+                ${o.eliminated ? `<span class="hit-note">${t('royale.crash')}</span>` : o.lostLife ? `<span class="hit-note">${t('royale.lostLife')}</span>` : ''}</div>`;
+        }).join('')}</div>`;
+        box.hidden = false;
+        playBeep(180, 'sawtooth', 0.2);
+        setTimeout(() => { if (royaleHitKey === key) box.hidden = true; }, 3000);
+    }
+
+    function maybeDuelSplash(m) {
+        const R = m.royale;
+        if (!R.duel || duelShownFor === m.id) return;
+        duelShownFor = m.id;
+        const duelists = getLobbyPlayers().filter(p => R.players[p.id]?.alive);
+        const splash = document.getElementById('duel-splash');
+        splash.innerHTML = `<div class="duel-title">${t('royale.duel')}</div><div class="duel-faces">${duelists.map((p, i) => `
+            <div class="duel-face"><span>${renderAvatarHTML(p, '100%', '100%')}</span><b>${escapeHTML(p.name)}</b></div>${i === 0 ? '<i>VS</i>' : ''}`).join('')}</div>`;
+        splash.hidden = false;
+        setTimeout(() => { splash.hidden = true; }, 2200);
+    }
+
+    // The eliminated watch as ghosts: panorama, the answer (after 5 s), the living locking in, and one ghost pin per round.
+    function renderGhost(m) {
+        const R = m.royale;
+        const banner = document.getElementById('spectator-banner');
+        banner.hidden = false;
+        document.getElementById('spect-title').innerHTML = `<b>${t('royale.ghostBanner', { n: m.round })}</b><span>${t('royale.you_ghost')}</span>`;
+        document.getElementById('spect-follow').innerHTML = '';
+        document.getElementById('spect-card').innerHTML = '';
+        const map = gameState.guessMap;
+        if (map && window.L) {
+            gameState.spectLayer?.remove();
+            gameState.spectLayer = L.layerGroup().addTo(map);
+            if (m.answer) L.marker([m.answer.lat, m.answer.lng], { icon: L.divIcon({ className: 'marker-pin-actual', iconSize: [18, 18] }) }).addTo(gameState.spectLayer);
+            for (const p of getLobbyPlayers()) {
+                const g = (m.guesses[m.round] || {})[p.id];
+                if (!g?.guessLatLng || !R.players[p.id]?.alive) continue;
+                const aura = getPlayerAura(p.id);
+                L.marker([g.guessLatLng.lat, g.guessLatLng.lng], { icon: L.divIcon({ className: 'custom-leaflet-player-marker', iconSize: [40, 52], iconAnchor: [20, 50],
+                    html: `<div class="marker-player-pin"><div class="marker-pin-bubble" style="border-color:${aura}">${renderAvatarHTML(p, '100%', '100%')}</div><div class="marker-pin-point" style="border-top-color:${aura}"></div></div>` }) }).addTo(gameState.spectLayer);
+            }
+        }
+        const btn = document.getElementById('guess-btn');
+        const can = R.settings.ghostPins && !R.mineDropped && !R.results?.[m.round];
+        btn.disabled = !can || !gameState.guessLatLng;
+        btn.classList.toggle('ready', can && !!gameState.guessLatLng);
+        btn.innerHTML = `<span>${R.mineDropped ? t('royale.pinDropped') : t('royale.dropPin')}</span>`;
+        // Results for the round, once decided.
+        const box = document.getElementById('spect-results');
+        const decided = !!R.results?.[m.round];
+        box.hidden = !decided;
+        if (decided) {
+            document.getElementById('spect-tabs').hidden = true;
+            document.getElementById('spect-results-list').innerHTML = renderStandings({ rows: mpStandingRows(), tab: 'round', royale: true, deps: standingsDeps() });
+        }
+    }
+    function dropGhostPin() {
+        if (!gameState.guessLatLng || !gameState.ghost) return;
+        sendRoomMessage({ type: 'GHOST_PIN', latLng: { lat: gameState.guessLatLng.lat, lng: gameState.guessLatLng.lng } });
+        showToast(t('royale.pinDropped'));
+        const btn = document.getElementById('guess-btn');
+        btn.disabled = true; btn.classList.remove('ready');
+    }
+
+    // Called from applyRoomState for every Royale state update.
+    function applyRoyale(m) {
+        const R = m.royale;
+        const me = R.players[myPlayerId];
+        gameState.royale = R;
+        gameState.ghost = !!me && !me.alive;
+        document.body.dataset.ghost = gameState.ghost ? '1' : '';
+        document.body.dataset.duel = R.duel && m.phase === 'playing' ? '1' : '';
+        document.body.dataset.royale = '1';
+        applyRoyaleZone(m);
+        royaleHud(m);
+        if (m.phase === 'playing') maybeDuelSplash(m);
+        maybeShowHits(m);
+        if (m.phase === 'final') document.getElementById('royale-hit').hidden = true;
+    }
+    function clearRoyaleUI() {
+        document.body.dataset.ghost = ''; document.body.dataset.duel = ''; document.body.dataset.royale = '';
+        gameState.ghost = false; gameState.royale = null; gameState.zoneKey = null;
+        gameState.zoneLayer?.remove(); gameState.ghostPinLayer?.remove(); gameState.spectLayer?.remove();
+        royaleHitKey = null; duelShownFor = null;
+        const counter = document.getElementById('royale-alive'); if (counter) counter.remove();
+        for (const id of ['royale-hit', 'duel-splash']) { const el = document.getElementById(id); if (el) el.hidden = true; }
+        const tabs = document.getElementById('spect-tabs'); if (tabs) tabs.hidden = false;
+    }
+
+    // ---- Standings (Part E): rows are built from server data; the component only sorts and draws.
+    const standingsDeps = () => ({
+        esc: escapeHTML, t,
+        fmtDist: formatDistanceStr,
+        avatar: r => renderAvatarHTML(r.avatarSource || r, '100%', '100%')
+    });
+    let standingsTab = 'round';
+    let standingsRows = [];
+    let standingsAutoTimer = null;
+
+    function simStandingRows() {
+        return gameState.simPlayers.map(p => ({
+            id: p.id, name: p.name, isMe: !!p.isMe, aura: p.aura, avatarSource: p,
+            guess: p.currentGuess ? { dist: p.currentGuess.dist, elapsed: p.currentGuess.elapsed ?? null, score: p.currentGuess.score } : null,
+            total: p.totalScore
+        }));
+    }
+    function mpStandingRows() {
+        const guesses = (gameState.mpGuesses || {})[gameState.roundIndex] || {};
+        const me = myPlayerId || 'me';
+        return getLobbyPlayers().map(p => {
+            const g = guesses[p.id] || null;
+            const R = serverMatch?.royale, st = R?.players?.[p.id], res = R?.results?.[gameState.roundIndex]?.find(o => o.id === p.id);
+            return { id: p.id, name: p.name, isMe: p.id === me, aura: getPlayerAura(p.id), avatarSource: p, guess: g, total: mpTotalFor(p.id),
+                ...(st ? { hearts: st.lives, shield: st.shield, alive: st.alive, eliminatedRound: st.eliminatedRound, lostLife: !!res?.lostLife, shieldBlocked: !!res?.shieldBlocked } : {}) };
+        });
+    }
+    // Called once when a result screen opens: "This round" first, then the running totals
+    // once the count-up has landed. The player can tap either tab at any time.
+    function beginStandings() {
+        standingsTab = 'round';
+        clearTimeout(standingsAutoTimer);
+        const listEl = document.getElementById('mp-round-players-list'); if (listEl) delete listEl.dataset.sig;
+        standingsAutoTimer = setTimeout(() => { if (standingsTab === 'round') setStandingsTab('overall'); }, 4000);
+    }
+    function paintStandings(rows) {
+        const list = document.getElementById('mp-round-players-list');
+        if (!list) return;
+        standingsRows = rows;
+        const sig = standingsTab + ':' + rows.length;
+        const animate = list.dataset.sig !== sig;
+        list.dataset.sig = sig;
+        const first = Number(gameState.roundIndex) <= 1;
+        list.innerHTML = renderStandings({
+            rows, tab: standingsTab, deps: standingsDeps(), royale: !!serverMatch?.royale,
+            previousOrder: first ? null : previousOrderFrom(rows)
+        });
+        document.querySelectorAll('#standings-tabs [data-tab]').forEach(b => {
+            const on = b.dataset.tab === standingsTab;
+            b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on));
+        });
+        // Rows slide in by rank, once per tab (server updates repaint without replaying it).
+        if (animate) list.querySelectorAll('.st-row, .st-step').forEach(el => el.classList.add('st-in'));
+    }
+    function setStandingsTab(tab) {
+        standingsTab = tab;
+        clearTimeout(standingsAutoTimer);
+        if (standingsRows.length) paintStandings(standingsRows);
     }
 
     function renderTeamRow(r, idx, me, showRoundPoints) {
@@ -2718,37 +3190,7 @@
             return;
         }
 
-        const rows = getLobbyPlayers().map(p => ({ ...p, guess: guesses[p.id] || null, total: mpTotalFor(p.id) }));
-        const rank = r => r.guess ? (r.guess.dist !== null ? r.guess.dist : 1e8) : 1e9;
-        rows.sort((a, b) => rank(a) - rank(b));
-
-        const medals = ['🥇 1st', '🥈 2nd', '🥉 3rd'];
-        list.innerHTML = rows.map((p, idx) => {
-            const g = p.guess;
-            const detail = !g ? t('result.stillGuessing')
-                : g.dist === null ? t('result.noGuess')
-                : `${formatDistanceStr(g.dist)} ${t('result.away')}${g.elapsed !== null ? ` (${g.elapsed.toFixed(1)}s)` : ''}`;
-            return `
-                <div class="mp-leaderboard-row ${idx === 0 && g ? 'rank-1' : ''} ${p.id === me ? 'is-me' : ''}">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-weight: 900; font-size: 0.92rem; min-width: 48px; color: ${idx === 0 && g ? 'var(--gold-deep)' : 'var(--ink-2)'};">${g ? (medals[idx] || `${idx + 1}th`) : '…'}</span>
-                        <div style="width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 2px solid ${getPlayerAura(p.id)}; background: var(--gold); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
-                            ${renderAvatarHTML(p, '100%', '100%')}
-                        </div>
-                        <div>
-                            <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                                ${escapeHTML(p.name)} ${p.id === me ? `<span style="font-size: 0.7rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; background: var(--rice); color: var(--paper);">${t('party.you')}</span>` : ''}
-                            </div>
-                            <div style="font-size: 0.75rem; color: var(--ink-2);">${detail}</div>
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="font-weight: 900; font-size: 1.05rem; color: var(--rice);">${g ? `+${g.score.toLocaleString()} ${t('final.points')}` : ''}</div>
-                        <div style="font-size: 0.72rem; color: var(--gold-deep); font-weight: 700;">${t('final.total')}: ${p.total.toLocaleString()}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
+        paintStandings(mpStandingRows());
     }
 
     function refreshMpResultPins() {
@@ -2762,6 +3204,8 @@
 
         const myTeamIds = isTeamMode() ? (myTeam()?.playerIds || []) : [];
         const shownTeams = new Set();
+        // Pin labels carry the same round rank as the standings list.
+        const rankOf = Object.fromEntries(sortByRoundPoints(mpStandingRows()).map((r, i) => [r.id, i + 1]));
         getLobbyPlayers().forEach(p => {
             const g = guesses[p.id];
             if (p.id === me || !g || !g.guessLatLng) return;
@@ -2776,7 +3220,7 @@
                 <div class="marker-player-pin">
                     <div class="marker-pin-bubble" style="border-color: ${aura};">${renderAvatarHTML(p, '100%', '100%')}</div>
                     <div class="marker-pin-point" style="border-top-color: ${aura};"></div>
-                    <div class="marker-pin-label" style="border-color: ${aura};">${escapeHTML(p.name)}: ${formatDistanceStr(g.dist)}</div>
+                    <div class="marker-pin-label" style="border-color: ${aura};">${isTeamMode() ? '' : '#' + rankOf[p.id] + ' '}${escapeHTML(p.name)}: ${formatDistanceStr(g.dist)}</div>
                 </div>
             `;
             L.marker(guessLoc, {
@@ -2918,6 +3362,7 @@
 
     async function refreshRankedScreen() {
         const me = await rankedFetch('/api/me');
+        setUnlocks(me?.unlocks);
         myRatings = me.ok ? me.data.ratings : null;
         paintRankRank();
         loadBoard();
@@ -3302,7 +3747,7 @@
         // Coach marks and map sheet.
         document.getElementById('coach-next').addEventListener('click', nextCoachStep);
         setupSheetGesture();
-        setupResizer();
+        setupDesktopMap();
 
         // Joining from the home card or the party modal.
         document.getElementById('home-join-input').addEventListener('keydown', e => { if (e.key === 'Enter') joinFromHome(); });
@@ -3328,14 +3773,16 @@
         ALL_LOCATIONS, WORLD_LOCATIONS, CAMBODIA_LOCATIONS, ASIA_LOCATIONS, LOCATIONS_DB, MODE_CONFIG,
         getNextUniqueLocation, getSeenHistory, recordSeenLocation, getLobbyPlayers, isRealMultiplayer,
         openTutorialModal, toggleMute, openProfileModal, closeModal, randomizeCharacter,
-        switchStudioTab, setStudioOption, saveProfile,
+        switchStudioTab, setStudioOption, saveProfile, undoStudio, resetStudio,
+        editingAvatarFrame: () => editingAvatar?.avatarConfig.frame,
         renderModeCards, handleModeCardClick, startModeGame, startQuickPlay, startSinglePlayerGame,
         start4PlayerSimulation, openMultiplayerModal, createMultiplayerLobby, joinMultiplayerLobby,
         selectPartyMode, leaveLobby, copyInviteLink, shareTelegram, sendLobbyEmote, startMultiplayerGame,
         skipBrokenLocation, returnToStartPano, toggleMapExpand, submitPlayerGuess, advanceNextRound,
         resetToHome, backToHome, joinFromHome, nextCoachStep, closeCoach, setRegion, setLanguage, showFinalPodium,
         shareInviteLink, openRanked, closeRanked, setRankedRegion, setBoardTab, setBoardMode, startRankedRun, copyBackupCode, restoreBackupCode, copyInviteLink,
-        setSheet, cycleSheet, pickTeamMember, myRoleNow
+        setSheet, cycleSheet, pickTeamMember, myRoleNow,
+        setStandingsTab, setRoyaleSettings, royaleSettingsLives: () => royaleSettingsSync?.lives, setSpectatorAnswer, setSpectTab, setFollow, followStep, toggleMapPinned, toggleTicketPanel, toggleDock, dockZoom, toggleEmoteMenu
     });
 
     Object.defineProperties(globalThis, {

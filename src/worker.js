@@ -1,9 +1,9 @@
 import { DurableObject } from 'cloudflare:workers';
-import { RoomEngine, EMOTES } from './room-engine.js';
+import { RoomEngine, EMOTES, profile } from './room-engine.js';
 import { GAME_PROTOCOL } from './location-rotation.js';
 import { modes } from '../.generated/game-data.js';
 import { RankedPlayer } from './ranked.js';
-import { authenticate, getRatings, topBoard, myStanding, recordRun, validIdentity, boardCacheKey, HttpError } from './leaderboard.js';
+import { authenticate, getRatings, getUnlocks, topBoard, myStanding, recordRun, validIdentity, boardCacheKey, HttpError } from './leaderboard.js';
 import { weekKey, weekStartMs } from './rating.js';
 
 export { RankedPlayer };
@@ -60,7 +60,7 @@ async function api(request, env, ctx, url) {
     if (!env.DB) throw new HttpError(503, 'The leaderboard is not available yet.');
     const body = await readBody(request, url);
     const name = await authenticate(env.DB, body);
-    if (path === '/api/me') return json({ name, ratings: await getRatings(env.DB, body.playerId) });
+    if (path === '/api/me') return json({ name, ratings: await getRatings(env.DB, body.playerId), unlocks: await getUnlocks(env.DB, body.playerId) });
     const action = path.slice('/api/ranked/'.length);
     if (!['start', 'guess', 'next'].includes(action)) throw new HttpError(404, 'Not found.');
     const stub = env.RANKED.get(env.RANKED.idFromName(body.playerId));
@@ -103,7 +103,8 @@ export class PartyRoom extends DurableObject {
     ctx.blockConcurrencyWhile(async () => { this.engine = new RoomEngine(await ctx.storage.get('room')); });
   }
   async fetch() {
-    if (this.ctx.getWebSockets().length >= 16) return new Response('Too many connections', { status: 429 });
+    // 8 players + 8 spectators, plus room for a resumed tab before its old socket closes.
+    if (this.ctx.getWebSockets().length >= 20) return new Response('Too many connections', { status: 429 });
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ pendingUntil: Date.now() + 15000 });
@@ -154,7 +155,7 @@ export class PartyRoom extends DurableObject {
       ws.close(1000, 'Left party');
     } else if (msg.type === 'LOBBY_EMOTE') {
       const p = this.engine.state.players.find(p => p.id === attachment.playerId);
-      if (p && EMOTES.includes(msg.emote)) this.sendAll({ type: 'LOBBY_EMOTE', sender: p.profile.name, emote: msg.emote });
+      if (p && EMOTES.includes(msg.emote)) this.sendAll({ type: 'LOBBY_EMOTE', sender: p.profile.name, emote: msg.emote, spectator: p.role === 'spectator' });
     } else {
       this.engine.tick(now);
       this.engine.handle(attachment.playerId, msg, now);
@@ -169,6 +170,9 @@ export class PartyRoom extends DurableObject {
     try {
       await authenticate(this.env.DB, { playerId: identity.playerId, secret: identity.secret, name: player.profile.name });
       player.deviceId = identity.playerId;
+      player.unlocks = await getUnlocks(this.env.DB, identity.playerId);
+      // Re-check the avatar now that we know what this player has earned.
+      if (!this.engine.state.match) player.profile = profile(player.wanted || player.profile, player.unlocks);
     } catch (e) { console.error('party identity not linked:', e?.message); }
   }
   async recordFinished() {
@@ -176,10 +180,13 @@ export class PartyRoom extends DurableObject {
     if (!this.env.DB || !m || m.phase !== 'final' || m.recorded) return;
     m.recorded = true;
     const cfg = modes[s.mode];
+    // Battle Royale is scored by placement (1st 100, 2nd 70, 3rd 50, then -10 per place, min 5); a score of 100 is a win.
+    const placement = m.royale ? Object.fromEntries((m.royale.placements || this.engine.placements()).map(x => [x.id, x.points])) : null;
     for (const p of s.players) {
-      if (!p.deviceId) continue;
-      const score = Object.values(m.guesses).reduce((sum, round) => sum + (round[p.id]?.score || 0), 0);
-      try { await recordRun(this.env.DB, { playerId: p.deviceId, mode: `party:${s.mode}`, region: cfg.region, score, rounds: cfg.rounds, ranked: false }); } catch (e) { console.error('party result not saved:', e?.message); }
+      if (!p.deviceId || p.role === 'spectator') continue;
+      const score = placement ? (placement[p.id] ?? 5) : Object.values(m.guesses).reduce((sum, round) => sum + (round[p.id]?.score || 0), 0);
+      const rounds = placement ? Math.max(1, m.round) : cfg.rounds;
+      try { await recordRun(this.env.DB, { playerId: p.deviceId, mode: `party:${s.mode}`, region: cfg.region, score, rounds, ranked: false }); } catch (e) { console.error('party result not saved:', e?.message); }
     }
   }
   sendAll(msg) {

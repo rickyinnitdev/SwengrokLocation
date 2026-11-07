@@ -1,3 +1,5 @@
+import { profileForMode } from '../map/profile.js';
+
 // Game modes. Single source of truth for the client and the server.
 // `region` decides which door a mode lives behind: "kh" (Cambodia) or "world".
 // Khmer copy is first-pass and should be reviewed by a native speaker.
@@ -129,6 +131,26 @@ export const MODE_CONFIG = {
     time: 60, rounds: 6, pool: 'countries', nmpz: false, teams: true, isWorld: true,
     region: 'world', icon: 'people', accent: 'rice', difficulty: 3
   },
+  // Battle Royale: everyone has lives, the worst guesser loses one each round, the zone shrinks.
+  // `rounds` is only the safety cap; the match ends when one player is left. Khmer copy: TODO(km-review).
+  royale: {
+    name: 'Tuk-Tuk Royale',
+    nameKm: 'តុកតុករ៉ូយ៉ាល់',
+    badge: 'Last explorer standing',
+    desc: 'Lose a life when you guess worst. The zone shrinks. Last one standing wins.',
+    descKm: 'អ្នកទាយអាក្រក់បំផុតបាត់បង់ជីវិតមួយ។ តំបន់រួមតូចទៅៗ។ អ្នកចុងក្រោយឈ្នះ។',
+    time: 60, rounds: 30, pool: 'all', nmpz: false, royale: true, lives: 3, minTime: 20,
+    region: 'kh', icon: 'flame', accent: 'lotus', difficulty: 3, party: true
+  },
+  royale_world: {
+    name: 'World Royale',
+    nameKm: 'រ៉ូយ៉ាល់ពិភពលោក',
+    badge: 'Last explorer standing',
+    desc: 'The world-map Battle Royale: lives, a shrinking zone and ghosts.',
+    descKm: 'ការប្រកួតរ៉ូយ៉ាល់លើផែនទីពិភពលោក៖ ជីវិត តំបន់រួម និងខ្មោច។',
+    time: 60, rounds: 30, pool: 'countries', nmpz: false, royale: true, isWorld: true, lives: 3, minTime: 20,
+    region: 'world', icon: 'flame', accent: 'lotus', difficulty: 3, party: true
+  },
   cambodia: {
     ranked: true,
     name: 'Angkor & Beyond',
@@ -145,3 +167,6 @@ export const REGION_CONFIG = {
   kh: { name: 'In Cambodia', nameKm: 'ក្នុងស្រុក', blurb: 'Phnom Penh streets, landmarks, khans and Angkor.' },
   world: { name: 'Around the World', nameKm: 'ជុំវិញពិភពលោក', blurb: 'World, country flags and Asia.' }
 };
+
+// Every mode carries a map profile (see client/map/profile.js). The server ignores it.
+for (const cfg of Object.values(MODE_CONFIG)) cfg.map = profileForMode(cfg);

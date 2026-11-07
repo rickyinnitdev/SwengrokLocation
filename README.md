@@ -48,12 +48,20 @@ Browser tests use installed Chrome locally; CI uses Playwright Chromium. To depl
 
 Teams of two (one team may have three). Each round one teammate is the **Viewer** and sees only the street, and the other is the **Pinner** and sees only the map; roles swap every round and the Pinner's guess scores for the whole team. The server never sends the Pinner the current location before the reveal, and never sends anyone a future round's location. If a partner disconnects, the remaining player sees both. Available in the party picker of both regions.
 
+## Battle Royale ("Tuk-Tuk Royale" / "World Royale")
+
+Party-only, best with 4 to 8 players. Everyone starts with lives (host sets 1 to 5, default 3). Each round the farthest guess loses a life (the two farthest with 6+ alive; a missing guess counts as farthest; ties at the bottom all lose one; if everyone would lose, nobody does). A guess within 100 m (25 km in the world) earns one shield that blocks the next hit. The round timer starts at 60 s (host can change it) and drops 5 s per round to a 20 s floor. From round 4 a glowing zone shrinks around the answer (6 km, 3 km, 1.5 km, and so on; 3,000 km in the world); the server picks a centre that always contains the answer but is never on it. With two players left it is a **final duel** (no quick-jump chips). Eliminated players become **ghosts**: they see the answer 5 s into each round and the living players' pins as they lock in, and may drop one anonymous ghost pin per round (the host can switch heckling off). The match ends when one player is left, or after 30 rounds on lives and then total distance. Placement points go to the party leaderboard as `party:royale`: 1st 100, 2nd 70, 3rd 50, then 10 less per place, minimum 5. The server never sends living players the answer or anyone else's pin before the round is decided.
+
+## Spectators
+
+Joining mid-match (or while results are showing) is allowed: the newcomer watches and joins the next lobby. Up to 8 spectators per room, separate from the 8 players. Spectators cannot guess, ready up, change settings or become host. By default they get no answer and no distances until the round is revealed; a locked pin (its position only) can be shown for the player they follow. The host's "Spectators see the answer early" switch turns that off for streams. When the host starts a rematch, spectators become players in join order while seats remain.
+
 ## Party rules
 
 - Everyone can edit their character, name and title in the lobby; saved changes appear live for friends.
 - The host picks the mode in the creation dialog or lobby. Everyone sees the server-confirmed mode.
 - A single Durable Object owns each room: roster, host, shared randomized location plan, timers, accepted guesses, scores and round readiness.
-- The Start button enables after at least two players are connected. New players wait until the current match finishes before joining.
+- The Start button enables after at least two players are connected. Someone who opens the room link mid-match joins as a **spectator** (see below).
 - Every match draws five distinct spots, with random headings. Saved shuffled draw decks use every location in the selected pool before repeating. Nearby points and recently used street names are avoided where the remaining pool allows; history follows players into new rooms. Landmark mode uses the 42 landmark coordinates; other modes use all 392.
 - After guessing, press Ready for next round. Everyone advances together after all remaining players are ready.
 - Refreshing/reconnecting in the same browser tab resumes the session using a token in session storage. Tokens are never included in shared rosters. A disconnected player's place is saved for 30 seconds, then removed; if the host leaves, another player becomes host.
