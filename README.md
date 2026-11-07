@@ -1,5 +1,7 @@
 # WanderPenh / SwengrokLocation
 
+**▶ Play now: [wanderpenh.kimhengmorm222.workers.dev](https://wanderpenh.kimhengmorm222.workers.dev/)**
+
 Phnom Penh guessing game with solo, AI battle, server-scored ranked runs with leaderboards, and server-backed private party rooms. The first screen offers two doors: **In Cambodia** (Khmer by default) and **Around the World**. The website and multiplayer server run together in one Cloudflare Worker. No PeerJS, TURN service, API key or third-party room service is required.
 
 ## Deploy from the private GitHub repository
