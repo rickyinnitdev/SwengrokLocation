@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { RoomEngine, GRACE_MS, MAX_PLAYERS, MAX_SPECTATORS } from '../src/room-engine.js';
+import { RoomEngine, GRACE_MS, GRACE_MATCH_MS, MAX_PLAYERS, MAX_SPECTATORS } from '../src/room-engine.js';
 import { locations } from '../.generated/game-data.js';
 import { drawLocations, locationSeparation } from '../src/location-rotation.js';
 
@@ -69,7 +69,7 @@ test('Reconnect restores identity and state, then host transfers when grace expi
   assert.equal(resumed.id, a.id);
   assert.equal(restored.state.match.id, m.id);
   restored.disconnect(a.id, 4000);
-  restored.tick(4000 + GRACE_MS);
+  restored.tick(4000 + GRACE_MATCH_MS);
   assert.equal(restored.state.hostId, b.id);
   assert.equal(restored.state.players.length, 1);
 });
@@ -277,10 +277,11 @@ test('Tag-Team disconnected partner becomes both eyes and hands', () => {
 
   // b is the round-2 Pinner. Once their grace period expires, a must see and pin.
   e.disconnect(b.id, m.startedAt + 2500);
-  e.tick(m.startedAt + 2500 + GRACE_MS + 1);
+  m.deadline += GRACE_MATCH_MS; // the match grace period is longer than a round
+  e.tick(m.startedAt + 2500 + GRACE_MATCH_MS + 1);
   assert.equal(e.state.players.some(p => p.id === b.id), false);
   assert.equal(e.snapshot(a.id).match.role, 'both');
-  e.handle(a.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.deadline - 1000);
+  e.handle(a.id, msg(m, 'PLAYER_GUESS', { guessLatLng: target }), m.startedAt + 2500 + GRACE_MATCH_MS + 2);
   assert.ok(m.guesses[2][a.id].score > 0);
 });
 
@@ -544,7 +545,7 @@ test('royale views: living players never get the answer or others\' pins; ghosts
 test('royale: a disconnect past the grace period is an elimination', () => {
   const { e, players, m } = royaleRoom(3);
   e.disconnect(players[2].id, 5000);
-  e.tick(5000 + GRACE_MS + 1);
+  e.tick(5000 + GRACE_MATCH_MS + 1);
   assert.equal(m.royale.players[players[2].id].alive, false);
   assert.ok(m.royale.order.includes(players[2].id));
 });
@@ -564,7 +565,7 @@ test('royale: if a quitter leaves only one player alive, that player wins at onc
   const { e, players, m } = royaleRoom(2);
   const [a, b] = players;
   e.disconnect(b.id, 5000);
-  e.tick(5000 + GRACE_MS + 1);
+  e.tick(5000 + GRACE_MATCH_MS + 1);
   assert.equal(e.state.match.phase, 'final', 'no solo round for the survivor');
   assert.equal(e.state.match.royale.placements[0].id, a.id);
 });
@@ -586,7 +587,7 @@ test('a spectator waiting in a full lobby takes the next free seat before any ne
 test('royale keeps a quitter\'s name for the final standings', () => {
   const { e, players, m } = royaleRoom(3);
   e.disconnect(players[2].id, 5000);
-  e.tick(5000 + GRACE_MS + 1);
+  e.tick(5000 + GRACE_MATCH_MS + 1);
   assert.equal(m.royale.players[players[2].id].name, 'P2');
   assert.ok(e.placements().some(x => x.id === players[2].id));
 });

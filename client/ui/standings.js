@@ -49,7 +49,8 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 function breakdown(g, d) {
   if (!g) return d.t('result.stillGuessing');
-  if (g.dist === null) return d.t('result.noGuess');
+  if (g.locked) return d.t('result.stillGuessing'); // a rival's pin stays hidden until the reveal
+  if (g.dist == null) return d.t('result.noGuess');
   const parts = [d.fmtDist(g.dist)];
   if (typeof g.elapsed === 'number') parts.push(`${g.elapsed.toFixed(1)}s`);
   if (g.speedBonus) parts.push(`+${g.speedBonus.toLocaleString()} ${d.t('standings.speed')}`);
@@ -80,7 +81,7 @@ function podium(top, d, royale) {
   const order = [1, 0, 2].filter(i => top[i]);
   return `<div class="st-podium">${order.map(i => {
     const r = top[i];
-    const main = royale ? royaleBadge(r, d) || (r.guess && r.guess.dist !== null ? d.fmtDist(r.guess.dist) : '—')
+    const main = royale ? royaleBadge(r, d) || (r.guess && r.guess.dist != null ? d.fmtDist(r.guess.dist) : '—')
       : (r.guess && r.guess.dist !== null ? `+${num(r.guess.score, 0).toLocaleString()}` : '0');
     return `<div class="st-step place-${i + 1} ${r.isMe ? 'is-me' : ''}" style="--i:${i}">
       ${face(r, d, 'big')}<div class="st-step-name">${d.esc(r.name)}${youTag(r, d)}</div>
@@ -90,7 +91,7 @@ function podium(top, d, royale) {
 
 function row(r, rank, d, { tab, royale, change }) {
   const g = r.guess;
-  const noGuess = !g || g.dist === null;
+  const noGuess = !g || g.dist == null;
   let main, sub;
   if (tab === 'round') {
     main = royale ? (royaleBadge(r, d) || (noGuess ? '' : d.fmtDist(g.dist))) : (noGuess ? '0' : `+${num(g.score, 0).toLocaleString()}`);

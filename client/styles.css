@@ -2051,3 +2051,20 @@ body[data-duel='1'] .map-chips { display: none !important; }
 .duel-faces i { font-style: normal; font-weight: 900; font-size: clamp(1.4rem, 5vw, 2.4rem); color: #fde68a; }
 @keyframes duel-in { from { opacity: 0; transform: scale(1.15); } }
 @media (prefers-reduced-motion: reduce) { #duel-splash { animation: none; } }
+
+/* ---- Wiki ---- */
+#wiki-screen { background-color: var(--paper); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.wiki-search { width: 100%; box-sizing: border-box; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line, #0002); font: inherit; background: var(--card, #fff); color: inherit; margin: 8px 0 12px; }
+.wiki-section h2 { margin: 18px 0 8px; font-size: 1.15rem; }
+.wiki-item { background: var(--card, #fff); border: 1px solid var(--line, #0001); border-radius: 12px; padding: 10px 14px; margin-bottom: 8px; }
+.wiki-item h3 { margin: 0 0 4px; font-size: 0.98rem; }
+.wiki-item p, .wiki-item li { font-size: 0.88rem; line-height: 1.45; margin: 4px 0; }
+.wiki-item ul { padding-left: 18px; margin: 4px 0; }
+.wiki-small { font-size: 0.78rem !important; color: var(--ink-2); }
+.wiki-table-wrap { overflow-x: auto; }
+.wiki-table { border-collapse: collapse; font-size: 0.78rem; }
+.wiki-table th, .wiki-table td { padding: 3px 8px; border-bottom: 1px solid #0001; text-align: right; white-space: nowrap; }
+.wiki-table th:first-child { text-align: left; }
+.wiki-map { width: 100%; height: auto; }
+.wiki-sea { fill: #8ec5e622; }
+.wiki-dot { fill: var(--gold-deep, #b8860b); fill-opacity: 0.55; }

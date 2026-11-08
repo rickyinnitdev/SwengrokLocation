@@ -1,7 +1,8 @@
 import { DurableObject } from 'cloudflare:workers';
-import { locations, modes } from '../.generated/game-data.js';
+import { modes } from '../.generated/game-data.js';
 import { drawLocations } from './location-rotation.js';
 import { distance, scoreRound, maxRoundScore } from './scoring.js';
+import { locationById } from './lookup.js';
 import { poolFor, poolKeyFor } from './pools.js';
 import { recordRun, HttpError } from './leaderboard.js';
 
@@ -38,6 +39,8 @@ export class RankedPlayer extends DurableObject {
       if (action === 'start') out = await this.start(body);
       else if (action === 'guess') out = await this.guess(body);
       else if (action === 'next') out = await this.next();
+      else if (action === 'check') out = await this.check();
+      else if (action === 'reserve') out = await this.reserve();
       else throw new HttpError(404, 'Unknown action.');
       return Response.json(out);
     } catch (e) {
@@ -46,15 +49,31 @@ export class RankedPlayer extends DurableObject {
     }
   }
 
-  async start({ mode, playerId, name }, now = Date.now()) {
-    const cfg = modes[mode];
-    if (!cfg?.ranked) throw new HttpError(400, 'That mode is not ranked.');
+  // Party starts check every player first, then reserve, so a blocked friend costs nobody a start.
+  async check(now = Date.now()) {
+    const recent = ((await this.ctx.storage.get('starts')) || []).filter(t => now - t < 3600 * 1000);
+    if (recent.length >= STARTS_PER_HOUR) throw new HttpError(429, 'Too many ranked runs. Try again later.');
+    return { ok: true };
+  }
+
+  // One shared counter for solo runs and ranked parties.
+  async reserve(now = Date.now()) {
     const recent = ((await this.ctx.storage.get('starts')) || []).filter(t => now - t < 3600 * 1000);
     if (recent.length >= STARTS_PER_HOUR) throw new HttpError(429, 'Too many ranked runs. Try again later.');
     recent.push(now);
     await this.ctx.storage.put('starts', recent);
+    return { ok: true };
+  }
 
-    const picks = drawLocations(poolFor(cfg), cfg.rounds, { history: [] }, poolKeyFor(cfg));
+  async start({ mode, playerId, name }, now = Date.now()) {
+    const cfg = modes[mode];
+    if (!cfg?.ranked) throw new HttpError(400, 'That mode is not ranked.');
+    await this.reserve(now);
+
+    // Each device keeps its own draw deck so a player's runs do not repeat the same spots.
+    const rotation = (await this.ctx.storage.get('rotation')) || { history: [] };
+    const picks = drawLocations(poolFor(cfg), cfg.rounds, rotation, poolKeyFor(cfg));
+    await this.ctx.storage.put('rotation', rotation);
     const run = {
       id: crypto.randomUUID(), playerId, name, mode, region: cfg.region,
       plan: picks.map(l => ({ id: l.id, heading: randomHeading() })),
@@ -74,7 +93,7 @@ export class RankedPlayer extends DurableObject {
       && Math.abs(guessLatLng.lat) <= 90 && Math.abs(guessLatLng.lng) <= 180
       && now >= run.roundStartedAt && now <= run.deadline + LATE_GRACE_MS;
     const point = valid ? { lat: guessLatLng.lat, lng: guessLatLng.lng } : null;
-    const target = Object.values(locations).flat().find(l => l.id === run.plan[run.round - 1].id);
+    const target = locationById(run.plan[run.round - 1].id);
     const dist = point ? distance(target, point) : null;
     const elapsed = Math.max(0, Math.min(cfg.time, (now - run.roundStartedAt) / 1000));
     const scored = scoreRound(run.mode, cfg, dist, elapsed);

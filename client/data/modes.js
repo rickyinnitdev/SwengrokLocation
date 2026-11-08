@@ -78,8 +78,8 @@ export const MODE_CONFIG = {
     name: 'Asia Adventure',
     nameKm: 'ផ្សងព្រេងអាស៊ី',
     badge: 'Southeast Asia and beyond',
-    desc: 'Bangkok, Hanoi, Singapore, Bali, Tokyo and everything between.',
-    descKm: 'បាងកក ហាណូយ សិង្ហបុរី បាលី តូក្យូ និងច្រើនទៀត។',
+    desc: 'Seoul, Hanoi, Singapore, Bali, Tokyo and everything between.',
+    descKm: 'សេអ៊ូល ហាណូយ សិង្ហបុរី បាលី តូក្យូ និងច្រើនទៀត។',
     time: 60, rounds: 5, pool: 'asia', nmpz: false, isAsia: true,
     region: 'world', icon: 'globe', accent: 'rice', difficulty: 2, featured: true
   },

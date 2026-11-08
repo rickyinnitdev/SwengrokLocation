@@ -184,8 +184,6 @@ export const LOCATIONS_DB = {
             { id: "w_46", name: "Kyoto Fushimi Inari", lat: 34.9671, lng: 135.7727, country: "Japan", continent: "Asia" },
             { id: "w_47", name: "Osaka Dotonbori", lat: 34.6687, lng: 135.5013, country: "Japan", continent: "Asia" },
             // Southeast Asia
-            { id: "w_48", name: "Grand Palace Bangkok", lat: 13.7500, lng: 100.4913, country: "Thailand", continent: "Southeast Asia" },
-            { id: "w_49", name: "Chiang Mai Old City", lat: 18.7883, lng: 98.9853, country: "Thailand", continent: "Southeast Asia" },
             { id: "w_50", name: "Hoan Kiem Lake Hanoi", lat: 21.0285, lng: 105.8542, country: "Vietnam", continent: "Southeast Asia" },
             { id: "w_51", name: "Ho Chi Minh City Center", lat: 10.7769, lng: 106.7009, country: "Vietnam", continent: "Southeast Asia" },
             { id: "w_52", name: "Hoi An Ancient Town", lat: 15.8801, lng: 108.3380, country: "Vietnam", continent: "Southeast Asia" },
@@ -200,7 +198,6 @@ export const LOCATIONS_DB = {
             { id: "w_61", name: "Luang Prabang Main St", lat: 19.8856, lng: 102.1350, country: "Laos", continent: "Southeast Asia" },
             { id: "w_62", name: "Vientiane That Luang", lat: 17.9757, lng: 102.6331, country: "Laos", continent: "Southeast Asia" },
             { id: "w_63", name: "Yangon Shwedagon Road", lat: 16.8714, lng: 96.1499, country: "Myanmar", continent: "Southeast Asia" },
-            { id: "w_64", name: "Phuket Old Town", lat: 7.8804, lng: 98.3923, country: "Thailand", continent: "Southeast Asia" },
             // Africa
             { id: "w_65", name: "Pyramids of Giza Road", lat: 29.9792, lng: 31.1342, country: "Egypt", continent: "Africa" },
             { id: "w_66", name: "V&A Waterfront Cape Town", lat: -33.9036, lng: 18.4211, country: "South Africa", continent: "Africa" },
@@ -211,15 +208,18 @@ export const LOCATIONS_DB = {
             // Oceania
             { id: "w_71", name: "Sydney Opera House", lat: -33.8568, lng: 151.2153, country: "Australia", continent: "Oceania" },
             { id: "w_72", name: "Auckland Sky Tower", lat: -36.8485, lng: 174.7633, country: "New Zealand", continent: "Oceania" },
-            { id: "w_73", name: "Melbourne Federation Sq", lat: -37.8180, lng: 144.9691, country: "Australia", continent: "Oceania" }
+            { id: "w_73", name: "Melbourne Federation Sq", lat: -37.8180, lng: 144.9691, country: "Australia", continent: "Oceania" },
+            { id: "w_74", name: "Gyeongbokgung Seoul", lat: 37.5796, lng: 126.9770, country: "South Korea", continent: "Asia" },
+            { id: "w_75", name: "Taipei 101 Xinyi", lat: 25.0330, lng: 121.5654, country: "Taiwan", continent: "Asia" },
+            { id: "w_76", name: "Galle Face Green Colombo", lat: 6.9271, lng: 79.8438, country: "Sri Lanka", continent: "Asia" }
         ],
         asia: [
-            // Thailand
-            { id: "asia_01", name: "Grand Palace & Wat Phra Kaew", lat: 13.7500, lng: 100.4913, country: "Thailand", continent: "Southeast Asia" },
-            { id: "asia_02", name: "Wat Arun Temple of Dawn", lat: 13.7437, lng: 100.4888, country: "Thailand", continent: "Southeast Asia" },
-            { id: "asia_03", name: "Chiang Mai Tha Phae Gate", lat: 18.7877, lng: 98.9931, country: "Thailand", continent: "Southeast Asia" },
-            { id: "asia_04", name: "Phuket Old Town Heritage", lat: 7.8844, lng: 98.3888, country: "Thailand", continent: "Southeast Asia" },
-            { id: "asia_05", name: "Ayutthaya Historical Park", lat: 14.3432, lng: 100.5419, country: "Thailand", continent: "Southeast Asia" },
+            // East Asia
+            { id: "asia_39", name: "Gyeongbokgung Palace Gate", lat: 37.5759, lng: 126.9769, country: "South Korea", continent: "Asia" },
+            { id: "asia_40", name: "Gamcheon Culture Village Busan", lat: 35.0975, lng: 129.0105, country: "South Korea", continent: "Asia" },
+            { id: "asia_41", name: "Taipei 101 Plaza", lat: 25.0339, lng: 121.5645, country: "Taiwan", continent: "Asia" },
+            { id: "asia_42", name: "Merdeka Square Kuala Lumpur", lat: 3.1479, lng: 101.6937, country: "Malaysia", continent: "Southeast Asia" },
+            { id: "asia_43", name: "Rizal Park Manila", lat: 14.5826, lng: 120.9787, country: "Philippines", continent: "Southeast Asia" },
             // Vietnam
             { id: "asia_06", name: "Hoan Kiem Lake The Huc Bridge", lat: 21.0305, lng: 105.8524, country: "Vietnam", continent: "Southeast Asia" },
             { id: "asia_07", name: "Notre Dame & Central Post Office", lat: 10.7798, lng: 106.6990, country: "Vietnam", continent: "Southeast Asia" },

@@ -44,7 +44,7 @@ Browser tests use installed Chrome locally; CI uses Playwright Chromium. To depl
 - **Ranked runs:** a ranked run is started, timed and scored by the server (`src/ranked.js`, one Durable Object per device, using the same formulas as party rooms in `src/scoring.js`). Each round's clock starts when the player asks for it, guesses after the deadline count as zero, skipping is disabled and at most 30 runs can be started per hour. Ranked modes are the ones flagged `ranked: true` in `client/data/modes.js`. The location table ships to the browser, so the server stops forged *scores*, not someone looking up answers.
 - **Ratings and tiers:** each finished ranked run moves a rating (kept separately for Cambodia and World; `src/rating.js`). Tiers: Tourist, Moto Rider (900), Tuk-Tuk Driver (1100), City Guide (1300), Khan Master (1500), Legend of Penh (1700).
 - **Boards:** `GET /api/leaderboard?mode=classic&period=week|all&region=kh` (best score per player) and `?type=rating&region=kh`. Weeks reset on Monday 00:00 Phnom Penh time. Responses are cached for a minute and the affected boards are cleared when a run is saved.
-- **Party results:** a finished party records each player's total under `party:<mode>` when that player's browser sent its device identity. Party games never change ratings.
+- **Party results:** a finished party records each player's total under `party:<mode>` when that player's browser sent its device identity. Ordinary party games never change ratings; a **ranked party** (host switches on Ranked, ranked modes only, no skipping, every player linked) moves each player's rating exactly like a solo run and files the score under the real mode's board.
 
 ## Tag-Team relay
 
@@ -77,6 +77,8 @@ Joining mid-match (or while results are showing) is allowed: the newcomer watche
 The original 110 locations plus 282 additional OSM-derived named road coordinates are within Phnom Penh. See [data/SOURCES.md](data/SOURCES.md) for provenance, licensing and panorama limitations. Extra coordinates are bundled at build time; they do not add a live map API dependency.
 
 index.html and avatar_generator.js are editable sources. scripts/build.mjs builds dist/, bundles Leaflet locally and generates the server's matching mode/location data. Do not edit generated files or commit them. Original local versions and legacy Netlify downloads remain ignored in this checkout.
+
+**Content rule:** the game must not contain content about one country excluded by the owner. See `CLAUDE.md` for the rule and `tests/content-rules.test.mjs`, which fails the build if it is broken.
 
 ## Validation scope
 

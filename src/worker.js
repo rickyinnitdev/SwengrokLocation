@@ -100,7 +100,13 @@ export class PartyRoom extends DurableObject {
     super(ctx, env);
     this.ctx = ctx;
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair('ping', 'pong'));
-    ctx.blockConcurrencyWhile(async () => { this.engine = new RoomEngine(await ctx.storage.get('room')); });
+    ctx.blockConcurrencyWhile(async () => {
+      const [room, rotation] = await Promise.all([ctx.storage.get('room'), ctx.storage.get('rotation')]);
+      if (room && rotation) room.rotation = rotation;
+      this.engine = new RoomEngine(room);
+      // A room saved before rotation had its own key must write it out on the next save.
+      this.saved = { rotation: rotation ? JSON.stringify(this.engine.state.rotation) : null, view: this.fingerprint() };
+    });
   }
   async fetch() {
     // 8 players + 8 spectators, plus room for a resumed tab before its old socket closes.
@@ -117,6 +123,7 @@ export class PartyRoom extends DurableObject {
     try { msg = JSON.parse(raw); } catch { return ws.close(1007, 'Invalid JSON'); }
     if (!msg || typeof msg !== 'object') return;
     let attachment = ws.deserializeAttachment();
+    const hello = !attachment.playerId;
     const now = Date.now();
     // Per-connection rate limit is persisted with the hibernating socket.
     if (attachment.windowAt && now - attachment.windowAt < 1000 && attachment.count >= 20) return;
@@ -156,11 +163,23 @@ export class PartyRoom extends DurableObject {
     } else if (msg.type === 'LOBBY_EMOTE') {
       const p = this.engine.state.players.find(p => p.id === attachment.playerId);
       if (p && EMOTES.includes(msg.emote)) this.sendAll({ type: 'LOBBY_EMOTE', sender: p.profile.name, emote: msg.emote, spectator: p.role === 'spectator' });
+      return; // an emote changes no room state: nothing to save or broadcast
     } else {
       this.engine.tick(now);
-      this.engine.handle(attachment.playerId, msg, now);
+      let out;
+      // A ranked party draws on every player's 30-starts-per-hour allowance before it begins.
+      if (msg.type === 'START_MATCH' && this.engine.state.ranked && !this.engine.startBlocker(attachment.playerId)) {
+        // A double-click must not reserve everyone's starts twice.
+        if (this.starting) return;
+        this.starting = true;
+        try { out = await this.reserveRankedStarts(); } finally { this.starting = false; }
+      }
+      out ||= this.engine.handle(attachment.playerId, msg, now);
+      if (out?.notice) ws.send(JSON.stringify({ type: 'ROOM_NOTICE', code: out.notice, names: out.names || [] }));
     }
     await this.recordFinished();
+    // Nothing visible changed (a stray or rejected message): skip the write and the broadcast.
+    if (!hello && this.fingerprint() === this.saved.view) return;
     await this.persist();
     this.broadcast();
   }
@@ -175,11 +194,34 @@ export class PartyRoom extends DurableObject {
       if (!this.engine.state.match) player.profile = profile(player.wanted || player.profile, player.unlocks);
     } catch (e) { console.error('party identity not linked:', e?.message); }
   }
+  async reserveRankedStarts() {
+    if (!this.env.RANKED) return { notice: 'RANKED_LIMIT', names: [] };
+    const call = (p, action) => this.env.RANKED.get(this.env.RANKED.idFromName(p.deviceId)).fetch('https://ranked/' + action, { method: 'POST', body: '{}' });
+    const blocked = [];
+    // Check everyone first: a blocked friend must not use up the others' hourly starts.
+    for (const p of this.engine.roster()) {
+      try { if (!(await call(p, 'check')).ok) blocked.push(p.profile.name); } catch { blocked.push(p.profile.name); }
+    }
+    if (blocked.length) return { notice: 'RANKED_LIMIT', names: blocked };
+    for (const p of this.engine.roster()) { try { await call(p, 'reserve'); } catch {} }
+    return null;
+  }
   async recordFinished() {
     const s = this.engine.state, m = s.match;
     if (!this.env.DB || !m || m.phase !== 'final' || m.recorded) return;
     m.recorded = true;
     const cfg = modes[s.mode];
+    if (m.ranked) {
+      // Ranked party: the same rating maths as a solo run, filed under the real mode's board.
+      for (const rp of m.ranked.players) {
+        if (!rp.deviceId) continue;
+        const { score, performance } = this.engine.rankedScore(rp.id);
+        try {
+          m.ranked.results[rp.id] = await recordRun(this.env.DB, { playerId: rp.deviceId, mode: s.mode, region: cfg.region, score, rounds: cfg.rounds, performance, ranked: true });
+        } catch (e) { console.error('ranked party result not saved:', e?.message); }
+      }
+      return;
+    }
     // Battle Royale is scored by placement (1st 100, 2nd 70, 3rd 50, then -10 per place, min 5); a score of 100 is a win.
     const placement = m.royale ? Object.fromEntries((m.royale.placements || this.engine.placements()).map(x => [x.id, x.points])) : null;
     for (const p of s.players) {
@@ -218,6 +260,7 @@ export class PartyRoom extends DurableObject {
   async webSocketClose(ws) {
     const id = ws.deserializeAttachment()?.playerId;
     if (id) this.engine.disconnect(id);
+    await this.recordFinished();
     await this.persist();
     this.broadcast();
   }
@@ -229,8 +272,18 @@ export class PartyRoom extends DurableObject {
     if (pending.length) await this.ctx.storage.setAlarm(Math.min(...pending));
     else await this.ctx.storage.deleteAlarm();
   }
+  // Everything a client can see, minus bookkeeping timestamps and the draw history.
+  fingerprint() {
+    const { rotation, updatedAt, ...visible } = this.engine.state;
+    return JSON.stringify(visible);
+  }
   async persist() {
-    await this.ctx.storage.put('room', this.engine.state);
+    const { rotation, ...rest } = this.engine.state;
+    await this.ctx.storage.put('room', rest);
+    // The draw history can hold 1,500 ids: write it only when it actually changed.
+    const r = JSON.stringify(rotation);
+    if (r !== this.saved.rotation) { await this.ctx.storage.put('rotation', rotation); this.saved.rotation = r; }
+    this.saved.view = this.fingerprint();
     await this.schedule();
   }
   async alarm() {
@@ -242,6 +295,7 @@ export class PartyRoom extends DurableObject {
     if (!this.engine.state.players.length) {
       for (const ws of this.ctx.getWebSockets()) ws.close(1000, 'Room expired');
     }
+    await this.recordFinished();
     await this.persist();
     this.broadcast();
   }

@@ -3,6 +3,9 @@
     import { t, getLang, setLang, applyI18n, onLangChange } from './i18n.js';
     import { mapOptions, applyMapProfile } from './map/profile.js';
     import { AVATAR_LOCKS, UNLOCK_LABELS, isLocked as isAvatarLocked } from './data/avatar-unlocks.js';
+    import { renderWiki, filterWiki } from './wiki.js';
+    import * as RATING from './shared/rating.js';
+    import * as SCORING from './shared/scoring.js';
     import { renderStandings, renderFinal, previousOrderFrom, sortByRoundPoints } from './ui/standings.js';
 
     // ============================================================
@@ -107,7 +110,7 @@
         "Chile": "🇨🇱", "Colombia": "🇨🇴", "Costa Rica": "🇨🇷", "Peru": "🇵🇪",
         "Japan": "🇯🇵", "India": "🇮🇳", "South Korea": "🇰🇷", "UAE": "🇦🇪",
         "Turkey": "🇹🇷", "Taiwan": "🇹🇼", "Hong Kong": "🇭🇰", "Nepal": "🇳🇵",
-        "Sri Lanka": "🇱🇰", "Jordan": "🇯🇴", "Thailand": "🇹🇭", "Vietnam": "🇻🇳",
+        "Sri Lanka": "🇱🇰", "Jordan": "🇯🇴", "Vietnam": "🇻🇳",
         "Indonesia": "🇮🇩", "Malaysia": "🇲🇾", "Singapore": "🇸🇬", "Philippines": "🇵🇭",
         "Cambodia": "🇰🇭", "Laos": "🇱🇦", "Myanmar": "🇲🇲", "Egypt": "🇪🇬",
         "South Africa": "🇿🇦", "Morocco": "🇲🇦", "Kenya": "🇰🇪", "Nigeria": "🇳🇬",
@@ -157,7 +160,6 @@
         "Nepal": { lat: 28.3949, lng: 84.1240 },
         "Sri Lanka": { lat: 7.8731, lng: 80.7718 },
         "Jordan": { lat: 30.5852, lng: 36.2384 },
-        "Thailand": { lat: 15.8700, lng: 100.9925 },
         "Vietnam": { lat: 14.0583, lng: 108.2772 },
         "Indonesia": { lat: -0.7893, lng: 113.9213 },
         "Malaysia": { lat: 4.2105, lng: 101.9758 },
@@ -766,7 +768,8 @@
     function skipBrokenLocation() {
         if (gameState.ranked) { showToast(t('ranked.noSkip')); return; }
         if (gameState.matchPlan) {
-            if (gameState.isHost) { sendRoomMessage({ type: 'SKIP_LOCATION' }); showToast(t('toast.skipHost')); }
+            if (serverRanked) showToast(t('ranked.noSkip'));
+            else if (gameState.isHost) { sendRoomMessage({ type: 'SKIP_LOCATION' }); showToast(t('toast.skipHost')); }
             else showToast(t('toast.skipGuest'));
             return;
         }
@@ -2157,7 +2160,7 @@
                     <div class="final-hint">${t('result.waiting', { n: readyPlayers.size, total: getLobbyPlayers().length })}</div>
                 `;
             }
-            table.innerHTML = (gameState.ranked ? rankedSummaryHTML(gameState.ranked) : '') + partyHTML + roundsHTML;
+            table.innerHTML = (gameState.ranked ? rankedSummaryHTML(gameState.ranked) : '') + rankedPartyHTML() + partyHTML + roundsHTML;
         }
     }
 
@@ -2196,6 +2199,8 @@
     let reconnectAttempts = 0;
     let serverClockOffset = 0;
     let serverMatch = null;
+    let serverRanked = false;
+    let pendingRankedParty = null;
     let guessPending = false;
     let readyPending = false;
     let myPlayerId = null;
@@ -2269,7 +2274,8 @@
         if (spinner) spinner.style.display = roomReady ? 'none' : 'block';
         if (start) {
             start.disabled = !roomReady || getLobbyPlayers().filter(p => p.connected !== false).length < 2 || getLobbyPlayers().some(p => p.connected === false) || !!serverMatch;
-            start.title = !roomReady ? t('lobby.connectingTitle') : getLobbyPlayers().length < 2 ? t('lobby.inviteTitle') : t('lobby.readyTitle');
+            const away = getLobbyPlayers().filter(p => p.connected === false);
+            start.title = !roomReady ? t('lobby.connectingTitle') : getLobbyPlayers().length < 2 ? t('lobby.inviteTitle') : away.length ? t('toast.startPlayerAway', { names: away.map(p => p.name).join(', ') }) : t('lobby.readyTitle');
         }
     }
 
@@ -2352,7 +2358,7 @@
                         ${escapeHTML(p.name)} ${p.isHost ? `<span style="color: var(--gold-deep); font-size: 0.72rem;">(${t('party.host')})</span>` : ''} ${p.id === (myPlayerId || 'me') ? `<span style="color: var(--rice); font-size: 0.72rem;">(${t('party.you')})</span>` : ''}
                     </div>
                     <div style="font-size: 0.72rem; color: var(--ink-2); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
-                        ${p.connected === false ? t('party.reconnecting') : escapeHTML(p.title || 'Explorer')}
+                        ${p.connected === false ? t('party.reconnecting') : serverRanked && !p.linked ? `<span title="${escapeHTML(t('party.unrankedHint'))}">⚠ ${t('party.unranked')}</span>` : escapeHTML(p.title || 'Explorer')}
                     </div>
                 </div>
             </div>
@@ -2457,6 +2463,11 @@
 
     function renderPartyModes() {
         const entries = regionModes();
+        if (serverRanked) {
+            // A ranked party offers every ranked mode (both regions), never Royale or Tag-Team.
+            entries.length = 0;
+            entries.push(...Object.entries(MODE_CONFIG).filter(([, m]) => m.ranked && !m.royale && !m.teams));
+        }
         if (MODE_CONFIG[currentMode] && !entries.some(([key]) => key === currentMode)) {
             entries.unshift([currentMode, MODE_CONFIG[currentMode]]);
         }
@@ -2530,11 +2541,43 @@
         return true;
     }
 
+    // The resume token lives in localStorage (so a reloaded or re-opened tab keeps its seat) with an expiry.
+    const ROOM_TOKEN_TTL = 3 * 60 * 60 * 1000;
+    function loadRoomToken(code) {
+        try {
+            const v = JSON.parse(localStorage.getItem('wanderpenh_room_' + code));
+            if (v?.token && v.exp > Date.now()) return { token: v.token };
+            localStorage.removeItem('wanderpenh_room_' + code);
+        } catch {}
+        return null;
+    }
+    function saveRoomToken(code, session) { try { localStorage.setItem('wanderpenh_room_' + code, JSON.stringify({ token: session.token, exp: Date.now() + ROOM_TOKEN_TTL })); } catch {} }
+    function clearRoomToken(code) { try { localStorage.removeItem('wanderpenh_room_' + code); } catch {} }
+    // Clock sync: keep the lowest-delay sample and smooth the offset so the timer never jumps.
+    let pingSentAt = 0, bestRtt = Infinity, lastRtt = null, reconnectCount = 0, disconnectedAt = 0;
+    function updateClockOffset(serverNow) {
+        const sample = serverNow - (Date.now() - (lastRtt ?? 0) / 2);
+        // Seed at once (no delay known yet); from then on only trust samples with a measured round trip.
+        if (!clockSeeded) { serverClockOffset = sample; clockSeeded = true; return; }
+        if (lastRtt === null) return;
+        const rtt = lastRtt;
+        if (rtt <= bestRtt + 30) { serverClockOffset = serverClockOffset * 0.7 + sample * 0.3; bestRtt = Math.min(bestRtt, rtt); }
+    }
+    let clockSeeded = false;
+    function retryNow() {
+        if (!roomSession || roomReady || !gameState.roomCode) return;
+        if (roomSocket && (roomSocket.readyState === WebSocket.CONNECTING || roomSocket.readyState === WebSocket.OPEN)) return;
+        clearTimeout(reconnectTimer);
+        initRoomConnection(gameState.roomCode, false, true);
+    }
+    window.addEventListener('online', retryNow);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') retryNow(); });
+
     function initRoomConnection(code, create, resume = false) {
         if (!resume) {
             reconnectAttempts = 0;
             roomSession = null;
-            try { roomSession = JSON.parse(sessionStorage.getItem('wanderpenh_room_' + code)); } catch {}
+            roomSession = loadRoomToken(code);
         }
         roomReady = false;
         setLobbyStatus(resume ? 'Reconnecting to your party…' : create ? 'Opening your party room…' : 'Connecting to ' + code + '…');
@@ -2543,7 +2586,8 @@
         const socket = new WebSocket(url);
         roomSocket = socket;
         clearTimeout(connectionTimer);
-        connectionTimer = setTimeout(() => {
+        // Only the first join gives up after 15 s; resume attempts follow the reconnect patience instead.
+        if (!resume) connectionTimer = setTimeout(() => {
             if (roomSocket !== socket || roomReady) return;
             leaveLobby();
             showToast(t('toast.serverUnreachable'));
@@ -2554,27 +2598,29 @@
             clearInterval(heartbeatTimer);
             heartbeatTimer = setInterval(() => {
                 if (roomSocket !== socket || socket.readyState !== WebSocket.OPEN) return;
-                if (Date.now() - lastServerMessage > 40000) { socket.close(); return; }
+                if (Date.now() - lastServerMessage > 12000) { socket.close(); return; }
+                pingSentAt = Date.now();
                 socket.send('ping');
-            }, 15000);
+            }, 5000);
             socket.send(JSON.stringify({ type: 'HELLO', protocol: WanderRotation.protocol, create: create && !roomSession, token: roomSession?.token, profile: sanitizeProfile(userProfile), mode: currentMode, seen: getSeenHistory().slice(-600), identity: deviceIdentity() }));
         };
         socket.onmessage = event => {
             if (roomSocket !== socket) return;
             lastServerMessage = Date.now();
-            if (event.data === 'pong') return;
+            if (event.data === 'pong') { if (pingSentAt) { lastRtt = Date.now() - pingSentAt; pingSentAt = 0; renderDebug(); } return; }
             let msg;
             try { msg = JSON.parse(event.data); } catch { return; }
             if (msg.type === 'WELCOME') {
                 myPlayerId = msg.playerId;
                 roomSession = { token: msg.token };
-                try { sessionStorage.setItem('wanderpenh_room_' + code, JSON.stringify(roomSession)); } catch {}
+                saveRoomToken(code, roomSession);
                 const invite = new URL(location.href);
                 invite.searchParams.set('room', code);
                 history.replaceState(null, '', invite);
             } else if (msg.type === 'ROOM_STATE') {
                 clearTimeout(connectionTimer);
                 reconnectAttempts = 0;
+                disconnectedAt = 0;
                 roomReady = true;
                 applyRoomState(msg);
             } else if (msg.type === 'ROOM_ERROR') {
@@ -2585,9 +2631,13 @@
                     initRoomConnection(gameState.roomCode, true);
                     return;
                 }
-                try { sessionStorage.removeItem('wanderpenh_room_' + code); } catch {}
+                clearRoomToken(code);
                 leaveLobby();
                 showToast(msg.message || 'Unable to join this party.');
+            } else if (msg.type === 'ROOM_NOTICE') {
+                const names = (msg.names || []).map(n => cleanText(n, 'Explorer', 24)).join(', ');
+                const key = { PLAYER_AWAY: 'toast.startPlayerAway', RANKED_UNLINKED: 'toast.rankedUnlinked', RANKED_LIMIT: 'toast.rankedLimit', RANKED_MODE: 'toast.rankedMode' }[msg.code] || 'toast.startNeedPlayers';
+                showToast(t(key, { names }));
             } else if (msg.type === 'LOBBY_EMOTE') {
                 if (document.getElementById('game-screen').classList.contains('active')) showFloatingEmote(cleanText(msg.sender, 'Explorer', 24), msg.emote, !!msg.spectator);
                 else showToast(cleanText(msg.sender, 'Explorer', 24) + ': ' + msg.emote);
@@ -2601,20 +2651,38 @@
             guessPending = false;
             readyPending = false;
             setLobbyStatus('Connection interrupted. Rejoining your party…');
-            if (!roomSession || reconnectAttempts >= 6) {
+            if (!disconnectedAt) disconnectedAt = Date.now();
+            // Keep trying for as long as the server keeps the seat (60 s in a match, 30 s in the lobby, plus slack).
+            const patience = (serverMatch ? 65000 : 35000);
+            if (!roomSession || Date.now() - disconnectedAt > patience) {
+                clearRoomToken(code);
+                disconnectedAt = 0;
                 leaveLobby();
                 showToast(t('toast.roomLost'));
                 return;
             }
             showToast(t('toast.reconnecting'));
-            reconnectTimer = setTimeout(() => initRoomConnection(code, false, true), Math.min(4000, 500 * 2 ** reconnectAttempts++));
+            reconnectCount++;
+            reconnectTimer = setTimeout(() => initRoomConnection(code, false, true), Math.min(2000, 400 * 2 ** reconnectAttempts++));
         };
         socket.onerror = () => { /* onclose handles retry and feedback */ };
     }
 
+    // ?debug=1 shows ping, clock offset, socket state and reconnect count.
+    const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
+    function renderDebug() {
+        if (!DEBUG) return;
+        let el = document.getElementById('debug-overlay');
+        if (!el) { el = document.createElement('pre'); el.id = 'debug-overlay'; el.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:99999;margin:0;padding:4px 8px;font:11px monospace;background:#000c;color:#0f0;border-radius:6px;pointer-events:none'; document.body.appendChild(el); }
+        const states = ['connecting', 'open', 'closing', 'closed'];
+        el.textContent = `ping ${lastRtt ?? '-'} ms\noffset ${Math.round(serverClockOffset)} ms\nsocket ${roomSocket ? states[roomSocket.readyState] : 'none'}\nreconnects ${reconnectCount}`;
+    }
+    if (DEBUG) setInterval(renderDebug, 1000);
+
     function applyRoomState(state) {
-        serverClockOffset = state.serverNow - Date.now();
-        lobbyPlayers = state.players.map(p => ({ ...sanitizeProfile(p), id: p.id, isHost: p.isHost, connected: p.connected }));
+        updateClockOffset(state.serverNow);
+        serverRanked = !!state.ranked;
+        lobbyPlayers = state.players.map(p => ({ ...sanitizeProfile(p), id: p.id, isHost: p.isHost, connected: p.connected, linked: !!p.linked }));
         lobbySpectators = (state.spectators || []).map(p => ({ ...sanitizeProfile(p), id: p.id, connected: p.connected }));
         const prevRole = viewerRole;
         viewerRole = state.viewerRole === 'spectator' ? 'spectator' : 'player';
@@ -2626,6 +2694,17 @@
         if (answerToggle) answerToggle.checked = !!state.spectatorsSeeAnswer;
         gameState.isHost = state.hostId === myPlayerId;
         currentMode = state.mode;
+        if (pendingRankedParty && gameState.isHost && !state.match) {
+            // Opened from the Ranked screen: switch the new lobby to ranked with the chosen mode.
+            sendRoomMessage({ type: 'SET_RANKED', value: true, mode: pendingRankedParty });
+            pendingRankedParty = null;
+        }
+        const rankedToggle = document.getElementById('ranked-party-toggle');
+        if (rankedToggle) { rankedToggle.checked = serverRanked; rankedToggle.disabled = !!state.match; }
+        const rankedNote = document.getElementById('ranked-party-note');
+        if (rankedNote) rankedNote.hidden = !serverRanked;
+        const answerLabel = document.getElementById('spectator-answer-label');
+        if (answerLabel) answerLabel.style.display = serverRanked ? 'none' : '';
         serverMatch = state.match;
         serverTeams = state.teams || [];
         document.getElementById('host-controls').style.display = gameState.isHost ? 'flex' : 'none';
@@ -2742,6 +2821,17 @@
         loadRound();
     }
 
+    function setPartyRanked(value) { if (gameState.isHost) sendRoomMessage({ type: 'SET_RANKED', value: !!value, mode: currentMode }); }
+    function startRankedParty() {
+        const mode = document.getElementById('ranked-party-mode')?.value;
+        if (!MODE_CONFIG[mode]?.ranked) return;
+        currentMode = mode;
+        pendingRankedParty = mode;
+        const select = document.getElementById('party-mode-select');
+        if (select) select.value = mode;
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        createMultiplayerLobby();
+    }
     function startMultiplayerGame() {
         if (!gameState.isHost || !roomReady || getLobbyPlayers().length < 2 || serverMatch) return;
         sendRoomMessage({ type: 'START_MATCH' });
@@ -2764,7 +2854,7 @@
 
     function mpTotalFor(playerId) {
         return Object.values(gameState.mpGuesses || {})
-            .reduce((sum, round) => sum + (round[playerId] ? round[playerId].score : 0), 0);
+            .reduce((sum, round) => sum + (round[playerId]?.score || 0), 0); // a locked rival pin has no score yet
     }
 
     function royaleChipClass(id) {
@@ -3334,6 +3424,26 @@
     }
     function closeRanked() { backToHome(); }
 
+    // ---- Wiki: built from the game's own data (modes, tiers, scoring, unlocks, locations) ----
+    function paintWiki() {
+        const root = document.getElementById('wiki-content');
+        if (!root) return;
+        root.innerHTML = renderWiki({ t, lang: getLang(), modes: MODE_CONFIG, tiers: RATING.TIERS, locations: LOCATIONS_DB, unlocks: UNLOCK_LABELS, locks: AVATAR_LOCKS, scoring: SCORING, rating: RATING });
+        filterWiki(root, document.getElementById('wiki-search')?.value || '');
+    }
+    function openWiki() {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('wiki-screen').classList.add('active');
+        document.getElementById('wiki-screen').scrollTop = 0;
+        paintWiki();
+    }
+    function closeWiki() { backToHome(); }
+    function searchWiki(value) {
+        const shown = filterWiki(document.getElementById('wiki-content'), value);
+        document.getElementById('wiki-empty').hidden = shown > 0;
+    }
+    onLangChange(() => { if (document.getElementById('wiki-screen')?.classList.contains('active')) paintWiki(); });
+
     function setRankedRegion(region) {
         if (region !== 'kh' && region !== 'world') return;
         rankedRegion = region;
@@ -3380,6 +3490,8 @@
                 <span aria-hidden="true">${m.icon === 'flame' ? '🔥' : '📍'}</span>
                 <span>${escapeHTML(modeName(m))}<small>${t('mode.perRound', { n: m.time })} · ${t('mode.rounds', { n: m.rounds })}</small></span>
             </button>`).join('');
+        const friends = document.getElementById('ranked-party-mode');
+        if (friends) { const keep = friends.value; friends.innerHTML = modes.map(([key, m]) => `<option value="${key}">${escapeHTML(modeName(m))}</option>`).join(''); if (modes.some(([k]) => k === keep)) friends.value = keep; }
         document.querySelectorAll('.board-tabs [data-board-tab]').forEach(btn => {
             btn.setAttribute('aria-selected', btn.dataset.boardTab === boardTab ? 'true' : 'false');
         });
@@ -3604,6 +3716,22 @@
         openRanked();
     }
 
+    // Ranked party podium: each player's rating change and tier, as filed by the server.
+    function rankedPartyHTML() {
+        const R = isRealMultiplayer() && serverMatch?.ranked;
+        if (!R) return '';
+        const rows = R.players.map(p => {
+            const r = R.results?.[p.id];
+            const you = p.id === myPlayerId ? ` (${t('party.you')})` : '';
+            if (!r) return `<div class="ranked-result"><div class="ranked-result-main"><strong>${escapeHTML(p.name)}${you}</strong><span class="rank-card-hint">${t('ranked.notSaved')}</span></div></div>`;
+            const sign = r.delta > 0 ? '+' : '';
+            return `<div class="ranked-result" data-rating-change="${p.id}">${tierBadgeHTML(r.tier)}
+                <div class="ranked-result-main"><strong>${escapeHTML(p.name)}${you} · ${escapeHTML(tierName(r.tier))}</strong>
+                <span>${r.before.toLocaleString()} → <b>${r.after.toLocaleString()}</b></span>
+                <span class="ranked-delta ${r.delta >= 0 ? 'up' : 'down'}">${t('ranked.change')}: ${sign}${r.delta}</span></div></div>`;
+        }).join('');
+        return `<div class="field-label">${t('ranked.partyResults')}</div>${rows}`;
+    }
     function rankedSummaryHTML(run) {
         const open = `<button class="btn btn-sm btn-ghost" type="button" onclick="openRanked('${run.mode}')">${t('ranked.openBoard')}</button>`;
         if (!run.saved || !run.rating) {
@@ -3624,8 +3752,9 @@
     }
 
     function leaveLobby() {
+        pendingRankedParty = null;
         closeModal('profile-modal');
-        try { sessionStorage.removeItem('wanderpenh_room_' + gameState.roomCode); } catch {}
+        clearRoomToken(gameState.roomCode);
         clearInterval(gameState.timerInterval);
         teardownRoom();
         gameState.isMultiplayer = false;
@@ -3710,6 +3839,7 @@
 
         renderModeCards();
         updateHomeChrome();
+        if (urlParams.has('wiki')) openWiki();
 
         // Door choice.
         document.querySelectorAll('[data-pick-region]').forEach(btn => {
@@ -3783,7 +3913,7 @@
         resetToHome, backToHome, joinFromHome, nextCoachStep, closeCoach, setRegion, setLanguage, showFinalPodium,
         shareInviteLink, openRanked, closeRanked, setRankedRegion, setBoardTab, setBoardMode, startRankedRun, copyBackupCode, restoreBackupCode, copyInviteLink,
         setSheet, cycleSheet, pickTeamMember, myRoleNow,
-        setStandingsTab, setRoyaleSettings, royaleSettingsLives: () => royaleSettingsSync?.lives, setSpectatorAnswer, setSpectTab, setFollow, followStep, toggleMapPinned, toggleTicketPanel, toggleDock, dockZoom, toggleEmoteMenu
+        setStandingsTab, setRoyaleSettings, royaleSettingsLives: () => royaleSettingsSync?.lives, openWiki, closeWiki, searchWiki, setSpectatorAnswer, setPartyRanked, startRankedParty, setSpectTab, setFollow, followStep, toggleMapPinned, toggleTicketPanel, toggleDock, dockZoom, toggleEmoteMenu
     });
 
     Object.defineProperties(globalThis, {

@@ -93,6 +93,9 @@
           <button class="btn-icon-only" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
           </button>
+          <button class="btn-icon-only" type="button" onclick="openWiki()" id="wiki-btn" aria-label="Wiki" data-i18n-aria="nav.wiki" title="Wiki">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2V5Z"></path><path d="M19 19v2H6"></path></svg>
+          </button>
           <button class="btn-icon-only" type="button" onclick="openTutorialModal()" aria-label="How to play" data-i18n-aria="nav.howto" title="How to play">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>
           </button>
@@ -398,6 +401,11 @@
 
       <div id="host-controls" style="display:flex; flex-direction:column; gap:8px;">
         <label class="lobby-toggle">
+          <input type="checkbox" id="ranked-party-toggle" onchange="setPartyRanked(this.checked)">
+          <span data-i18n="party.rankedToggle">Ranked match (moves everyone's rating)</span>
+        </label>
+        <p class="ranked-note" id="ranked-party-note" hidden data-i18n="party.rankedNote">Ranked: no skipping, no early answers for spectators. Every player needs a ranked profile.</p>
+        <label class="lobby-toggle" id="spectator-answer-label">
           <input type="checkbox" id="spectator-answer-toggle" onchange="setSpectatorAnswer(this.checked)">
           <span data-i18n="spectate.seeAnswer">Spectators see the answer early</span>
         </label>
@@ -613,6 +621,18 @@
   <!-- ======================================================================
        RANKED + LEADERBOARD
        ====================================================================== -->
+  <section id="wiki-screen" class="screen" aria-labelledby="wiki-title">
+    <div class="ranked-wrap">
+      <header class="ranked-head">
+        <button class="btn btn-ghost btn-sm" type="button" onclick="closeWiki()" data-i18n="ranked.back">← Back</button>
+        <h1 id="wiki-title" data-i18n="wiki.title">Wiki</h1>
+      </header>
+      <input type="search" id="wiki-search" class="wiki-search" oninput="searchWiki(this.value)" data-i18n-placeholder="wiki.search" placeholder="Search modes, ranks, rules…" aria-label="Search the wiki">
+      <p id="wiki-empty" class="ranked-note" hidden data-i18n="wiki.empty">Nothing found.</p>
+      <div id="wiki-content"></div>
+    </div>
+  </section>
+
   <section id="ranked-screen" class="screen" aria-labelledby="ranked-title">
     <div class="ranked-wrap">
       <header class="ranked-head">
@@ -630,6 +650,11 @@
         <div class="field-label" data-i18n="ranked.play">Play a ranked run</div>
         <p class="ranked-note" data-i18n="ranked.note">The server keeps the clock and the score. No skipping, no restarts.</p>
         <div id="ranked-modes" class="ranked-modes"></div>
+        <div class="ranked-friends">
+          <label class="board-mode"><span data-i18n="ranked.friendsMode">Mode for friends</span>
+            <select id="ranked-party-mode"></select></label>
+          <button class="btn btn-primary btn-block" id="ranked-party-btn" type="button" onclick="startRankedParty()" data-i18n="ranked.friendsBtn">Play ranked with friends</button>
+        </div>
       </section>
 
       <section class="ranked-block">

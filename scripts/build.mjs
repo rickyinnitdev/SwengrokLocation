@@ -34,6 +34,9 @@ fs.cpSync('client', 'dist/client', { recursive: true });
 fs.rmSync('dist/client/_markup_extract.html', { force: true });
 // Server-side door-agnostic extras are appended to the client module too.
 fs.appendFileSync('dist/client/data/locations.js', `\nLOCATIONS_DB.classic.push(...${JSON.stringify(extra.locations)});\n`);
+// The Wiki reads the same rating and scoring code as the server, copied next to the client.
+fs.mkdirSync('dist/client/shared', { recursive: true });
+for (const f of ['rating.js', 'scoring.js']) fs.copyFileSync(`src/${f}`, `dist/client/shared/${f}`);
 fs.copyFileSync('index.html', 'dist/index.html');
 fs.mkdirSync('dist/data', { recursive: true });
 fs.copyFileSync('data/pp-khans.geojson', 'dist/data/pp-khans.geojson');

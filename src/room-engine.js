@@ -1,13 +1,16 @@
-import { locations, modes } from '../.generated/game-data.js';
+import { modes } from '../.generated/game-data.js';
 import { drawLocations } from './location-rotation.js';
-import { distance, scoreRound } from './scoring.js';
+import { distance, scoreRound, maxRoundScore } from './scoring.js';
 import { poolFor, poolKeyFor } from './pools.js';
 import { ROYALE_CAP, DEFAULT_SETTINGS, cleanSettings, roundTime, makeZone, resolveRound, placementPoints } from './royale.js';
+import { locationById, isKnownLocation } from './lookup.js';
 import { stripLocked } from '../client/data/avatar-unlocks.js';
 
 export const MAX_PLAYERS = 8;
 export const MAX_SPECTATORS = 8;
-export const GRACE_MS = 30000;
+export const GRACE_MS = 30000;        // lobby
+export const GRACE_MATCH_MS = 60000;  // during a match
+export const AUTO_ADVANCE_MS = 8000;
 const ROOM_TTL = 2 * 60 * 60 * 1000;
 export const EMOTES = ['🛵 Vroom!', '📍 Easy spot!', '🤔 No clue!', '🔥 Ready!', '👑 GG!'];
 const clean = (s, fallback, n = 60) => typeof s === 'string' ? s.replace(/[<>\x00-\x1f]/g, '').trim().slice(0, n) || fallback : fallback;
@@ -43,8 +46,10 @@ export function shuffled(array) {
   return copy;
 }
 export { distance };
+// A ranked party may only use solo-ranked modes; Royale and Tag-Team are never ranked.
+export const isRankedMode = key => !!modes[key]?.ranked && !modes[key].royale && !modes[key].teams;
 export function initialState() {
-  return { players: [], hostId: null, mode: 'classic', match: null, teams: [], recent: [], rotation: { history: [] }, spectatorsSeeAnswer: false, royaleSettings: { ...DEFAULT_SETTINGS }, updatedAt: 0 };
+  return { players: [], hostId: null, mode: 'classic', match: null, teams: [], recent: [], rotation: { history: [] }, spectatorsSeeAnswer: false, ranked: false, royaleSettings: { ...DEFAULT_SETTINGS }, updatedAt: 0 };
 }
 export class RoomEngine {
   constructor(state = initialState()) {
@@ -139,6 +144,20 @@ export class RoomEngine {
     }
     return roles;
   }
+  // Mid-round repair: keep every role a player already has. Only a team with no connected
+  // Pinner (or a newly arrived player without a role) is touched.
+  repairRoles() {
+    const s = this.state, m = s.match;
+    m.roles ||= {};
+    const fresh = this.roundRoles();
+    for (const team of s.teams) {
+      const active = team.playerIds.filter(id => s.players.some(p => p.id === id && p.connected));
+      if (!active.length) continue;
+      const holder = active.find(id => m.roles[id] === 'pinner' || m.roles[id] === 'both');
+      if (!holder) { for (const id of active) m.roles[id] = fresh[id]; continue; }
+      for (const id of active) if (!m.roles[id]) m.roles[id] = 'viewer';
+    }
+  }
   teamHasGuess(teamId, round = this.state.match?.round) {
     const team = this.state.teams.find(t => t.id === teamId);
     return !!team?.playerIds.some(id => this.state.match?.guesses?.[round]?.[id]);
@@ -155,9 +174,8 @@ export class RoomEngine {
       if (!spectate && this.roster().length >= MAX_PLAYERS) throw new Error('This party is full (8 players).');
       player = { id: crypto.randomUUID(), token: crypto.randomUUID(), profile: profile(p), wanted: wantedProfile(p), unlocks: [], connected: true, leftAt: null, role: spectate ? 'spectator' : 'player', joinedAt: now };
       s.players.push(player);
-      const valid = new Set(Object.values(locations).flat().map(l => l.id));
       if (Array.isArray(seen)) {
-        const imported = seen.filter(id => typeof id === 'string' && valid.has(id)).slice(-600);
+        const imported = seen.filter(id => typeof id === 'string' && isKnownLocation(id)).slice(-600);
         s.rotation.history = [...new Set([...imported, ...s.rotation.history])].slice(-1500);
         // Imported browser history also applies to an already-created lobby deck.
         for (const key of Object.keys(s.rotation.decks || {})) {
@@ -192,6 +210,7 @@ export class RoomEngine {
     const m = this.state.match;
     m.startedAt = now + 800;
     m.ready = [];
+    m.revealedAt = null;
     if (m.royale) {
       const R = m.royale;
       R.duel = this.contenders().length === 2;
@@ -205,13 +224,29 @@ export class RoomEngine {
   }
   targetOf(m = this.state.match) {
     const id = m?.plan[m.round - 1]?.id;
-    return id ? Object.values(locations).flat().find(l => l.id === id) : null;
+    return id ? locationById(id) : null;
   }
   newRoyale() {
     const settings = cleanSettings(this.state.royaleSettings);
     const players = {};
     for (const p of this.roster()) players[p.id] = { name: p.profile.name, lives: settings.lives, shield: false, alive: true, eliminatedRound: null, bestDist: null, shieldsUsed: 0, survived: 0 };
     return { settings, players, order: [], results: {}, ghostPins: {}, zone: null, duel: false, ended: false };
+  }
+  // Same checks START_MATCH makes, so the worker can reserve ranked starts before the match exists.
+  startBlocker(id) {
+    const s = this.state;
+    if (id !== s.hostId || s.match) return 'NOT_HOST';
+    if (this.roster().filter(p => p.connected).length < 2) return 'NEED_PLAYERS';
+    if (this.roster().some(p => !p.connected)) return 'PLAYER_AWAY';
+    if (s.ranked && !isRankedMode(s.mode)) return 'RANKED_MODE';
+    if (s.ranked && this.roster().some(p => !p.deviceId)) return 'RANKED_UNLINKED';
+    return null;
+  }
+  // Total and 0..1 performance for a ranked player; rounds they never reached count as 0.
+  rankedScore(playerId) {
+    const m = this.state.match, cfg = modes[this.state.mode];
+    const score = Object.values(m.guesses).reduce((sum, r) => sum + (r[playerId]?.score || 0), 0);
+    return { score, performance: score / (maxRoundScore(this.state.mode, cfg) * cfg.rounds) };
   }
   handle(id, msg, now = Date.now()) {
     const s = this.state, p = s.players.find(p => p.id === id);
@@ -223,21 +258,39 @@ export class RoomEngine {
       if (!s.match) { p.wanted = wantedProfile(msg.profile); p.profile = profile(p.wanted, p.unlocks); }
     } else if (msg.type === 'SET_MODE') {
       if (id !== s.hostId || s.match || !Object.hasOwn(modes, msg.mode)) return;
+      if (s.ranked && !isRankedMode(msg.mode)) return;
       s.mode = msg.mode;
       this.syncTeams(true);
+    } else if (msg.type === 'SET_RANKED') {
+      if (id !== s.hostId || s.match || typeof msg.value !== 'boolean') return;
+      s.ranked = msg.value;
+      if (s.ranked) {
+        if (!isRankedMode(s.mode)) s.mode = Object.hasOwn(modes, msg.mode) && isRankedMode(msg.mode) ? msg.mode : 'classic';
+        s.spectatorsSeeAnswer = false;
+        this.syncTeams(true);
+      }
     } else if (msg.type === 'SET_ROYALE') {
       if (id === s.hostId && !s.match) s.royaleSettings = cleanSettings({ ...s.royaleSettings, ...msg.settings });
     } else if (msg.type === 'SET_SPECTATOR_ANSWER') {
-      if (id === s.hostId && typeof msg.value === 'boolean') s.spectatorsSeeAnswer = msg.value;
+      if (id === s.hostId && typeof msg.value === 'boolean' && !s.ranked) s.spectatorsSeeAnswer = msg.value;
     } else if (msg.type === 'SET_TEAMS') {
       if (id !== s.hostId || s.match || !this.isTeamsMode() || !this.validTeams(msg.teams)) return;
       this.applyTeams(msg.teams);
     } else if (msg.type === 'START_MATCH') {
-      if (id !== s.hostId || s.match || this.roster().filter(p => p.connected).length < 2 || this.roster().some(p => !p.connected)) return;
+      if (id !== s.hostId || s.match) return;
+      if (this.roster().filter(p => p.connected).length < 2) return { notice: 'NEED_PLAYERS' };
+      if (this.roster().some(p => !p.connected)) return { notice: 'PLAYER_AWAY', names: this.roster().filter(p => !p.connected).map(p => p.profile.name) };
+      if (s.ranked) {
+        if (!isRankedMode(s.mode)) return { notice: 'RANKED_MODE' };
+        const unlinked = this.roster().filter(p => !p.deviceId);
+        if (unlinked.length) return { notice: 'RANKED_UNLINKED', names: unlinked.map(p => p.profile.name) };
+      }
       if (this.isTeamsMode() && !this.validTeams(s.teams)) this.syncTeams(true);
       if (this.isTeamsMode() && !this.validTeams(s.teams)) return;
       s.match = { id: crypto.randomUUID(), phase: 'playing', plan: this.makePlan(), round: 1, guesses: {}, ready: [], swaps: 0 };
       if (this.isRoyale()) s.match.royale = this.newRoyale();
+      // Ranked: remember who played, so a player who quits still takes the 0s for the rounds they missed.
+      if (s.ranked) s.match.ranked = { players: this.roster().map(p => ({ id: p.id, deviceId: p.deviceId, name: p.profile.name })), results: {} };
       this.startRound(now);
     } else if (msg.type === 'REMATCH') {
       if (id === s.hostId && s.match?.phase === 'final') { s.match = null; this.promoteSpectators(); this.syncTeams(); }
@@ -249,6 +302,7 @@ export class RoomEngine {
       if (m.royale && !m.royale.players[id]?.alive) return; // ghosts do not guess
       this.guess(id, msg.guessLatLng, now);
       this.resolveIfDone(now);
+      this.markRevealed(now);
     } else if (msg.type === 'ROUND_READY') {
       const m = s.match;
       if (!m || msg.matchId !== m.id || msg.round !== m.round) return;
@@ -260,7 +314,7 @@ export class RoomEngine {
       this.advance(now);
     } else if (msg.type === 'SKIP_LOCATION') {
       const m = s.match;
-      if (id !== s.hostId || !m || m.phase !== 'playing' || Object.keys(m.guesses[m.round] || {}).length || m.swaps >= 5) return;
+      if (s.ranked || id !== s.hostId || !m || m.phase !== 'playing' || Object.keys(m.guesses[m.round] || {}).length || m.swaps >= 5) return;
       const next = drawLocations(this.pool(), 1, s.rotation, this.poolKey(), m.plan.map(r => r.id))[0];
       if (!next) return;
       m.plan[m.round - 1] = { id: next.id, heading: randomInt(360) };
@@ -283,7 +337,7 @@ export class RoomEngine {
     if (round[id]) return;
     const valid = ll && typeof ll.lat === 'number' && typeof ll.lng === 'number' && Number.isFinite(ll.lat) && Number.isFinite(ll.lng) && Math.abs(ll.lat) <= 90 && Math.abs(ll.lng) <= 180 && now <= m.deadline;
     const point = valid ? { lat: ll.lat, lng: ll.lng } : null;
-    const target = Object.values(locations).flat().find(l => l.id === m.plan[m.round - 1].id);
+    const target = locationById(m.plan[m.round - 1].id);
     const dist = point ? distance(target, point) : null;
     const roundTime = m.roundTime || cfg.time;
     const elapsed = Math.max(0, Math.min(roundTime, (now - m.startedAt) / 1000));
@@ -307,16 +361,27 @@ export class RoomEngine {
       // Wait for the living to be ready once the round has been resolved.
       const R = m.royale, living = this.contenders();
       if (!R.results[m.round]) return;
-      if (!living.every(p => m.ready.includes(p.id))) return;
+      this.markRevealed(now);
+      const waiting = living.filter(p => p.connected && !m.ready.includes(p.id));
+      if (waiting.length && !(m.revealedAt && now - m.revealedAt >= AUTO_ADVANCE_MS)) return;
       if (R.ended || m.round >= ROYALE_CAP) { this.finishRoyale(); return; }
       this.drawNextRoyaleLocation();
       m.round++;
       this.startRound(now);
       return;
     }
-    if (!this.roster().length || !this.roster().every(p => m.ready.includes(p.id))) return;
+    if (!this.roster().length) return;
+    this.markRevealed(now);
+    // Only connected players are waited for; a player in the grace period never blocks the table.
+    const waiting = this.roster().filter(p => p.connected && !m.ready.includes(p.id));
+    const timedOut = m.revealedAt && now - m.revealedAt >= AUTO_ADVANCE_MS;
+    if (waiting.length && !timedOut) return;
     if (m.round >= modes[s.mode].rounds) m.phase = 'final';
     else { m.round++; this.startRound(now); }
+  }
+  markRevealed(now) {
+    const m = this.state.match;
+    if (m && !m.revealedAt && this.roundRevealed(m)) m.revealedAt = now;
   }
   drawNextRoyaleLocation() {
     const s = this.state, m = s.match;
@@ -369,11 +434,12 @@ export class RoomEngine {
     m.royale.placements = this.placements();
     // Hook for the party leaderboard (see worker.recordFinished): results are read from m.royale.placements.
   }
+  graceMs() { return this.state.match ? GRACE_MATCH_MS : GRACE_MS; }
   disconnect(id, now = Date.now(), explicit = false) {
     const s = this.state, p = s.players.find(p => p.id === id);
     if (!p) return;
     p.connected = false;
-    p.leftAt = explicit ? now - GRACE_MS : now;
+    p.leftAt = explicit ? now - this.graceMs() : now;
     this.tick(now);
   }
   tick(now = Date.now()) {
@@ -382,14 +448,14 @@ export class RoomEngine {
     if (s.match?.royale && s.match.phase === 'playing') {
       for (const p of s.players) {
         const st = s.match.royale.players[p.id];
-        if (!p.connected && p.leftAt + GRACE_MS <= now && st?.alive) {
+        if (!p.connected && p.leftAt + this.graceMs() <= now && st?.alive) {
           st.alive = false; st.lives = 0; st.eliminatedRound = s.match.round; s.match.royale.order.push(p.id);
         }
       }
       // Quitters can leave a single survivor: that player has won, with no solo round to play.
       if (this.contenders().length <= 1) { s.match.royale.ended = true; this.finishRoyale(); }
     }
-    s.players = s.players.filter(p => p.connected || p.leftAt + GRACE_MS > now);
+    s.players = s.players.filter(p => p.connected || p.leftAt + this.graceMs() > now);
     this.pruneTeams();
     if (s.match && !this.roster().length && this.spectators().length) {
       // Every player left mid-match: the watchers take over a fresh lobby.
@@ -397,6 +463,18 @@ export class RoomEngine {
       this.spectators().forEach(p => { p.role = 'player'; });
       s.hostId = null;
     }
+    if (!s.match) {
+      // Lobby: a host who drops hands over at once, and gets the role back if they return in time.
+      const host = s.players.find(p => p.id === s.hostId);
+      if (host && !host.connected) {
+        const other = this.roster().find(p => p.connected);
+        if (other) { s.prevHostId = host.id; s.hostId = other.id; }
+      } else if (s.prevHostId) {
+        const prev = s.players.find(p => p.id === s.prevHostId);
+        if (prev?.connected && prev.role !== 'spectator') { s.hostId = prev.id; s.prevHostId = null; }
+        else if (!prev) s.prevHostId = null;
+      }
+    } else s.prevHostId = null;
     if (!s.players.some(p => p.id === s.hostId) || this.isSpectator(s.hostId)) {
       // The host is never a spectator while a match is running.
       const pick = list => list.find(p => p.connected)?.id || list[0]?.id || null;
@@ -409,7 +487,7 @@ export class RoomEngine {
     // In the lobby, spectators who were left waiting take any seat that frees up, in join order.
     if (!s.match) { this.promoteSpectators(); this.syncTeams(); }
     const m = s.match;
-    if (m?.phase === 'playing' && this.isTeamsMode()) m.roles = this.roundRoles();
+    if (m?.phase === 'playing' && this.isTeamsMode()) this.repairRoles();
     if (m?.phase === 'playing' && now >= m.deadline) {
       if (this.isTeamsMode()) {
         for (const team of s.teams) {
@@ -428,10 +506,11 @@ export class RoomEngine {
   }
   nextAlarm(now = Date.now()) {
     const s = this.state;
-    const deadlines = s.players.filter(p => !p.connected).map(p => p.leftAt + GRACE_MS);
+    const deadlines = s.players.filter(p => !p.connected).map(p => p.leftAt + this.graceMs());
     if (s.match?.phase === 'playing' && s.match.deadline > now) deadlines.push(s.match.deadline + 1);
     // Ghosts are shown the answer 5 s into a Royale round, so wake up then to broadcast it.
     if (s.match?.royale && s.match.phase === 'playing' && s.match.startedAt + 5000 > now) deadlines.push(s.match.startedAt + 5001);
+    if (s.match?.phase === 'playing' && s.match.revealedAt) deadlines.push(s.match.revealedAt + AUTO_ADVANCE_MS + 1);
     if (s.players.length) deadlines.push(s.updatedAt + ROOM_TTL);
     return deadlines.length ? Math.max(now + 1, Math.min(...deadlines)) : null;
   }
@@ -504,10 +583,19 @@ export class RoomEngine {
     }
     // The panorama needs the location id, exactly as it does for players. The coordinates themselves
     // are only sent as `answer` when the host allowed it or the round is over.
-    const target = m.plan[m.round - 1]?.id ? Object.values(locations).flat().find(l => l.id === m.plan[m.round - 1].id) : null;
+    const target = m.plan[m.round - 1]?.id ? locationById(m.plan[m.round - 1].id) : null;
     if (target && (open || revealed)) m.answer = { lat: target.lat, lng: target.lng };
     m.role = 'spectator';
     return m;
+  }
+  // Until the round is revealed, other players' pins, distances and scores stay on the server.
+  hideOthers(m, viewerId) {
+    if (m.phase === 'final' || this.roundRevealed(m)) return;
+    const mine = new Set(this.teamFor(viewerId)?.playerIds || [viewerId]);
+    const byPlayer = m.guesses[m.round];
+    if (!byPlayer) return;
+    m.guesses = { ...m.guesses, [m.round]: Object.fromEntries(Object.entries(byPlayer).map(([pid, g]) => [pid, mine.has(pid) ? g : { playerId: g.playerId, round: g.round, elapsed: g.elapsed, locked: true }])) };
+    if (m.teamGuesses?.[m.round]) m.teamGuesses = { ...m.teamGuesses, [m.round]: Object.fromEntries(Object.entries(m.teamGuesses[m.round]).filter(([tid]) => this.teamFor(viewerId)?.id === tid)) };
   }
   snapshot(viewerId, now = Date.now()) {
     const s = this.state;
@@ -519,7 +607,17 @@ export class RoomEngine {
       match = { ...match, plan: match.plan.map(round => ({ ...round })) };
       if (viewerIsSpectator) match = this.spectatorView(match);
       else if (match.royale) match = this.royaleView(match, viewerId, now);
-      else if (this.isTeamsMode() && viewerId) {
+      else {
+        this.hideOthers(match, viewerId);
+        // Future rounds are never sent. Once the round is over the next id is released so
+        // the panorama can preload during the result screen.
+        const revealed = this.roundRevealed(match);
+        for (let i = match.round; i < match.plan.length; i++) {
+          if (i === match.round && revealed && !this.isTeamsMode() && !s.ranked) continue; // ranked: no early id, it would give away the answer
+          match.plan[i] = { ...match.plan[i], id: null, redacted: true };
+        }
+      }
+      if (!match.royale && !viewerIsSpectator && this.isTeamsMode() && viewerId) {
         const team = this.teamFor(viewerId);
         match.role = match.roles?.[viewerId] || null;
         match.teamId = team?.id || null;
@@ -534,11 +632,14 @@ export class RoomEngine {
         for (let i = match.round; i < match.plan.length; i++) match.plan[i] = { ...match.plan[i], id: null, redacted: true };
       }
     }
+    // Device ids identify leaderboard accounts: they never leave the server.
+    if (match?.ranked) match = { ...match, ranked: { players: match.ranked.players.map(({ id, name }) => ({ id, name })), results: match.ranked.results } };
     return {
       hostId: s.hostId,
       mode: s.mode,
+      ranked: !!s.ranked,
       selection: { poolSize: pool.length, remaining },
-      players: this.roster().map(({ id, profile, connected }) => ({ id, ...profile, connected, isHost: id === s.hostId, role: 'player' })),
+      players: this.roster().map(({ id, profile, connected, deviceId }) => ({ id, ...profile, connected, linked: !!deviceId, isHost: id === s.hostId, role: 'player' })),
       spectators: this.spectators().map(({ id, profile, connected }) => ({ id, ...profile, connected, role: 'spectator' })),
       spectatorCount: this.spectators().length,
       spectatorsSeeAnswer: !!s.spectatorsSeeAnswer,

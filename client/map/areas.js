@@ -34,7 +34,6 @@ export const KH_PROVINCES = [
 
 export const ASIA_COUNTRIES = [
   ['Cambodia', 'កម្ពុជា', box(10.4, 102.3, 14.7, 107.7)],
-  ['Thailand', 'ថៃ', box(5.6, 97.3, 20.5, 105.7)],
   ['Vietnam', 'វៀតណាម', box(8.5, 102.1, 23.4, 109.5)],
   ['Laos', 'ឡាវ', box(13.9, 100.1, 22.5, 107.7)],
   ['Myanmar', 'មីយ៉ាន់ម៉ា', box(9.7, 92.1, 28.5, 101.2)],
